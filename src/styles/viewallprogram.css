@@ -1,0 +1,77 @@
+.view-all-programs-btn {
+  font-family: "Poppins", sans-serif;
+  font-size: 18px;
+  font-weight: 600;
+  background: linear-gradient(
+    90deg,
+    #10b981,
+    #facc15,
+    #f59e0b
+  ); /* green → yellow → orange */
+  color: #ffffff;
+  padding: 0.7em 1.2em;
+  display: flex;
+  align-items: center;
+  border: none;
+  border-radius: 16px;
+  overflow: hidden;
+  cursor: pointer;
+  position: relative;
+  transition: all 0.3s ease;
+  box-shadow: 0 6px 15px rgba(16, 185, 129, 0.4);
+}
+
+.view-all-programs-btn span {
+  display: block;
+  margin-left: 0.4em;
+  transition: all 0.3s ease-in-out;
+}
+
+.svg-wrapper-1 {
+  display: flex;
+  align-items: center;
+}
+
+.svg-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.3s ease-in-out;
+}
+
+.view-all-programs-btn svg {
+  display: block;
+  transform-origin: center;
+  transition: transform 0.3s ease-in-out;
+}
+
+.view-all-programs-btn:hover .svg-wrapper {
+  animation: fly-1 0.6s ease-in-out infinite alternate;
+}
+
+.view-all-programs-btn:hover svg {
+  transform: translateX(1.2em) rotate(45deg) scale(1.1);
+}
+
+.view-all-programs-btn:hover span {
+  transform: translateX(120%);
+  opacity: 0;
+}
+
+.view-all-programs-btn:active {
+  transform: scale(0.96);
+}
+
+@keyframes fly-1 {
+  from {
+    transform: translateY(0.1em);
+  }
+  to {
+    transform: translateY(-0.1em);
+  }
+}
+
+/* Glow effect */
+.view-all-programs-btn:hover {
+  box-shadow: 0 8px 20px rgba(250, 204, 21, 0.5);
+}

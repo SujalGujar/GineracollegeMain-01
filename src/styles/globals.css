@@ -1,0 +1,239 @@
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  --font-size: 16px;
+  --background: #ffffff;
+  --foreground: #1a1a1a;
+  --card: #ffffff;
+  --card-foreground: #1a1a1a;
+  --popover: #ffffff;
+  --popover-foreground: #1a1a1a;
+  --primary: #F59E0B;
+  --primary-foreground: #ffffff;
+  --secondary: #EA580C;
+  --secondary-foreground: #ffffff;
+  --muted: #f8fafc;
+  --muted-foreground: #64748b;
+  --accent: #D97706;
+  --accent-foreground: #ffffff;
+  --destructive: #dc2626;
+  --destructive-foreground: #ffffff;
+  --border: #e2e8f0;
+  --input: #f1f5f9;
+  --input-background: #f8fafc;
+  --switch-background: #cbd5e1;
+  --font-weight-medium: 500;
+  --font-weight-normal: 400;
+  --ring: #F59E0B;
+  --chart-1: #F59E0B;
+  --chart-2: #EA580C;
+  --chart-3: #D97706;
+  --chart-4: #dc2626;
+  --chart-5: #7c2d12;
+  --radius: 0.5rem;
+  --sidebar: #f8fafc;
+  --sidebar-foreground: #1a1a1a;
+  --sidebar-primary: #F59E0B;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #f1f5f9;
+  --sidebar-accent-foreground: #334155;
+  --sidebar-border: #e2e8f0;
+  --sidebar-ring: #F59E0B;
+  
+  /* Academic theme colors */
+  --academic-orange: #F59E0B;
+  --academic-orange-dark: #EA580C;
+  --academic-orange-light: #FCD34D;
+  --academic-teal: #0f766e;
+  --academic-green: #059669;
+  --academic-red: #dc2626;
+  
+  /* Professional gradients */
+  --gradient-primary: linear-gradient(135deg, #F59E0B 0%, #EA580C 100%);
+  --gradient-secondary: linear-gradient(135deg, #EA580C 0%, #D97706 100%);
+  --gradient-accent: linear-gradient(135deg, #D97706 0%, #B45309 100%);
+  --gradient-header: linear-gradient(135deg, #EA580C 0%, #F59E0B 100%);
+}
+
+.dark {
+  --background: #0f172a;
+  --foreground: #f1f5f9;
+  --card: #1e293b;
+  --card-foreground: #f1f5f9;
+  --popover: #1e293b;
+  --popover-foreground: #f1f5f9;
+  --primary: #F59E0B;
+  --primary-foreground: #ffffff;
+  --secondary: #EA580C;
+  --secondary-foreground: #ffffff;
+  --muted: #334155;
+  --muted-foreground: #94a3b8;
+  --accent: #D97706;
+  --accent-foreground: #ffffff;
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+  --border: #334155;
+  --input: #334155;
+  --ring: #F59E0B;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-input-background: var(--input-background);
+  --color-switch-background: var(--switch-background);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --radius-sm: calc(var(--radius) - 2px);
+  --radius-md: var(--radius);
+  --radius-lg: calc(var(--radius) + 2px);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  }
+}
+
+/* Professional utilities */
+@layer utilities {
+  .gradient-primary {
+    background: var(--gradient-primary);
+  }
+  
+  .gradient-secondary {
+    background: var(--gradient-secondary);
+  }
+  
+  .gradient-accent {
+    background: var(--gradient-accent);
+  }
+  
+  .gradient-header {
+    background: var(--gradient-header);
+  }
+  
+  .academic-shadow {
+    box-shadow: 0 4px 12px -2px rgba(245, 158, 11, 0.1);
+  }
+  
+  .academic-shadow-lg {
+    box-shadow: 0 10px 25px -3px rgba(245, 158, 11, 0.1), 0 4px 6px -2px rgba(245, 158, 11, 0.05);
+  }
+  
+  .text-shadow {
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+  
+  .border-academic {
+    border-color: #e2e8f0;
+  }
+  
+  .hover-lift {
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+  }
+  
+  .hover-lift:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px -5px rgba(245, 158, 11, 0.15);
+  }
+}
+
+/**
+ * Base typography for academic content
+ */
+@layer base {
+  :where(:not(:has([class*=" text-"]), :not(:has([class^="text-"])))) {
+    h1 {
+      font-size: 2.25rem;
+      font-weight: 700;
+      line-height: 1.2;
+      color: var(--foreground);
+    }
+
+    h2 {
+      font-size: 1.875rem;
+      font-weight: 600;
+      line-height: 1.3;
+      color: var(--foreground);
+    }
+
+    h3 {
+      font-size: 1.5rem;
+      font-weight: 600;
+      line-height: 1.4;
+      color: var(--foreground);
+    }
+
+    h4 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      line-height: 1.4;
+      color: var(--foreground);
+    }
+
+    p {
+      font-size: 1rem;
+      font-weight: 400;
+      line-height: 1.6;
+      color: var(--muted-foreground);
+    }
+
+    label {
+      font-size: 0.875rem;
+      font-weight: 500;
+      line-height: 1.4;
+      color: var(--foreground);
+    }
+
+    button {
+      font-size: 0.875rem;
+      font-weight: 500;
+      line-height: 1.4;
+    }
+
+    input {
+      font-size: 0.875rem;
+      font-weight: 400;
+      line-height: 1.4;
+    }
+  }
+}
+
+html {
+  font-size: var(--font-size);
+}

@@ -1,0 +1,237 @@
+/* 🔹 Wave Text Animation for the Button */
+.wave-text span {
+  display: inline-block;
+  animation: wave 2s ease-in-out infinite;
+}
+
+.wave-text span:nth-child(1) {
+  animation-delay: 0s;
+}
+.wave-text span:nth-child(2) {
+  animation-delay: 0.1s;
+}
+.wave-text span:nth-child(3) {
+  animation-delay: 0.2s;
+}
+.wave-text span:nth-child(4) {
+  animation-delay: 0.3s;
+}
+.wave-text span:nth-child(5) {
+  animation-delay: 0.4s;
+}
+.wave-text span:nth-child(6) {
+  animation-delay: 0.5s;
+}
+.wave-text span:nth-child(7) {
+  animation-delay: 0.6s;
+}
+
+@keyframes wave {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+.animated-learn-more-btn {
+  position: relative;
+  display: inline-flex;
+  height: 48px;
+  background: white;
+  color: #111827;
+  text-decoration: none;
+  text-align: center;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  border: none;
+  cursor: pointer;
+  overflow: hidden;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  padding: 0 24px;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+.animated-learn-more-btn::before,
+.animated-learn-more-btn::after,
+.animated-learn-more-btn .btn-span::before,
+.animated-learn-more-btn .btn-span::after {
+  content: "";
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  /* // background: #9BB3C8; */
+  transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 1;
+}
+
+.animated-learn-more-btn::before {
+  top: -2px;
+  left: -2px;
+  border-top-left-radius: 8px;
+}
+
+.animated-learn-more-btn::after {
+  top: -2px;
+  right: -2px;
+  border-top-right-radius: 8px;
+}
+
+.animated-learn-more-btn .btn-span::before {
+  bottom: -2px;
+  left: -2px;
+  border-bottom-left-radius: 8px;
+}
+
+.animated-learn-more-btn .btn-span::after {
+  bottom: -2px;
+  right: -2px;
+  border-bottom-right-radius: 8px;
+}
+
+.animated-learn-more-btn:hover::before,
+.animated-learn-more-btn:hover::after,
+.animated-learn-more-btn:hover .btn-span::before,
+.animated-learn-more-btn:hover .btn-span::after {
+  width: calc(100% / 2 + 4px);
+  height: calc(100% / 2 + 4px);
+}
+
+.animated-learn-more-btn:hover {
+  background: linear-gradient(135deg, #8b4513, #cedce9ff);
+  color: white;
+  transform: translateY(-2px);
+  /* // box-shadow: 0 8px 30px rgba(245, 158, 11, 0.4); */
+}
+
+.animated-learn-more-btn:active {
+  transform: translateY(-1px);
+}
+
+.animated-learn-more-btn .btn-text {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Enhanced View All Button */
+.view-all-programs-btn {
+  position: relative;
+  display: inline-flex;
+  height: 52px;
+  background: #6093c4ff;
+  color: white;
+  text-align: center;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  font-weight: 600;
+  font-family: inherit;
+  border: none;
+  cursor: pointer;
+  overflow: hidden;
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  padding: 0 32px;
+  border-radius: 14px;
+  box-shadow: 0 6px 25px rgba(30, 58, 138, 0.3);
+}
+
+.view-all-programs-btn::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  /* // background: linear-gradient(to right, #A67C52, #FAF3E0); */
+  transition: left 0.8s ease;
+}
+
+.view-all-programs-btn:hover::before {
+  left: 100%;
+}
+
+.view-all-programs-btn:hover {
+  background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%);
+  transform: translateY(-3px) scale(1.05);
+  box-shadow: 0 15px 40px rgba(59, 130, 246, 0.5);
+}
+
+.view-all-programs-btn:active {
+  transform: translateY(-1px) scale(1.02);
+}
+
+.view-all-programs-btn .btn-content {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.arrow-container {
+  position: relative;
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.main-arrow {
+  transition: all 0.3s ease;
+}
+
+.hover-arrow {
+  position: absolute;
+  opacity: 0;
+  transform: translateX(-8px);
+  transition: all 0.3s ease;
+}
+
+.view-all-programs-btn:hover .main-arrow {
+  opacity: 0;
+  transform: translateX(8px);
+}
+
+.view-all-programs-btn:hover .hover-arrow {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+/* Floating particles */
+.particle {
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  background: white;
+  border-radius: 50%;
+  opacity: 0;
+}
+
+.view-all-programs-btn:hover .particle {
+  animation: floatParticles 1s ease-out forwards;
+}
+
+@keyframes floatParticles {
+  0% {
+    opacity: 0;
+    transform: translate(0, 0) scale(0);
+  }
+  50% {
+    opacity: 1;
+    transform: translate(var(--tx), var(--ty)) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--tx), calc(var(--ty) - 15px)) scale(0);
+  }
+}
