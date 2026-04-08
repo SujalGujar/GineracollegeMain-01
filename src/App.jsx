@@ -316,7 +316,7 @@ export default function App() {
   };
 
   return (
-  
+  <>
       <div className="min-h-screen bg-background">
         <Header currentPage={currentPage} onNavigate={handleNavigation} />
         <main>
@@ -411,6 +411,6 @@ export default function App() {
       </footer>
       </div>
       <Toaster />
-    
+    </>
   );
 }
