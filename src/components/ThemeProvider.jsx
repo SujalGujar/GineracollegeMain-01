@@ -9,14 +9,11 @@ export function ThemeProvider({ children }) {
   const [theme, setTheme] = useState('light');
 
   useEffect(() => {
-    // Check localStorage for saved theme preference
-    const savedTheme = localStorage.getItem('theme');
-    if (savedTheme) {
-      setTheme(savedTheme);
-    } else {
-      // Always default to light mode
-      setTheme('light');
-    }
+    // Always force light mode - remove dark class and clear localStorage
+    const root = document.documentElement;
+    root.classList.remove('dark');
+    localStorage.setItem('theme', 'light');
+    setTheme('light');
   }, []);
 
   useEffect(() => {
