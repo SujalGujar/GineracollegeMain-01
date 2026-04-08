@@ -7,7 +7,7 @@ import { Label } from "./ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
 import { Upload, Save, Eye, Trash2, Plus, Edit3 } from "lucide-react";
-import { toast } from "sonner@2.0.3";
+import { toast } from "sonner";
 import { motion } from 'framer-motion';
 
 const defaultCampusImages = [

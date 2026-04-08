@@ -230,13 +230,17 @@
 
 import React, { useState } from 'react';
 import { Sparkles } from "lucide-react";
-import { ThemeProvider } from './components/ThemeProvider';
-import { Header } from './components/Header';
+
+import {Header} from './components/Header';
 import { Toaster } from './components/ui/sonner';
-import { HomePage } from './components/HomePage';
+
+import HomePage from './components/HomePage.jsx';
+
 import { AboutLogo, DeanMessage, History, Location, VisionMission, Achievements } from './components/AboutPages';
 import { CoursesOffered, AdmissionProcedure, AdmissionRules, Bond, Instructions } from './components/AdmissionPages';
+
 import { GenericDepartment } from './components/DepartmentPages';
+
 import { CollegePhotos, HospitalPhotos, EventsPhotos } from './components/PhotoGallery';
 import { AffiliatedInstitutes } from './components/AffiliatedInstitutes';
 import { ContactPage } from './components/ContactPage';
@@ -252,7 +256,7 @@ export default function App() {
   const renderCurrentPage = () => {
     switch (currentPage) {
       case 'home':
-        return <HomePage />;
+        return <HomePage onNavigate={handleNavigation} />;
       
       // About Us pages
       case 'about-logo':
@@ -311,12 +315,12 @@ export default function App() {
         return <AdminPanel />;
       
       default:
-        return <HomePage />;
+        return <HomePage  onNavigate={handleNavigation}/>;
     }
   };
 
   return (
-    <ThemeProvider>
+    
       <div className="min-h-screen bg-background">
         <Header currentPage={currentPage} onNavigate={handleNavigation} />
         <main>
@@ -409,8 +413,8 @@ export default function App() {
           </div>
         </div>
       </footer>
-      </div>
       <Toaster />
-    </ThemeProvider>
+      </div>
+    
   );
 }

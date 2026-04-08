@@ -1058,7 +1058,7 @@ const cardVariant = {
 /* ═══════════════════════════════════════════════════════
    MAIN COMPONENT
 ═══════════════════════════════════════════════════════ */
-export function HomePage({ onNavigate }) {
+const HomePage=({ onNavigate }) => {
   const [testimonialsIndex, setTestimonialsIndex] = useState(0);
   const [logoOffset, setLogoOffset] = useState(0);
   const [programsVisible, setProgramsVisible] = useState(false);

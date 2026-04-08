@@ -230,10 +230,9 @@
 
 import React, { useState } from 'react';
 import { Sparkles } from "lucide-react";
-import { ThemeProvider } from './components/ThemeProvider.jsx';
-import { Header } from './components/Header.jsx';
+import  {Header}  from './components/Header.jsx';
 import { Toaster } from './components/ui/sonner.jsx';
-import { HomePage } from './components/HomePage.jsx';
+import HomePage from './components/HomePage.jsx';
 import { AboutLogo, DeanMessage, History, Location, VisionMission, Achievements } from './components/AboutPages.jsx';
 import { CoursesOffered, AdmissionProcedure, AdmissionRules, Bond, Instructions } from './components/AdmissionPages.jsx';
 import { AnatomyDepartment,GenericDepartment } from './components/DepartmentPages.jsx';
@@ -253,7 +252,7 @@ export default function App() {
   const renderCurrentPage = () => {
     switch (currentPage) {
     case 'home':
-      return <HomePage />;
+      return <HomePage onNavigate={handleNavigation} />;
     
     // About Us pages
     case 'about-logo':
@@ -312,12 +311,12 @@ export default function App() {
       return <AdminPanel />;
     
     default:
-      return <HomePage />;
+      return <HomePage onNavigate={handleNavigation} />;
   }
   };
 
   return (
-    <ThemeProvider>
+  
       <div className="min-h-screen bg-background">
         <Header currentPage={currentPage} onNavigate={handleNavigation} />
         <main>
@@ -412,6 +411,6 @@ export default function App() {
       </footer>
       </div>
       <Toaster />
-    </ThemeProvider>
+    
   );
 }

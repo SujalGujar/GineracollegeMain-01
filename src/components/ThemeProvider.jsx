@@ -2,6 +2,9 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 
 const ThemeContext = createContext(undefined);
 
+/**
+ * @param {{ children: React.ReactNode }} props
+ */
 export function ThemeProvider({ children }) {
   const [theme, setTheme] = useState('light');
 
@@ -40,6 +43,10 @@ export function ThemeProvider({ children }) {
     </ThemeContext.Provider>
   );
 }
+
+ThemeProvider.defaultProps = {
+  children: null
+};
 
 export function useTheme() {
   const context = useContext(ThemeContext);
