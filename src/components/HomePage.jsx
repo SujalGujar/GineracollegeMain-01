@@ -1113,7 +1113,7 @@ export function HomePage({ onNavigate }) {
           id="academic-programs"
           style={{
             position: "relative",
-            padding: "96px 0 80px",
+            padding: "64px 0 48px",
             background: "linear-gradient(160deg, #f0f4ff 0%, #e8edf8 100%)",
             overflow: "hidden",
           }}
@@ -1263,7 +1263,7 @@ export function HomePage({ onNavigate }) {
               variants={fadeUp} custom={3}
               initial="hidden"
               animate={programsVisible ? "visible" : "hidden"}
-              style={{ textAlign: "center", marginTop: 56 }}
+              style={{ textAlign: "center", marginTop: 32 }}
             >
               <ViewAllButton onClick={() => console.log("View All Programs")} />
               <p style={{ marginTop: 20, color: "#6b7280", fontSize: 16 }}>
@@ -1274,7 +1274,7 @@ export function HomePage({ onNavigate }) {
         </section>
         <section style={{
           position: "relative",
-          padding: "96px 0",
+          padding: "48px 0 64px",
           background: "linear-gradient(160deg, #eff6ff 0%, #eef2ff 100%)",
           overflow: "hidden",
         }}>
@@ -1299,7 +1299,7 @@ export function HomePage({ onNavigate }) {
           <div style={{ maxWidth: 1100, margin: "0 auto", padding: "0 24px", position: "relative", zIndex: 1 }}>
             <motion.div
               variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }}
-              style={{ textAlign: "center", marginBottom: 56 }}
+              style={{ textAlign: "center", marginBottom: 32 }}
             >
               <div className="section-badge" style={{ background: "#fef2f2", color: "#dc2626" }}>
                 <Heart size={14} />

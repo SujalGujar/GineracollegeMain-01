@@ -846,11 +846,23 @@ export function AdmissionProcedure() {
       step: 8,
       title: "Admission Committee Website",
       description:
-        "ADMISSION THROUGH - Admission Committee for Physiotherapy,BSC Nursing,Prosthetics and Orthotics ,Occupational Therapy,Optometry ,Naturopathy,Audiology and Speech Therapy,GNM And ANM AdmissionGovernment of Gujarat ,Gandhinagar ",
-      details: "https://www.medadmgujarat.org/ga/home.aspx",
+        "ADMISSION THROUGH - Admission Committee for Physiotherapy, BSC Nursing, Prosthetics and Orthotics, Occupational Therapy, Optometry, Naturopathy, Audiology and Speech Therapy, GNM And ANM Admission Government of Gujarat, Gandhinagar",
+      detailsUrl: "https://www.medadmgujarat.org/ga/home.aspx",
       icon: <FileText className="w-6 h-6" />,
+      readMoreRequired: true
     },
   ];
+
+  const [expandedProcedureSteps, setExpandedProcedureSteps] = useState([]);
+
+  const toggleProcedureStep = (stepId) => {
+    setExpandedProcedureSteps((prev) =>
+      prev.includes(stepId)
+        ? prev.filter((id) => id !== stepId)
+        : [...prev, stepId]
+    );
+  };
+
 
   const requiredDocs = [
    
@@ -932,11 +944,42 @@ export function AdmissionProcedure() {
                       {step.title}
                     </h3>
                     <p className="text-gray-700 text-sm mb-3">
-                      {step.description}
+                      {step.readMoreRequired ? (
+                        <>
+                          {expandedProcedureSteps.includes(step.step)
+                            ? step.description
+                            : step.description.slice(0, 100) +
+                              (step.description.length > 100 ? "..." : "")}
+                          {step.description.length > 100 && (
+                            <button
+                              onClick={() => toggleProcedureStep(step.step)}
+                              className="text-orange-600 font-semibold hover:underline text-xs ml-1 focus:outline-none"
+                            >
+                              {expandedProcedureSteps.includes(step.step)
+                                ? "Read less"
+                                : "Read more"}
+                            </button>
+                          )}
+                        </>
+                      ) : (
+                        step.description
+                      )}
                     </p>
-                    <p className="text-gray-600 text-xs bg-orange-50 rounded-lg p-2 border border-orange-100">
-                      {step.details}
-                    </p>
+                    {step.details && (
+                      <p className="text-gray-600 text-xs bg-orange-50 rounded-lg p-2 border border-orange-100 break-words">
+                        {step.details}
+                      </p>
+                    )}
+                    {step.detailsUrl && (
+                      <a
+                        href={step.detailsUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-block mt-2 text-xs font-semibold text-white bg-orange-500 hover:bg-orange-600 px-3 py-1.5 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-opacity-50"
+                      >
+                        Visit Link
+                      </a>
+                    )}
                   </motion.div>
                 ))}
               </div>
@@ -1676,6 +1719,7 @@ export function AdmissionProcedure() {
 //   );
 // }
 export function AdmissionRules() {
+  const [isCommitteeTextExpanded, setIsCommitteeTextExpanded] = useState(false);
   // Animation variants
   const staggerContainer = {
     hidden: { opacity: 0 },
@@ -1968,10 +2012,25 @@ export function AdmissionRules() {
                       
                     </motion.div>
                     <motion.div className="p-4 rounded-lg border border-orange-200 bg-orange-50/50 group/item">
-                        <motion.p>Admission Committee for Physiotherapy,BSC Nursing,Prosthetics and Orthotics ,Occupational Therapy,Optometry ,
-Naturopathy,Audiology and Speech Therapy,GNM And ANM Admission
-Government of Gujarat ,Gandhinagar</motion.p>
-                        <motion.a  className="text-blue" href="https://www.medadmgujarat.org/ga/home.aspx" target="_blank">Click Here</motion.a>
+                        <motion.p className="text-sm text-gray-700">
+                          {isCommitteeTextExpanded
+                            ? "Admission Committee for Physiotherapy, BSC Nursing, Prosthetics and Orthotics, Occupational Therapy, Optometry, Naturopathy, Audiology and Speech Therapy, GNM And ANM Admission Government of Gujarat, Gandhinagar"
+                            : "Admission Committee for Physiotherapy, BSC Nursing, Prosthetics and Orthotics..."}
+                          <button
+                            onClick={() => setIsCommitteeTextExpanded(!isCommitteeTextExpanded)}
+                            className="text-orange-600 font-semibold hover:underline text-xs ml-1 focus:outline-none"
+                          >
+                            {isCommitteeTextExpanded ? "Read less" : "Read more"}
+                          </button>
+                        </motion.p>
+                        <a
+                          href="https://www.medadmgujarat.org/ga/home.aspx"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-block mt-2 text-xs font-semibold text-white bg-orange-500 hover:bg-orange-600 px-3 py-1.5 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-opacity-50"
+                        >
+                          Visit Us
+                        </a>
                       </motion.div>
                   </motion.div>
 

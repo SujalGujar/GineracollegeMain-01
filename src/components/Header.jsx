@@ -653,8 +653,7 @@ import {
 } from "./ui/navigation-menu.jsx";
 import { Button } from "./ui/button.jsx";
 import { Sheet, SheetContent, SheetTrigger } from "./ui/sheet.jsx";
-import { Menu, GraduationCap, Phone, Mail, Sun, Moon, User } from "lucide-react";
-import { useTheme } from "./ThemeProvider.jsx";
+import { Menu, GraduationCap, Phone, Mail, User } from "lucide-react";
 
 const departmentItems = [
   { 
@@ -672,8 +671,6 @@ const departmentItems = [
 ];
 
 export function Header({ currentPage, onNavigate }) {
-  const { theme, toggleTheme } = useTheme();
-
   const handleNavigation = (page, event) => {
     if (event) {
       event.preventDefault();
@@ -714,7 +711,7 @@ export function Header({ currentPage, onNavigate }) {
 
             {/* Desktop Navigation */}
             <div className="hidden lg:flex items-center space-x-2">
-              <NavigationMenu>
+              <NavigationMenu viewport={false}>
                 <NavigationMenuList>
                   <NavigationMenuItem>
                     <NavigationMenuLink
@@ -730,75 +727,43 @@ export function Header({ currentPage, onNavigate }) {
                       About Us
                     </NavigationMenuTrigger>
                     <NavigationMenuContent>
-                      <div className="w-[500px] p-2">
-                        <div className="bg-background rounded-lg border p-4 space-y-1">
-                          <NavigationMenuLink
-                            onClick={() => handleNavigation("about-logo")}
-                            className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-orange-50 cursor-pointer"
-                          >
-                            <div className="text-sm font-medium leading-none text-foreground">
-                              College Logo
-                            </div>
-                            <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
-                              Official institutional branding
-                            </p>
-                          </NavigationMenuLink>
-                          <NavigationMenuLink
-                            onClick={() => handleNavigation("dean-message")}
-                            className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-orange-50 cursor-pointer"
-                          >
-                            <div className="text-sm font-medium leading-none text-foreground">
-                              Dean's Message
-                            </div>
-                            <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
-                              Welcome from the Dean
-                            </p>
-                          </NavigationMenuLink>
-                          <NavigationMenuLink
-                            onClick={() => handleNavigation("history")}
-                            className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-orange-50 cursor-pointer"
-                          >
-                            <div className="text-sm font-medium leading-none text-foreground">
-                              Our History
-                            </div>
-                            <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
-                              Institutional timeline
-                            </p>
-                          </NavigationMenuLink>
-                          <NavigationMenuLink
-                            onClick={() => handleNavigation("location")}
-                            className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-orange-50 cursor-pointer"
-                          >
-                            <div className="text-sm font-medium leading-none text-foreground">
-                              Campus Location
-                            </div>
-                            <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
-                              Find us on map
-                            </p>
-                          </NavigationMenuLink>
-                          <NavigationMenuLink
-                            onClick={() => handleNavigation("vision-mission")}
-                            className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-orange-50 cursor-pointer"
-                          >
-                            <div className="text-sm font-medium leading-none text-foreground">
-                              Vision & Mission
-                            </div>
-                            <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
-                              Our core values
-                            </p>
-                          </NavigationMenuLink>
-                          <NavigationMenuLink
-                            onClick={() => handleNavigation("achievements")}
-                            className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-orange-50 cursor-pointer"
-                          >
-                            <div className="text-sm font-medium leading-none text-foreground">
-                              Achievements
-                            </div>
-                            <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
-                              Awards & recognitions
-                            </p>
-                          </NavigationMenuLink>
-                        </div>
+                      <div className="w-56 p-1 flex flex-col bg-white">
+                        <NavigationMenuLink
+                          onClick={() => handleNavigation("about-logo")}
+                          className="block rounded-md px-3 py-2 text-sm transition-colors hover:bg-orange-50 hover:text-orange-600 cursor-pointer"
+                        >
+                          College Logo
+                        </NavigationMenuLink>
+                        <NavigationMenuLink
+                          onClick={() => handleNavigation("dean-message")}
+                          className="block rounded-md px-3 py-2 text-sm transition-colors hover:bg-orange-50 hover:text-orange-600 cursor-pointer"
+                        >
+                          Dean's Message
+                        </NavigationMenuLink>
+                        <NavigationMenuLink
+                          onClick={() => handleNavigation("history")}
+                          className="block rounded-md px-3 py-2 text-sm transition-colors hover:bg-orange-50 hover:text-orange-600 cursor-pointer"
+                        >
+                          Our History
+                        </NavigationMenuLink>
+                        <NavigationMenuLink
+                          onClick={() => handleNavigation("location")}
+                          className="block rounded-md px-3 py-2 text-sm transition-colors hover:bg-orange-50 hover:text-orange-600 cursor-pointer"
+                        >
+                          Campus Location
+                        </NavigationMenuLink>
+                        <NavigationMenuLink
+                          onClick={() => handleNavigation("vision-mission")}
+                          className="block rounded-md px-3 py-2 text-sm transition-colors hover:bg-orange-50 hover:text-orange-600 cursor-pointer"
+                        >
+                          Vision & Mission
+                        </NavigationMenuLink>
+                        <NavigationMenuLink
+                          onClick={() => handleNavigation("achievements")}
+                          className="block rounded-md px-3 py-2 text-sm transition-colors hover:bg-orange-50 hover:text-orange-600 cursor-pointer"
+                        >
+                          Achievements
+                        </NavigationMenuLink>
                       </div>
                     </NavigationMenuContent>
                   </NavigationMenuItem>
@@ -808,64 +773,37 @@ export function Header({ currentPage, onNavigate }) {
                       Admissions
                     </NavigationMenuTrigger>
                     <NavigationMenuContent>
-                      <div className="w-[450px] p-2">
-                        <div className="bg-background rounded-lg border p-4 space-y-1">
-                          <NavigationMenuLink
-                            onClick={() => handleNavigation("courses")}
-                            className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-orange-50 cursor-pointer"
-                          >
-                            <div className="text-sm font-medium leading-none text-foreground">
-                              Courses Offered
-                            </div>
-                            <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
-                              MBBS and PG programs
-                            </p>
-                          </NavigationMenuLink>
-                          <NavigationMenuLink
-                            onClick={() => handleNavigation("admission-procedure")}
-                            className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-orange-50 cursor-pointer"
-                          >
-                            <div className="text-sm font-medium leading-none text-foreground">
-                              Admission Procedure
-                            </div>
-                            <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
-                              Step-by-step process
-                            </p>
-                          </NavigationMenuLink>
-                          <NavigationMenuLink
-                            onClick={() => handleNavigation("admission-rules")}
-                            className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-orange-50 cursor-pointer"
-                          >
-                            <div className="text-sm font-medium leading-none text-foreground">
-                              Admission Rules
-                            </div>
-                            <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
-                              Eligibility criteria
-                            </p>
-                          </NavigationMenuLink>
-                          <NavigationMenuLink
-                            onClick={() => handleNavigation("bond")}
-                            className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-orange-50 cursor-pointer"
-                          >
-                            <div className="text-sm font-medium leading-none text-foreground">
-                              Service Bond
-                            </div>
-                            <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
-                              Commitment details
-                            </p>
-                          </NavigationMenuLink>
-                          <NavigationMenuLink
-                            onClick={() => handleNavigation("instructions")}
-                            className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-orange-50 cursor-pointer"
-                          >
-                            <div className="text-sm font-medium leading-none text-foreground">
-                              Student Guidelines
-                            </div>
-                            <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
-                              Important instructions
-                            </p>
-                          </NavigationMenuLink>
-                        </div>
+                      <div className="w-56 p-1 flex flex-col bg-white">
+                        <NavigationMenuLink
+                          onClick={() => handleNavigation("courses")}
+                          className="block rounded-md px-3 py-2 text-sm transition-colors hover:bg-orange-50 hover:text-orange-600 cursor-pointer"
+                        >
+                          Courses Offered
+                        </NavigationMenuLink>
+                        <NavigationMenuLink
+                          onClick={() => handleNavigation("admission-procedure")}
+                          className="block rounded-md px-3 py-2 text-sm transition-colors hover:bg-orange-50 hover:text-orange-600 cursor-pointer"
+                        >
+                          Admission Procedure
+                        </NavigationMenuLink>
+                        <NavigationMenuLink
+                          onClick={() => handleNavigation("admission-rules")}
+                          className="block rounded-md px-3 py-2 text-sm transition-colors hover:bg-orange-50 hover:text-orange-600 cursor-pointer"
+                        >
+                          Admission Rules
+                        </NavigationMenuLink>
+                        <NavigationMenuLink
+                          onClick={() => handleNavigation("bond")}
+                          className="block rounded-md px-3 py-2 text-sm transition-colors hover:bg-orange-50 hover:text-orange-600 cursor-pointer"
+                        >
+                          Service Bond
+                        </NavigationMenuLink>
+                        <NavigationMenuLink
+                          onClick={() => handleNavigation("instructions")}
+                          className="block rounded-md px-3 py-2 text-sm transition-colors hover:bg-orange-50 hover:text-orange-600 cursor-pointer"
+                        >
+                          Student Guidelines
+                        </NavigationMenuLink>
                       </div>
                     </NavigationMenuContent>
                   </NavigationMenuItem>
@@ -875,38 +813,31 @@ export function Header({ currentPage, onNavigate }) {
                       Departments
                     </NavigationMenuTrigger>
                     <NavigationMenuContent>
-                      <div className="w-[600px] p-2">
-                        <div className="bg-background rounded-lg border p-4">
-                          {departmentItems.map((dept, index) => (
-                            <div
-                              key={index}
-                              className={`border-l-4 ${dept.color} pl-4 space-y-3`}
-                            >
-                              <h4 className="font-semibold text-foreground text-base">
-                                {dept.title}
-                              </h4>
-                              <div className="grid grid-cols-1 gap-2">
-                                {dept.items.map((item, itemIndex) => (
-                                  <NavigationMenuLink
-                                    key={itemIndex}
-                                    onClick={() =>
-                                      handleNavigation(
-                                        `department-${item
-                                          .toLowerCase()
-                                          .replace(/\s+/g, "-")
-                                          .replace(/[()&]/g, "")
-                                          .replace(/,/g, "")}`
-                                      )
-                                    }
-                                    className="block select-none rounded-md p-2 text-sm leading-none no-underline outline-none transition-colors hover:bg-orange-50 cursor-pointer"
-                                  >
-                                    {item}
-                                  </NavigationMenuLink>
-                                ))}
-                              </div>
+                      <div className="w-[350px] p-1 flex flex-col bg-white">
+                        {departmentItems.map((dept, index) => (
+                          <div key={index} className="flex flex-col">
+                            <div className="px-3 py-2 text-sm font-semibold text-gray-900 bg-gray-50 rounded-t-md">
+                              {dept.title}
                             </div>
-                          ))}
-                        </div>
+                            {dept.items.map((item, itemIndex) => (
+                              <NavigationMenuLink
+                                key={itemIndex}
+                                onClick={() =>
+                                  handleNavigation(
+                                    `department-${item
+                                      .toLowerCase()
+                                      .replace(/\s+/g, "-")
+                                      .replace(/[()&]/g, "")
+                                      .replace(/,/g, "")}`
+                                  )
+                                }
+                                className="block rounded-md px-3 py-2 text-sm transition-colors hover:bg-orange-50 hover:text-orange-600 cursor-pointer"
+                              >
+                                {item}
+                              </NavigationMenuLink>
+                            ))}
+                          </div>
+                        ))}
                       </div>
                     </NavigationMenuContent>
                   </NavigationMenuItem>
@@ -916,42 +847,25 @@ export function Header({ currentPage, onNavigate }) {
                       Gallery
                     </NavigationMenuTrigger>
                     <NavigationMenuContent>
-                      <div className="w-[300px] p-2">
-                        <div className="bg-background rounded-lg border p-4 space-y-1">
-                          <NavigationMenuLink
-                            onClick={() => handleNavigation("college-photos")}
-                            className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-orange-50 cursor-pointer"
-                          >
-                            <div className="text-sm font-medium leading-none text-foreground">
-                              College Photos
-                            </div>
-                            <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
-                              Campus infrastructure
-                            </p>
-                          </NavigationMenuLink>
-                          <NavigationMenuLink
-                            onClick={() => handleNavigation("hospital-photos")}
-                            className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-orange-50 cursor-pointer"
-                          >
-                            <div className="text-sm font-medium leading-none text-foreground">
-                              Hospital Photos
-                            </div>
-                            <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
-                              Clinical facilities
-                            </p>
-                          </NavigationMenuLink>
-                          <NavigationMenuLink
-                            onClick={() => handleNavigation("events-photos")}
-                            className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-orange-50 cursor-pointer"
-                          >
-                            <div className="text-sm font-medium leading-none text-foreground">
-                              Events Photos
-                            </div>
-                            <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
-                              Academic & cultural events
-                            </p>
-                          </NavigationMenuLink>
-                        </div>
+                      <div className="w-48 p-1 flex flex-col bg-white">
+                        <NavigationMenuLink
+                          onClick={() => handleNavigation("college-photos")}
+                          className="block rounded-md px-3 py-2 text-sm transition-colors hover:bg-orange-50 hover:text-orange-600 cursor-pointer"
+                        >
+                          College Photos
+                        </NavigationMenuLink>
+                        <NavigationMenuLink
+                          onClick={() => handleNavigation("hospital-photos")}
+                          className="block rounded-md px-3 py-2 text-sm transition-colors hover:bg-orange-50 hover:text-orange-600 cursor-pointer"
+                        >
+                          Hospital Photos
+                        </NavigationMenuLink>
+                        <NavigationMenuLink
+                          onClick={() => handleNavigation("events-photos")}
+                          className="block rounded-md px-3 py-2 text-sm transition-colors hover:bg-orange-50 hover:text-orange-600 cursor-pointer"
+                        >
+                          Events Photos
+                        </NavigationMenuLink>
                       </div>
                     </NavigationMenuContent>
                   </NavigationMenuItem>
@@ -993,37 +907,10 @@ export function Header({ currentPage, onNavigate }) {
                 <User className="h-4 w-4 mr-2" />
                 Admin Panel
               </Button>
-
-              {/* Theme Toggle */}
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={toggleTheme}
-                className="ml-1 hover:bg-orange-50"
-              >
-                {theme === "light" ? (
-                  <Moon className="h-4 w-4" />
-                ) : (
-                  <Sun className="h-4 w-4" />
-                )}
-              </Button>
             </div>
 
             {/* Mobile Navigation */}
             <div className="lg:hidden flex items-center space-x-2">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={toggleTheme}
-                className="hover:bg-orange-50"
-              >
-                {theme === "light" ? (
-                  <Moon className="h-5 w-5" />
-                ) : (
-                  <Sun className="h-5 w-5" />
-                )}
-              </Button>
-              
               <Sheet>
                 <SheetTrigger asChild>
                   <Button variant="ghost" size="icon">

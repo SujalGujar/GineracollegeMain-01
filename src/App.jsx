@@ -236,7 +236,8 @@ import { Toaster } from './components/ui/sonner.jsx';
 import { HomePage } from './components/HomePage.jsx';
 import { AboutLogo, DeanMessage, History, Location, VisionMission, Achievements } from './components/AboutPages.jsx';
 import { CoursesOffered, AdmissionProcedure, AdmissionRules, Bond, Instructions } from './components/AdmissionPages.jsx';
-import { GenericDepartment } from './components/DepartmentPages.jsx';
+import { AnatomyDepartment,GenericDepartment } from './components/DepartmentPages.jsx';
+
 import { CollegePhotos, HospitalPhotos, EventsPhotos } from './components/PhotoGallery.jsx';
 import { AffiliatedInstitutes } from './components/AffiliatedInstitutes.jsx';
 import { ContactPage } from './components/ContactPage.jsx';
@@ -251,68 +252,68 @@ export default function App() {
 
   const renderCurrentPage = () => {
     switch (currentPage) {
-      case 'home':
-        return <HomePage />;
-      
-      // About Us pages
-      case 'about-logo':
-        return <AboutLogo />;
-      case 'dean-message':
-        return <DeanMessage />;
-      case 'history':
-        return <History />;
-      case 'location':
-        return <Location />;
-      case 'vision-mission':
-        return <VisionMission />;
-      case 'achievements':
-        return <Achievements />;
-      
-      // Admission pages
-      case 'courses':
-        return <CoursesOffered />;
-      case 'admission-procedure':
-        return <AdmissionProcedure />;
-      case 'admission-rules':
-        return <AdmissionRules />;
-      case 'bond':
-        return <Bond />;
-      case 'instructions':
-        return <Instructions />;
-      
-      // Nursing Department pages
-      case 'department-department-of-fundamentals-of-nursing':
-        return <GenericDepartment deptName="Department of Fundamentals Of Nursing" category="Nursing Department" />;
-      case 'department-department-of-medical-surgical-nursing':
-        return <GenericDepartment deptName="Department of Medical Surgical Nursing" category="Nursing Department" />;
-      case 'department-department-of-obstetric-and-gynaecological-nursing':
-        return <GenericDepartment deptName="Department of Obstetric and Gynaecological Nursing" category="Nursing Department" />;
-      case 'department-department-of-child-health-nursing':
-        return <GenericDepartment deptName="Department of Child Health Nursing" category="Nursing Department" />;
-      case 'department-department-of-community-health-nursing':
-        return <GenericDepartment deptName="Department of Community Health Nursing" category="Nursing Department" />;
-      case 'department-department-of-mental-health-nursing':
-        return <GenericDepartment deptName="Department of Mental Health Nursing" category="Nursing Department" />;
-      
-      // Photo Gallery pages
-      case 'college-photos':
-        return <CollegePhotos />;
-      case 'hospital-photos':
-        return <HospitalPhotos />;
-      case 'events-photos':
-        return <EventsPhotos />;
-      
-      // Other pages
-      case 'affiliated-institutes':
-        return <AffiliatedInstitutes />;
-      case 'contact':
-        return <ContactPage />;
-      case 'admin':
-        return <AdminPanel />;
-      
-      default:
-        return <HomePage />;
-    }
+    case 'home':
+      return <HomePage />;
+    
+    // About Us pages
+    case 'about-logo':
+      return <AboutLogo />;
+    case 'dean-message':
+      return <DeanMessage />;
+    case 'history':
+      return <History />;
+    case 'location':
+      return <Location />;
+    case 'vision-mission':
+      return <VisionMission />;
+    case 'achievements':
+      return <Achievements />;
+    
+    // Admission pages
+    case 'courses':
+      return <CoursesOffered />;
+    case 'admission-procedure':
+      return <AdmissionProcedure />;
+    case 'admission-rules':
+      return <AdmissionRules />;
+    case 'bond':
+      return <Bond />;
+    case 'instructions':
+      return <Instructions />;
+    
+    // Nursing Department pages - Use GenericDepartment for all
+    case 'department-department-of-fundamentals-of-nursing':
+      return <GenericDepartment deptName="Department of Fundamentals Of Nursing" category="Nursing Department" />;
+    case 'department-department-of-medical-surgical-nursing':
+      return <GenericDepartment deptName="Department of Medical Surgical Nursing" category="Nursing Department" />;
+    case 'department-department-of-obstetric-and-gynaecological-nursing':
+      return <GenericDepartment deptName="Department of Obstetric and Gynaecological Nursing" category="Nursing Department" />;
+    case 'department-department-of-child-health-nursing':
+      return <GenericDepartment deptName="Department of Child Health Nursing" category="Nursing Department" />;
+    case 'department-department-of-community-health-nursing':
+      return <GenericDepartment deptName="Department of Community Health Nursing" category="Nursing Department" />;
+    case 'department-department-of-mental-health-nursing':
+      return <GenericDepartment deptName="Department of Mental Health Nursing" category="Nursing Department" />;
+    
+    // Photo Gallery pages
+    case 'college-photos':
+      return <CollegePhotos />;
+    case 'hospital-photos':
+      return <HospitalPhotos />;
+    case 'events-photos':
+      return <EventsPhotos />;
+    
+    // Other pages
+    case 'affiliated-institutes':
+      return <AffiliatedInstitutes />;
+    case 'contact':
+      return <ContactPage />;
+    case 'admin':
+      return <AdminPanel />;
+    
+    default:
+      return <HomePage />;
+  }
   };
 
   return (

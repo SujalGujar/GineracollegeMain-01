@@ -703,6 +703,8 @@ const imageAnimation = {
 };
 
 export function History() {
+  const [isHistoryExpanded, setIsHistoryExpanded] = React.useState(false);
+  const [expandedMilestones, setExpandedMilestones] = React.useState([]);
   return (
     <motion.div
       className="w-full"
@@ -759,17 +761,6 @@ export function History() {
               }}
               transition={{ duration: 0.4 }}
             />
-            <motion.img
-              style={{ marginTop: '70px' }}
-              src={laboratoryImage}
-              alt="Institutional Timeline"
-              className="rounded-2xl  shadow-2xl w-full max-w-md h-80 object-cover border-4 border-white"
-              whileHover={{
-                scale: 1.05,
-                boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
-              }}
-              transition={{ duration: 0.4 }}
-            />
           </motion.div>
 
           {/* Content Section */}
@@ -791,10 +782,20 @@ export function History() {
               <p>
                 The college has completed 62 years of teaching to nursing students. Students of this college have obtained various statuses in administration, education and clinical field in Gujarat (India) as well abroad.
               </p>
-              <p>
-                The college has the roots in the post basic Nursing School, which was started in 1963. At the time Gujarat was very young state and the need for P.H.N. nurses was acute. So the diploma course in Public Health Nursing was started. Two years later with the increasing in Nursing Schools a especially the ANM schools the need for tutors was felt, so in 1965 a Diploma in Nursing Education course was started.
-              </p>
-              <p>During the years when the Diploma courses were being conducted, the concept of post Basic B.Sc. Degree course in Nursing was conceived. The Idea very new too many but was easily accepted. It was realized that changing needs of the society which in turn is due to the rapid advanced medicine and technology demands professional Nurses. This could be done if a collegiate program was started thus, in July 1963 the post Basic nursing school ceased to exist and the college of Nursing born.</p>
+              {isHistoryExpanded && (
+                <>
+                  <p>
+                    The college has the roots in the post basic Nursing School, which was started in 1963. At the time Gujarat was very young state and the need for P.H.N. nurses was acute. So the diploma course in Public Health Nursing was started. Two years later with the increasing in Nursing Schools a especially the ANM schools the need for tutors was felt, so in 1965 a Diploma in Nursing Education course was started.
+                  </p>
+                  <p>During the years when the Diploma courses were being conducted, the concept of post Basic B.Sc. Degree course in Nursing was conceived. The Idea very new too many but was easily accepted. It was realized that changing needs of the society which in turn is due to the rapid advanced medicine and technology demands professional Nurses. This could be done if a collegiate program was started thus, in July 1963 the post Basic nursing school ceased to exist and the college of Nursing born.</p>
+                </>
+              )}
+              <button
+                onClick={() => setIsHistoryExpanded(!isHistoryExpanded)}
+                className="text-orange-600 font-semibold hover:underline text-sm focus:outline-none mt-2"
+              >
+                {isHistoryExpanded ? "Read less" : "Read more"}
+              </button>
             </div>
 
             {/* Stats */}
@@ -924,8 +925,8 @@ export function History() {
                   {
                       year:"2025",
                       event:"Post Basic Diploma – Residency Programs- 1 year ",
-                      icon:"",
-                      color:"10b981",
+                      icon:"📜",
+                      color:"#10b981",
                       description:"Post Basic Diploma – Residency Programs- 1 year  (7 Courses) was started in 2025 with intake of 20 students each."
       //                 programs: [
       //   
@@ -943,7 +944,7 @@ export function History() {
                   {
                     year: "2024",
                     event: "Excellence in Midwifery",
-                    icon: "💎",
+                    icon: "🌟",
                     color: "#8b5cf6",
                     description: "POST BASIC DIPLOMA IN NURSE PRACTITIONERS IN MIDWIFERY ( 1 YEAR 6 MONTHS) NURSE PRACTITIONER MIDWIFERY (NPM) EDUCATOR PROGRAM,"
                   },
@@ -977,7 +978,28 @@ export function History() {
                         {milestone.event}
                       </h3>
                       <p className="text-sm leading-relaxed">
-                        {milestone.description}
+                        {milestone.description.length > 100 ? (
+                          <>
+                            {expandedMilestones.includes(index)
+                              ? milestone.description
+                              : milestone.description.slice(0, 100) + "..."}
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setExpandedMilestones((prev) =>
+                                  prev.includes(index)
+                                    ? prev.filter((i) => i !== index)
+                                    : [...prev, index]
+                                );
+                              }}
+                              className="text-orange-600 font-semibold hover:underline text-xs ml-1 focus:outline-none"
+                            >
+                              {expandedMilestones.includes(index) ? "Read less" : "Read more"}
+                            </button>
+                          </>
+                        ) : (
+                          milestone.description
+                        )}
                       </p>
 
                       <motion.div
@@ -1319,6 +1341,16 @@ const valueCardVariants = {
 };
 
 export function VisionMission() {
+  const [expandedCoreValues, setExpandedCoreValues] = React.useState([]);
+
+  const toggleCoreValue = (title) => {
+    setExpandedCoreValues((prev) =>
+      prev.includes(title)
+        ? prev.filter((t) => t !== title)
+        : [...prev, title]
+    );
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-amber-50 to-orange-50 py-16 relative">
       {/* Background Image */}
@@ -1724,7 +1756,24 @@ export function VisionMission() {
                         animate={{ opacity: 1 }}
                         transition={{ delay: 1 + index * 0.1 }}
                       >
-                        {value.description}
+                        {value.description.length > 80 ? (
+                          <>
+                            {expandedCoreValues.includes(value.title)
+                              ? value.description
+                              : value.description.slice(0, 80) + "..."}
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                toggleCoreValue(value.title);
+                              }}
+                              className="text-orange-600 font-semibold hover:underline text-xs ml-1 focus:outline-none"
+                            >
+                              {expandedCoreValues.includes(value.title) ? "Read less" : "Read more"}
+                            </button>
+                          </>
+                        ) : (
+                          value.description
+                        )}
                       </motion.p>
                     </motion.div>
                   ))}
