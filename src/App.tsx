@@ -230,7 +230,7 @@
 
 import React, { useState } from 'react';
 import { Sparkles } from "lucide-react";
-
+import { ThemeProvider } from './components/ThemeProvider';
 import {Header} from './components/Header';
 import { Toaster } from './components/ui/sonner';
 
@@ -320,7 +320,7 @@ export default function App() {
   };
 
   return (
-    
+    <ThemeProvider>
       <div className="min-h-screen bg-background">
         <Header currentPage={currentPage} onNavigate={handleNavigation} />
         <main>
@@ -415,6 +415,6 @@ export default function App() {
       </footer>
       <Toaster />
       </div>
-    
+    </ThemeProvider>
   );
 }
