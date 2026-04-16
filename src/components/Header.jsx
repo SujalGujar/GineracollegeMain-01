@@ -1,22 +1,12 @@
-
-
 import React from "react";
-import {
-  NavigationMenu,
-  NavigationMenuContent,
-  NavigationMenuItem,
-  NavigationMenuLink,
-  NavigationMenuList,
-  NavigationMenuTrigger,
-} from "./ui/navigation-menu.jsx";
 import { Button } from "./ui/button.jsx";
 import { Sheet, SheetContent, SheetTrigger } from "./ui/sheet.jsx";
-import { Menu, GraduationCap, Phone, Mail, User } from "lucide-react";
+import { Menu, User, ChevronDown } from "lucide-react";
 import gineraLogo2 from "../images/ginera-logo2.png";
 import gineraLogo from "../images/ginera-logo.png";
 
 const departmentItems = [
-  { 
+  {
     title: "Nursing Departments",
     items: [
       "Department of Fundamentals Of Nursing",
@@ -30,25 +20,116 @@ const departmentItems = [
   },
 ];
 
+// Navigation structure with parent → subpages
+const NAV_ITEMS = [
+  { key: "home", label: "Home", subpages: [] },
+  {
+    key: "about",
+    label: "About Us",
+    subpages: [
+      { label: "College Logo", page: "about-logo" },
+      { label: "Dean's Message", page: "dean-message" },
+      { label: "Our History", page: "history" },
+      { label: "Campus Location", page: "location" },
+      { label: "Vision & Mission", page: "vision-mission" },
+      { label: "Achievements", page: "achievements" },
+    ],
+  },
+  {
+    key: "admissions",
+    label: "Admissions",
+    subpages: [
+      { label: "Courses Offered", page: "courses" },
+      { label: "Admission Procedure", page: "admission-procedure" },
+      { label: "Admission Rules", page: "admission-rules" },
+      { label: "Service Bond", page: "bond" },
+      { label: "Student Guidelines", page: "instructions" },
+    ],
+  },
+  {
+    key: "departments",
+    label: "Departments",
+    subpages: departmentItems[0].items.map((item) => ({
+      label: item,
+      page: `department-${item
+        .toLowerCase()
+        .replace(/\s+/g, "-")
+        .replace(/[()&]/g, "")
+        .replace(/,/g, "")}`,
+    })),
+  },
+  {
+    key: "gallery",
+    label: "Gallery",
+    subpages: [
+      { label: "College Photos", page: "college-photos" },
+      { label: "Hospital Photos", page: "hospital-photos" },
+      { label: "Events Photos", page: "events-photos" },
+    ],
+  },
+  { key: "affiliated-institutes", label: "Affiliated Institutes", subpages: [] },
+  { key: "contact", label: "Contact Us", subpages: [] },
+];
+
+// Map each page key to its parent section
+const PAGE_SECTION_MAP = {
+  "about-logo": "about",
+  "dean-message": "about",
+  "history": "about",
+  "location": "about",
+  "vision-mission": "about",
+  "achievements": "about",
+
+  "courses": "admissions",
+  "admission-procedure": "admissions",
+  "admission-rules": "admissions",
+  "bond": "admissions",
+  "instructions": "admissions",
+
+  "college-photos": "gallery",
+  "hospital-photos": "gallery",
+  "events-photos": "gallery",
+};
+
 export function Header({ currentPage, onNavigate }) {
   const [isSheetOpen, setIsSheetOpen] = React.useState(false);
-  
-  const handleNavigation = (page, event) => {
-    if (event) {
-      event.preventDefault();
-    }
-    onNavigate(page);
-    setIsSheetOpen(false); // Close sheet after navigation
+  const [openDropdown, setOpenDropdown] = React.useState(null);
+  const [mobileOpenSections, setMobileOpenSections] = React.useState({});
+  const dropdownRef = React.useRef(null);
+
+  // Close dropdown on outside click
+  React.useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setOpenDropdown(null);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // Determine which top-level section is active
+  const getActiveSection = () => {
+    if (PAGE_SECTION_MAP[currentPage]) return PAGE_SECTION_MAP[currentPage];
+    if (currentPage?.startsWith("department-")) return "departments";
+    return null;
   };
-  // Add this helper at the top of your component, inside Header():
-const getActiveSection = () => {
-  if (["about-logo","dean-message","history","location","vision-mission","achievements"].includes(currentPage)) return "about";
-  if (["courses","admission-procedure","admission-rules","bond","instructions"].includes(currentPage)) return "admissions";
-  if (currentPage?.startsWith("department-")) return "departments";
-  if (["college-photos","hospital-photos","events-photos"].includes(currentPage)) return "gallery";
-  return null;
-};
-const activeSection = getActiveSection();
+  const activeSection = getActiveSection();
+
+  const handleNavigation = (page, event) => {
+    if (event) event.preventDefault();
+    onNavigate(page);
+    setIsSheetOpen(false);
+    setOpenDropdown(null);
+  };
+
+  const toggleDropdown = (key) => {
+    setOpenDropdown((prev) => (prev === key ? null : key));
+  };
+
+  const toggleMobileSection = (key) => {
+    setMobileOpenSections((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
 
   return (
     <>
@@ -56,230 +137,136 @@ const activeSection = getActiveSection();
       <header className="bg-white border-b border-border shadow-sm sticky top-0 z-50">
         <div className="container mx-auto px-4">
           <div className="flex h-20 items-center justify-between">
+
             {/* Logo */}
             <div className="flex items-center space-x-3">
               <div
                 className="flex items-center justify-center w-12 h-12 rounded-full cursor-pointer"
                 onClick={(e) => handleNavigation("home", e)}
               >
-                <img
-                  src={gineraLogo2}
-                  alt="College Logo"
-                  className="w-12 h-12 object-contain"
-                />
+                <img src={gineraLogo2} alt="College Logo" className="w-12 h-12 object-contain" />
               </div>
               <div
                 className="hidden md:block cursor-pointer"
                 onClick={(e) => handleNavigation("home", e)}
               >
-                <h1 className="text-xl font-bold text-gray-900">
-                  Medical College
-                </h1>
-                <p className="text-sm text-gray-600">
-                  Excellence in Medical Education
-                </p>
+                <h1 className="text-xl font-bold text-gray-900">Medical College</h1>
+                <p className="text-sm text-gray-600">Excellence in Medical Education</p>
               </div>
             </div>
 
             {/* Desktop Navigation */}
-            <div className="hidden lg:flex items-center space-x-2">
-              <NavigationMenu viewport={false}>
-                <NavigationMenuList>
-                  <NavigationMenuItem>
-                    <NavigationMenuLink
-                      className="group inline-flex h-10 w-max items-center justify-center rounded-md bg-transparent px-4 py-2 text-sm font-medium transition-colors hover:bg-orange-50 hover:text-orange-600 focus:bg-accent focus:text-accent-foreground focus:outline-none disabled:pointer-events-none disabled:opacity-50 cursor-pointer"
-                      onClick={(e) => handleNavigation("home", e)}
-                    >
-                      Home
-                    </NavigationMenuLink>
-                  </NavigationMenuItem>
+            <div className="hidden lg:flex items-center space-x-1" ref={dropdownRef}>
+              <nav className="flex items-center space-x-1">
+                {NAV_ITEMS.map((item) => {
+                  const hasSubpages = item.subpages.length > 0;
+                  const isOpen = openDropdown === item.key;
+                  const isActive =
+                    currentPage === item.key || activeSection === item.key;
+                  const isContact = item.key === "contact";
 
-                  <NavigationMenuItem>
-                    <NavigationMenuTrigger className={`bg-transparent hover:bg-orange-50 hover:text-orange-600 
-                    data-[state=open]:bg-orange-50 data-[state=open]:text-orange-600
-                    ${activeSection === "about" ? "bg-orange-50 text-orange-600" : ""}`}>
-                    About Us
-                  </NavigationMenuTrigger>
-                    <NavigationMenuContent>
-                      <div className="w-56 p-1 flex flex-col bg-white">
-                        <NavigationMenuLink
-                          onClick={() => handleNavigation("about-logo")}
-                          className="block rounded-md px-3 py-2 text-sm transition-colors hover:bg-orange-50 hover:text-orange-600 cursor-pointer"
-                        >
-                          College Logo
-                        </NavigationMenuLink>
-                        <NavigationMenuLink
-  onClick={() => handleNavigation("dean-message")}
-  className={`block rounded-md px-3 py-2 text-sm transition-colors cursor-pointer
-    ${currentPage === "dean-message" 
-      ? "bg-orange-100 text-orange-700 font-medium" 
-      : "hover:bg-orange-50 hover:text-orange-600"}`}
->
-  Dean's Message
-</NavigationMenuLink>
-                        <NavigationMenuLink
-                          onClick={() => handleNavigation("history")}
-                          className="block rounded-md px-3 py-2 text-sm transition-colors hover:bg-orange-50 hover:text-orange-600 cursor-pointer"
-                        >
-                          Our History
-                        </NavigationMenuLink>
-                        <NavigationMenuLink 
-                          onClick={() => handleNavigation("location")}
-                          className="block rounded-md px-3 py-2 text-sm transition-colors hover:bg-orange-50 hover:text-orange-600 cursor-pointer"
-                        >
-                          Campus Location
-                        </NavigationMenuLink>
-                        <NavigationMenuLink
-                          onClick={() => handleNavigation("vision-mission")}
-                          className="block rounded-md px-3 py-2 text-sm transition-colors hover:bg-orange-50 hover:text-orange-600 cursor-pointer"
-                        >
-                          Vision & Mission
-                        </NavigationMenuLink>
-                        <NavigationMenuLink
-                          onClick={() => handleNavigation("achievements")}
-                          className="block rounded-md px-3 py-2 text-sm transition-colors hover:bg-orange-50 hover:text-orange-600 cursor-pointer"
-                        >
-                          Achievements
-                        </NavigationMenuLink>
-                      </div>
-                    </NavigationMenuContent>
-                  </NavigationMenuItem>
+                  return (
+                    <div key={item.key} className="relative">
+                      {/* Nav button / trigger */}
+                      <button
+                        id={`nav-${item.key}`}
+                        onClick={() => {
+                          if (hasSubpages) {
+                            toggleDropdown(item.key);
+                          } else {
+                            handleNavigation(item.key);
+                          }
+                        }}
+                        className={[
+                          "inline-flex items-center h-10 px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 focus:outline-none cursor-pointer",
+                          isContact
+                            ? "text-white"
+                            : isActive
+                              ? "bg-orange-50 text-orange-600"
+                              : "text-gray-700 hover:bg-orange-50 hover:text-orange-600",
+                          isOpen && !isContact
+                            ? "bg-orange-50 text-orange-600"
+                            : "",
+                        ]
+                          .filter(Boolean)
+                          .join(" ")}
+                        style={
+                          isContact
+                            ? {
+                                backgroundColor:
+                                  currentPage === "contact" ? "#D97706" : "#F59E0B",
+                              }
+                            : undefined
+                        }
+                        onMouseEnter={(e) => {
+                          if (isContact)
+                            e.currentTarget.style.backgroundColor = "#D97706";
+                        }}
+                        onMouseLeave={(e) => {
+                          if (isContact)
+                            e.currentTarget.style.backgroundColor =
+                              currentPage === "contact" ? "#D97706" : "#F59E0B";
+                        }}
+                      >
+                        {item.label}
+                        {hasSubpages && (
+                          <ChevronDown
+                            className={`ml-1 h-3.5 w-3.5 transition-transform duration-200 ${
+                              isOpen ? "rotate-180" : ""
+                            }`}
+                          />
+                        )}
+                      </button>
 
-                  <NavigationMenuItem>
-                    <NavigationMenuTrigger className="bg-transparent hover:bg-orange-50 hover:text-orange-600 data-[state=open]:bg-orange-50 data-[state=open]:text-orange-600">
-                      Admissions
-                    </NavigationMenuTrigger>
-                    <NavigationMenuContent>
-                      <div className="w-56 p-1 flex flex-col bg-white">
-                        <NavigationMenuLink
-                          onClick={() => handleNavigation("courses")}
-                          className="block rounded-md px-3 py-2 text-sm transition-colors hover:bg-orange-50 hover:text-orange-600 cursor-pointer"
+                      {/* Dropdown panel */}
+                      {hasSubpages && isOpen && (
+                        <div
+                          className="absolute top-full left-0 mt-1.5 bg-white rounded-lg border border-gray-200 shadow-xl overflow-hidden animate-in fade-in-0 zoom-in-95 duration-200"
+                          style={{
+                            minWidth:
+                              item.key === "departments" ? "340px" : "220px",
+                          }}
                         >
-                          Courses Offered
-                        </NavigationMenuLink>
-                        <NavigationMenuLink
-                          onClick={() => handleNavigation("admission-procedure")}
-                          className="block rounded-md px-3 py-2 text-sm transition-colors hover:bg-orange-50 hover:text-orange-600 cursor-pointer"
-                        >
-                          Admission Procedure
-                        </NavigationMenuLink>
-                        <NavigationMenuLink
-                          onClick={() => handleNavigation("admission-rules")}
-                          className="block rounded-md px-3 py-2 text-sm transition-colors hover:bg-orange-50 hover:text-orange-600 cursor-pointer"
-                        >
-                          Admission Rules
-                        </NavigationMenuLink>
-                        <NavigationMenuLink
-                          onClick={() => handleNavigation("bond")}
-                          className="block rounded-md px-3 py-2 text-sm transition-colors hover:bg-orange-50 hover:text-orange-600 cursor-pointer"
-                        >
-                          Service Bond
-                        </NavigationMenuLink>
-                        <NavigationMenuLink
-                          onClick={() => handleNavigation("instructions")}
-                          className="block rounded-md px-3 py-2 text-sm transition-colors hover:bg-orange-50 hover:text-orange-600 cursor-pointer"
-                        >
-                          Student Guidelines
-                        </NavigationMenuLink>
-                      </div>
-                    </NavigationMenuContent>
-                  </NavigationMenuItem>
-
-                  <NavigationMenuItem>
-                    <NavigationMenuTrigger className="bg-transparent hover:bg-orange-50 hover:text-orange-600 data-[state=open]:bg-orange-50 data-[state=open]:text-orange-600">
-                      Departments
-                    </NavigationMenuTrigger>
-                    <NavigationMenuContent>
-                      <div className="w-[350px] p-1 flex flex-col bg-white">
-                        {departmentItems.map((dept, index) => (
-                          <div key={index} className="flex flex-col">
-                            <div className="px-3 py-2 text-sm font-semibold text-gray-900 bg-gray-50 rounded-t-md">
-                              {dept.title}
-                            </div>
-                            {dept.items.map((item, itemIndex) => (
-                              <NavigationMenuLink
-                                key={itemIndex}
-                                onClick={() =>
-                                  handleNavigation(
-                                    `department-${item
-                                      .toLowerCase()
-                                      .replace(/\s+/g, "-")
-                                      .replace(/[()&]/g, "")
-                                      .replace(/,/g, "")}`
-                                  )
-                                }
-                                className="block rounded-md px-3 py-2 text-sm transition-colors hover:bg-orange-50 hover:text-orange-600 cursor-pointer"
+                          <div className="py-1.5 px-1.5 flex flex-col gap-0.5">
+                            {item.key === "departments" && (
+                              <div className="px-3 py-2 text-xs font-semibold uppercase tracking-wider text-gray-400 bg-gray-50 rounded-md mb-0.5">
+                                Nursing Departments
+                              </div>
+                            )}
+                            {item.subpages.map(({ label, page }) => (
+                              <button
+                                key={page}
+                                id={`nav-link-${page}`}
+                                onClick={() => handleNavigation(page)}
+                                className={[
+                                  "w-full text-left rounded-md px-3 py-2 text-sm transition-colors duration-150 cursor-pointer",
+                                  currentPage === page
+                                    ? "bg-orange-100 text-orange-700 font-medium"
+                                    : "text-gray-700 hover:bg-orange-50 hover:text-orange-600",
+                                ]
+                                  .filter(Boolean)
+                                  .join(" ")}
                               >
-                                {item}
-                              </NavigationMenuLink>
+                                {label}
+                              </button>
                             ))}
                           </div>
-                        ))}
-                      </div>
-                    </NavigationMenuContent>
-                  </NavigationMenuItem>
-
-                  <NavigationMenuItem>
-                    <NavigationMenuTrigger className="bg-transparent hover:bg-orange-50 hover:text-orange-600 data-[state=open]:bg-orange-50 data-[state=open]:text-orange-600">
-                      Gallery
-                    </NavigationMenuTrigger>
-                    <NavigationMenuContent>
-                      <div className="w-48 p-1 flex flex-col bg-white">
-                        <NavigationMenuLink
-                          onClick={() => handleNavigation("college-photos")}
-                          className="block rounded-md px-3 py-2 text-sm transition-colors hover:bg-orange-50 hover:text-orange-600 cursor-pointer"
-                        >
-                          College Photos
-                        </NavigationMenuLink>
-                        <NavigationMenuLink
-                          onClick={() => handleNavigation("hospital-photos")}
-                          className="block rounded-md px-3 py-2 text-sm transition-colors hover:bg-orange-50 hover:text-orange-600 cursor-pointer"
-                        >
-                          Hospital Photos
-                        </NavigationMenuLink>
-                        <NavigationMenuLink
-                          onClick={() => handleNavigation("events-photos")}
-                          className="block rounded-md px-3 py-2 text-sm transition-colors hover:bg-orange-50 hover:text-orange-600 cursor-pointer"
-                        >
-                          Events Photos
-                        </NavigationMenuLink>
-                      </div>
-                    </NavigationMenuContent>
-                  </NavigationMenuItem>
-
-                  <NavigationMenuItem>
-                    <NavigationMenuLink
-                      className="group inline-flex h-10 w-max items-center justify-center rounded-md bg-transparent px-4 py-2 text-sm font-medium transition-colors hover:bg-orange-50 hover:text-orange-600 focus:bg-accent focus:text-accent-foreground focus:outline-none disabled:pointer-events-none disabled:opacity-50 cursor-pointer"
-                      onClick={(e) => handleNavigation("affiliated-institutes", e)}
-                    >
-                      Affiliated Institutes
-                    </NavigationMenuLink>
-                  </NavigationMenuItem>
-
-                  <NavigationMenuItem>
-                    <NavigationMenuLink
-                      className="group inline-flex h-10 w-max items-center justify-center rounded-md text-white px-4 py-2 text-sm font-medium transition-colors focus:outline-none disabled:pointer-events-none disabled:opacity-50 cursor-pointer"
-                      style={{ backgroundColor: "#F59E0B" }}
-                      onMouseEnter={(e) =>
-                        (e.currentTarget.style.backgroundColor = "#D97706")
-                      }
-                      onMouseLeave={(e) =>
-                        (e.currentTarget.style.backgroundColor = "#F59E0B")
-                      }
-                      onClick={(e) => handleNavigation("contact", e)}
-                    >
-                      Contact Us
-                    </NavigationMenuLink>
-                  </NavigationMenuItem>
-                </NavigationMenuList>
-              </NavigationMenu>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </nav>
 
               {/* Admin Panel Button */}
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => handleNavigation("admin")}
-                className="ml-2 border-orange-500 text-orange-600 hover:bg-orange-50 hover:text-orange-700"
+                className={`ml-2 border-orange-500 hover:bg-orange-50 hover:text-orange-700
+                  ${currentPage === "admin"
+                    ? "bg-orange-50 text-orange-700"
+                    : "text-orange-600"}`}
               >
                 <User className="h-4 w-4 mr-2" />
                 Admin Panel
@@ -295,220 +282,118 @@ const activeSection = getActiveSection();
                   </Button>
                 </SheetTrigger>
                 <SheetContent side="right" className="w-80 overflow-y-auto">
-                  <div className="mt-6 space-y-6">
+                  <div className="mt-6 space-y-2">
+
                     {/* Mobile Logo */}
                     <div
                       className="flex items-center space-x-3 p-4 border-b border-border cursor-pointer"
                       onClick={() => handleNavigation("home")}
                     >
                       <div className="flex items-center justify-center w-10 h-10 rounded-full">
-                        <img
-                          src={gineraLogo}
-                          alt="College Logo"
-                          className="w-8 h-8 object-contain"
-                        />
+                        <img src={gineraLogo} alt="College Logo" className="w-8 h-8 object-contain" />
                       </div>
                       <div>
-                        <h1 className="text-lg font-bold text-gray-900">
-                          Medical College
-                        </h1>
-                        <p className="text-xs text-gray-600">
-                          Excellence in Medical Education
-                        </p>
+                        <h1 className="text-lg font-bold text-gray-900">Medical College</h1>
+                        <p className="text-xs text-gray-600">Excellence in Medical Education</p>
                       </div>
                     </div>
 
-                    <Button
-                      variant="ghost"
-                      className="w-full justify-start hover:bg-orange-50"
-                      onClick={() => handleNavigation("home")}
-                    >
-                      Home
-                    </Button>
+                    {/* Mobile Nav Items */}
+                    {NAV_ITEMS.map((item) => {
+                      const hasSubpages = item.subpages.length > 0;
+                      const isMobileOpen = mobileOpenSections[item.key];
+                      const isActive =
+                        currentPage === item.key || activeSection === item.key;
+                      const isContact = item.key === "contact";
 
-                    <div className="space-y-3">
-                      <h4 className="font-medium text-gray-900">About Us</h4>
-                      <div className="pl-4 space-y-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="w-full justify-start hover:bg-orange-50"
-                          onClick={() => handleNavigation("about-logo")}
-                        >
-                          College Logo
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="w-full justify-start hover:bg-orange-50"
-                          onClick={() => handleNavigation("dean-message")}
-                        >
-                          Dean's Message
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="w-full justify-start hover:bg-orange-50"
-                          onClick={() => handleNavigation("history")}
-                        >
-                          Our History
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="w-full justify-start hover:bg-orange-50"
-                          onClick={() => handleNavigation("location")}
-                        >
-                          Campus Location
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="w-full justify-start hover:bg-orange-50"
-                          onClick={() => handleNavigation("vision-mission")}
-                        >
-                          Vision & Mission
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="w-full justify-start hover:bg-orange-50"
-                          onClick={() => handleNavigation("achievements")}
-                        >
-                          Achievements
-                        </Button>
-                      </div>
-                    </div>
-
-                    <div className="space-y-3">
-                      <h4 className="font-medium text-gray-900">Admissions</h4>
-                      <div className="pl-4 space-y-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="w-full justify-start hover:bg-orange-50"
-                          onClick={() => handleNavigation("courses")}
-                        >
-                          Courses Offered
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="w-full justify-start hover:bg-orange-50"
-                          onClick={() => handleNavigation("admission-procedure")}
-                        >
-                          Admission Procedure
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="w-full justify-start hover:bg-orange-50"
-                          onClick={() => handleNavigation("admission-rules")}
-                        >
-                          Admission Rules
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="w-full justify-start hover:bg-orange-50"
-                          onClick={() => handleNavigation("bond")}
-                        >
-                          Service Bond
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="w-full justify-start hover:bg-orange-50"
-                          onClick={() => handleNavigation("instructions")}
-                        >
-                          Student Guidelines
-                        </Button>
-                      </div>
-                    </div>
-
-                    <div className="space-y-3">
-                      <h4 className="font-medium text-gray-900">Departments</h4>
-                      <div className="pl-4 space-y-2">
-                        {departmentItems[0].items.map((item, itemIndex) => (
-                          <Button
-                            key={itemIndex}
-                            variant="ghost"
-                            size="sm"
-                            className="w-full justify-start hover:bg-orange-50 whitespace-normal text-left"
-                            onClick={() =>
-                              handleNavigation(
-                                `department-${item
-                                  .toLowerCase()
-                                  .replace(/\s+/g, "-")
-                                  .replace(/[()&]/g, "")
-                                  .replace(/,/g, "")}`
-                              )
+                      return (
+                        <div key={item.key}>
+                          <button
+                            onClick={() => {
+                              if (hasSubpages) {
+                                toggleMobileSection(item.key);
+                              } else {
+                                handleNavigation(item.key);
+                              }
+                            }}
+                            className={[
+                              "w-full flex items-center justify-between px-4 py-2.5 rounded-md text-sm font-medium transition-colors cursor-pointer",
+                              isContact
+                                ? "text-white rounded-md"
+                                : isActive
+                                  ? "bg-orange-50 text-orange-600"
+                                  : "text-gray-700 hover:bg-orange-50 hover:text-orange-600",
+                            ]
+                              .filter(Boolean)
+                              .join(" ")}
+                            style={
+                              isContact
+                                ? {
+                                    backgroundColor:
+                                      currentPage === "contact"
+                                        ? "#D97706"
+                                        : "#F59E0B",
+                                  }
+                                : undefined
                             }
                           >
-                            {item}
-                          </Button>
-                        ))}
-                      </div>
-                    </div>
+                            {item.label}
+                            {hasSubpages && (
+                              <ChevronDown
+                                className={`h-4 w-4 transition-transform duration-200 ${
+                                  isMobileOpen ? "rotate-180" : ""
+                                }`}
+                              />
+                            )}
+                          </button>
 
-                    <div className="space-y-3">
-                      <h4 className="font-medium text-gray-900">Gallery</h4>
-                      <div className="pl-4 space-y-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="w-full justify-start hover:bg-orange-50"
-                          onClick={() => handleNavigation("college-photos")}
-                        >
-                          College Photos
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="w-full justify-start hover:bg-orange-50"
-                          onClick={() => handleNavigation("hospital-photos")}
-                        >
-                          Hospital Photos
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="w-full justify-start hover:bg-orange-50"
-                          onClick={() => handleNavigation("events-photos")}
-                        >
-                          Events Photos
-                        </Button>
-                      </div>
-                    </div>
+                          {/* Mobile subpages */}
+                          {hasSubpages && isMobileOpen && (
+                            <div className="ml-4 mt-1 mb-1 pl-3 border-l-2 border-orange-200 space-y-0.5">
+                              {item.key === "departments" && (
+                                <div className="px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-gray-400">
+                                  Nursing Departments
+                                </div>
+                              )}
+                              {item.subpages.map(({ label, page }) => (
+                                <button
+                                  key={page}
+                                  onClick={() => handleNavigation(page)}
+                                  className={[
+                                    "w-full text-left px-3 py-2 rounded-md text-sm transition-colors cursor-pointer",
+                                    currentPage === page
+                                      ? "bg-orange-100 text-orange-700 font-medium"
+                                      : "text-gray-600 hover:bg-orange-50 hover:text-orange-600",
+                                  ]
+                                    .filter(Boolean)
+                                    .join(" ")}
+                                >
+                                  {label}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
 
-                    <Button
-                      variant="ghost"
-                      className="w-full justify-start hover:bg-orange-50"
-                      onClick={() => handleNavigation("affiliated-institutes")}
-                    >
-                      Affiliated Institutes
-                    </Button>
-
-                    <Button
-                      className="w-full justify-start text-white"
-                      style={{ backgroundColor: "#F59E0B" }}
-                      onClick={() => handleNavigation("contact")}
-                    >
-                      Contact Us
-                    </Button>
-
+                    {/* Admin Panel */}
                     <Button
                       variant="outline"
-                      className="w-full justify-start border-orange-500 text-orange-600 hover:bg-orange-50"
+                      className={`w-full justify-start border-orange-500 hover:bg-orange-50 ${
+                        currentPage === "admin" ? "bg-orange-50 text-orange-700" : "text-orange-600"
+                      }`}
                       onClick={() => handleNavigation("admin")}
                     >
                       <User className="h-4 w-4 mr-2" />
                       Admin Panel
                     </Button>
+
                   </div>
                 </SheetContent>
               </Sheet>
             </div>
+
           </div>
         </div>
       </header>

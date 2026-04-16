@@ -248,6 +248,7 @@ export default function App() {
 
   const handleNavigation = (page) => {
     setCurrentPage(page);
+    window.scrollTo(0, 0);
   };
 
   const renderCurrentPage = () => {
