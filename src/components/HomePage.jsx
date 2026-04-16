@@ -768,7 +768,7 @@ import {
 import logo from "../icons/logo (2).png";
 import laboratoryImage from "../images/laboratory.jpg";
 import libraryImage from "../images/library.jpg";
-import backgroundImage4 from "../images/backgroundImage(4).jpg";
+import backgroundImage4 from "../images/backgroundImage(4).png";
 import collegeImage1 from "../images/collegeimage1.jpg";
 import collegeImage2 from "../images/collegeimage2.jpg";
 import collegeImage3 from "../images/collegeimage3.jpg";

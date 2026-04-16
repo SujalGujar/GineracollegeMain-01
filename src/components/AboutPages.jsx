@@ -10,7 +10,7 @@ import libraryImage from "../images/library1.jpg";
 import ourVisionImage from "../images/ourvision.jpg";
 import ourMissionImage from "../images/ourmision.jpg";
 import collegeImage1 from "../images/collegeimage1.jpg";
-import backgroundImage4 from "../images/backgroundImage(4).jpg";
+import backgroundImage4 from "../images/backgroundImage(4).png";
 import backgroundImage from "../images/backgroundImage (2).jpg";
 import backgroundImage1 from "../images/backgroundImage (1).jpg";
 import backgroundImage2 from "../images/backgroundImage (3).jpg";
@@ -441,8 +441,9 @@ export function DeanMessage() {
       <motion.div
         style={{ marginTop: "70px" }}
         className="container mx-auto px-4 relative z-10"
-        initial="hidden"
-        animate="visible"
+        initial="visible"
+        whileInView="visible"
+        viewport={{ once: true }}
         variants={containerVariants}
       >
         <div className="max-w-6xl mx-auto">
@@ -576,6 +577,9 @@ export function DeanMessage() {
           <motion.div
             className="grid grid-cols-2 lg:grid-cols-4 gap-6 my-12"
             variants={containerVariants}
+            initial="visible"
+            whileInView="visible"
+            viewport={{ once: true }}
           >
             {[
               { number: "62+", label: "Years of Excellence", color: "#A2632E" },

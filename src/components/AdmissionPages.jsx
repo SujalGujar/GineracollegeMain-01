@@ -17,7 +17,7 @@ import {
   Stethoscope,
 } from "lucide-react";
 import { motion } from "framer-motion";
-import backgroundImage4 from "../images/backgroundImage(4).jpg";
+import backgroundImage4 from "../images/backgroundImage(4).png";
 import ViewAllProgramsButton from "../components/Buttons/ViewAllProgramsButton";
 // import DownloadProspectusButton from "./DownloadProspectusButton";
 import AnimatedLearnMoreButton from "./Buttons/AnimatedLearnMoreButton";

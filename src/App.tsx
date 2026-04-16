@@ -229,10 +229,10 @@
 // }
 
 import React, { useState } from 'react';
-import { Sparkles } from "lucide-react";
 import { ThemeProvider } from './components/ThemeProvider';
 import {Header} from './components/Header';
 import { Toaster } from './components/ui/sonner';
+import gineraLogo2 from './images/ginera-logo2.png';
 
 import HomePage from './components/HomePage.jsx';
 
@@ -334,7 +334,7 @@ export default function App() {
             <div>
               <div className="flex items-center space-x-3 mb-4">
                 <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#F59E0B' }}>
-                  <Sparkles className="text-white w-5 h-5" />
+                  <img src={gineraLogo2} alt="College Logo" className="w-8 h-8 object-contain" />
                 </div>
                 <div>
                   <h3 className="font-bold text-lg">Nursing College</h3>

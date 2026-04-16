@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
 import { MapPin, Phone, Globe, Users } from "lucide-react";
-import backgroundImage4 from "../images/backgroundImage(4).jpg";
+import backgroundImage4 from "../images/backgroundImage(4).png";
 
 // Animation variants
 const fadeInUp = {
