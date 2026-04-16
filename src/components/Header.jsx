@@ -654,6 +654,8 @@ import {
 import { Button } from "./ui/button.jsx";
 import { Sheet, SheetContent, SheetTrigger } from "./ui/sheet.jsx";
 import { Menu, GraduationCap, Phone, Mail, User } from "lucide-react";
+import gineraLogo2 from "../images/ginera-logo2.png";
+import gineraLogo from "../images/ginera-logo.png";
 
 const departmentItems = [
   { 
@@ -691,7 +693,7 @@ export function Header({ currentPage, onNavigate }) {
                 onClick={(e) => handleNavigation("home", e)}
               >
                 <img
-                  src="/src/images/ginera-logo2.png"
+                  src={gineraLogo2}
                   alt="College Logo"
                   className="w-12 h-12 object-contain"
                 />
@@ -926,7 +928,7 @@ export function Header({ currentPage, onNavigate }) {
                     >
                       <div className="flex items-center justify-center w-10 h-10 rounded-full">
                         <img
-                          src="/src/images/ginera-logo.png"
+                          src={gineraLogo}
                           alt="College Logo"
                           className="w-8 h-8 object-contain"
                         />
