@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import HeroImage1 from "../images/collegeimage1.jpg"
 import HeroImage2 from "../images/collegeimage2.jpg"
 import HeroImage3 from "../images/collegeimage3.jpg"
+import axiosInstance from "../api/axiosInstance";
 
 const backgroundSlides = [
   { 
@@ -22,13 +23,32 @@ const backgroundSlides = [
 
 const HeroSection = () => {
   const [currentBgSlide, setCurrentBgSlide] = useState(0);
+  const [slides, setSlides] = useState(backgroundSlides);
+
+  useEffect(() => {
+    const fetchSliders = async () => {
+      try {
+        const response = await axiosInstance.get("/sliders");
+        if (response.data && response.data.length > 0) {
+          const backendSlides = response.data.map(item => ({
+            image: `http://localhost:8080${item.imageUrl}`,
+            alt: item.title || "Ginera College Slider"
+          }));
+          setSlides(backendSlides);
+        }
+      } catch (error) {
+        console.error("Error fetching slider images:", error);
+      }
+    };
+    fetchSliders();
+  }, []);
 
   useEffect(() => {
     const bgTimer = setInterval(() => {
-      setCurrentBgSlide((prev) => (prev + 1) % backgroundSlides.length);
+      setCurrentBgSlide((prev) => (prev + 1) % slides.length);
     }, 5000);
     return () => clearInterval(bgTimer);
-  }, []);
+  }, [slides.length]);
 
   return (
     <section
@@ -75,7 +95,7 @@ const HeroSection = () => {
 
       {/* Background Image Slider */}
       <div className="absolute inset-0">
-        {backgroundSlides.map((slide, index) => (
+        {slides.map((slide, index) => (
           <motion.div
             key={index}
             className="absolute inset-0"
@@ -113,7 +133,7 @@ const HeroSection = () => {
 
       {/* Slide Dots */}
       <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 flex items-center gap-2 z-30">
-        {backgroundSlides.map((_, index) => (
+        {slides.map((_, index) => (
           <button
             key={index}
             className={`slide-dot ${currentBgSlide === index ? "active" : ""}`}
