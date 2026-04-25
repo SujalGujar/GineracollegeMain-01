@@ -19,8 +19,9 @@ const upload = multer({
   limits: { fileSize: 5 * 1024 * 1024 } // 5MB limit
 });
 
-router.post('/upload', upload.array('images', 20), sliderController.uploadSliderImages);
 router.get('/', sliderController.getSliders);
+router.post('/upload', upload.array('images', 20), sliderController.uploadSliders);
+router.put('/:id', upload.single('image'), sliderController.updateSlider);
 router.delete('/:id', sliderController.deleteSlider);
 
 module.exports = router;

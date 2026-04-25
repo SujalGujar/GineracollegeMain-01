@@ -4,6 +4,9 @@ const cors = require('cors');
 const dotenv = require('dotenv');
 const path = require('path');
 const fs = require('fs');
+const dns = require('node:dns');
+// Force Node.js to use Google DNS to solve querySrv issues
+dns.setServers(['8.8.8.8', '8.8.4.4']);
 
 dotenv.config();
 
@@ -17,13 +20,16 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Create uploads directory if it doesn't exist
 const uploadsDir = path.join(__dirname, 'uploads');
-if (!fs.existsSync(uploadsDir)){
-    fs.mkdirSync(uploadsDir);
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir);
 }
+
 
 // Routes
 const sliderRoutes = require('./routes/sliderRoutes');
+const programRoutes = require('./routes/programRoutes');
 app.use('/api/sliders', sliderRoutes);
+app.use('/api/programs', programRoutes);
 
 // MongoDB Connection
 mongoose.set('bufferCommands', false);
@@ -31,8 +37,8 @@ mongoose.set('bufferCommands', false);
 const connectDB = async () => {
   try {
     await mongoose.connect(process.env.MONGODB_URI, {
-      serverSelectionTimeoutMS: 5000,
-      connectTimeoutMS: 5000,
+      serverSelectionTimeoutMS: 10000, // Increase timeout from 5s to 10s
+      socketTimeoutMS: 45000,         // Close sockets after 45s of inactivity
     });
     console.log('✅ Connected to MongoDB Atlas');
   } catch (err) {

@@ -11,34 +11,6 @@ const checkDbConnection = (res) => {
   return null;
 };
 
-exports.uploadSliderImages = async (req, res) => {
-  const dbError = checkDbConnection(res);
-  if (dbError) return dbError;
-
-  try {
-    if (!req.files || req.files.length === 0) {
-      return res.status(400).json({ message: 'No images uploaded' });
-    }
-
-    const savedSliders = [];
-    for (const file of req.files) {
-      const imageUrl = `/uploads/${file.filename}`;
-      const slider = await sliderService.createSlider({
-        title: req.body.title || '',
-        imageUrl
-      });
-      savedSliders.push(slider);
-    }
-
-    res.status(201).json({
-      message: 'Images uploaded successfully',
-      data: savedSliders
-    });
-  } catch (error) {
-    res.status(500).json({ message: 'Error uploading images', error: error.message });
-  }
-};
-
 exports.getSliders = async (req, res) => {
   const dbError = checkDbConnection(res);
   if (dbError) return dbError;
@@ -48,6 +20,44 @@ exports.getSliders = async (req, res) => {
     res.status(200).json(sliders);
   } catch (error) {
     res.status(500).json({ message: 'Error fetching sliders', error: error.message });
+  }
+};
+
+exports.uploadSliders = async (req, res) => {
+  const dbError = checkDbConnection(res);
+  if (dbError) return dbError;
+
+  try {
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).json({ message: 'No images uploaded' });
+    }
+
+    const sliderDataArray = req.files.map(file => ({
+      title: req.body.title || 'Ginera College Slider',
+      imageUrl: `/uploads/${file.filename}`
+    }));
+
+    const savedSliders = await sliderService.createSliders(sliderDataArray);
+    res.status(201).json(savedSliders);
+  } catch (error) {
+    res.status(500).json({ message: 'Error uploading sliders', error: error.message });
+  }
+};
+
+exports.updateSlider = async (req, res) => {
+  const dbError = checkDbConnection(res);
+  if (dbError) return dbError;
+
+  try {
+    const { id } = req.params;
+    let updateData = { ...req.body };
+    if (req.file) {
+      updateData.imageUrl = `/uploads/${req.file.filename}`;
+    }
+    const slider = await sliderService.updateSlider(id, updateData);
+    res.status(200).json(slider);
+  } catch (error) {
+    res.status(500).json({ message: 'Error updating slider', error: error.message });
   }
 };
 

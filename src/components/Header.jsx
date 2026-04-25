@@ -258,19 +258,7 @@ export function Header({ currentPage, onNavigate }) {
                 })}
               </nav>
 
-              {/* Admin Panel Button */}
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handleNavigation("admin")}
-                className={`ml-2 border-orange-500 hover:bg-orange-50 hover:text-orange-700
-                  ${currentPage === "admin"
-                    ? "bg-orange-50 text-orange-700"
-                    : "text-orange-600"}`}
-              >
-                <User className="h-4 w-4 mr-2" />
-                Admin Panel
-              </Button>
+
             </div>
 
             {/* Mobile Navigation */}
@@ -377,17 +365,7 @@ export function Header({ currentPage, onNavigate }) {
                       );
                     })}
 
-                    {/* Admin Panel */}
-                    <Button
-                      variant="outline"
-                      className={`w-full justify-start border-orange-500 hover:bg-orange-50 ${
-                        currentPage === "admin" ? "bg-orange-50 text-orange-700" : "text-orange-600"
-                      }`}
-                      onClick={() => handleNavigation("admin")}
-                    >
-                      <User className="h-4 w-4 mr-2" />
-                      Admin Panel
-                    </Button>
+
 
                   </div>
                 </SheetContent>

@@ -1082,6 +1082,23 @@ const HomePage=({ onNavigate }) => {
     return () => obs.disconnect();
   }, []);
 
+  const [dynamicPrograms, setDynamicPrograms] = useState([]);
+  const [loadingPrograms, setLoadingPrograms] = useState(true);
+
+  useEffect(() => {
+    const fetchDynamicPrograms = async () => {
+      try {
+        const response = await axiosInstance.get("/programs");
+        setDynamicPrograms(response.data);
+      } catch (error) {
+        console.error("Error fetching programs:", error);
+      } finally {
+        setLoadingPrograms(false);
+      }
+    };
+    fetchDynamicPrograms();
+  }, []);
+
   const duplicatedLogos = [...LOGOS, ...LOGOS, ...LOGOS];
   const LOGO_WIDTH = 184;
 
@@ -1091,9 +1108,11 @@ const HomePage=({ onNavigate }) => {
   const nextTestimonial = () => setTestimonialsIndex((p) => (p + 1) % TESTIMONIALS.length);
   const current = TESTIMONIALS[testimonialsIndex];
 
-  const toggleReadMore = (programIndex) => {
-    setExpandedProgram(expandedProgram === programIndex ? null : programIndex);
+  const toggleReadMore = (programId) => {
+    setExpandedProgram(expandedProgram === programId ? null : programId);
   };
+
+  const programsToDisplay = dynamicPrograms.length > 0 ? dynamicPrograms : PROGRAMS;
 
   return (
     <>
@@ -1172,13 +1191,17 @@ const HomePage=({ onNavigate }) => {
                 alignItems: "stretch",
               }}
             >
-              {PROGRAMS.map((prog, i) => {
-                const isExpanded = expandedProgram === i;
-                const displayCourses = isExpanded ? prog.courses : prog.courses.slice(0, 5);
-                const hasMore = prog.courses.length > 5;
+              {programsToDisplay.map((prog, i) => {
+                const programId = prog._id || i;
+                const isExpanded = expandedProgram === programId;
+                const courses = Array.isArray(prog.courses) ? prog.courses : [];
+                const displayCourses = isExpanded ? courses : courses.slice(0, 5);
+                const hasMore = courses.length > 5;
+                const imageUrl = prog.imageUrl ? (prog.imageUrl.startsWith('http') ? prog.imageUrl : `http://localhost:8080${prog.imageUrl}`) : prog.image;
+                
                 return (
                   <motion.div
-                    key={i}
+                    key={programId}
                     custom={i}
                     variants={cardVariant}
                     initial="hidden"
@@ -1201,7 +1224,7 @@ const HomePage=({ onNavigate }) => {
                   >
                     <div style={{ position: "relative", height: 200, overflow: "hidden", flexShrink: 0 }}>
                       <motion.img
-                        src={prog.image}
+                        src={imageUrl}
                         alt={prog.title}
                         style={{ width: "100%", height: "100%", objectFit: "cover" }}
                         whileHover={{ scale: 1.06 }}
@@ -1242,14 +1265,14 @@ const HomePage=({ onNavigate }) => {
                       </ul>
                       {hasMore && (
                         <button
-                          onClick={() => toggleReadMore(i)}
+                          onClick={() => toggleReadMore(programId)}
                           className="read-more-btn"
                           style={{
                             marginBottom: 16,
                             alignSelf: "flex-start",
                           }}
                         >
-                          {isExpanded ? "Show Less ↑" : `Read More (+${prog.courses.length - 5} more)`}
+                          {isExpanded ? "Show Less ↑" : `Read More (+${courses.length - 5} more)`}
                           <ArrowRight size={12} style={{ transform: isExpanded ? "rotate(90deg)" : "none", transition: "transform 0.2s" }} />
                         </button>
                       )}
