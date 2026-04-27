@@ -780,6 +780,7 @@ import collegelogo2 from "../Logos/collegelogo2.webp";
 import collegelogo3 from "../Logos/collegelogo3.webp";
 import collegelogo4 from "../Logos/collegelogo4.webp";
 import HeroSection from "../Homepages/HeroSection";
+import axiosInstance from "../api/axiosInstance";
 // ─────────────────────────────────────────────────────────────────────────────
 
 /* ═══════════════════════════════════════════════════════
@@ -1064,12 +1065,23 @@ const HomePage=({ onNavigate }) => {
   const [programsVisible, setProgramsVisible] = useState(false);
   const [expandedProgram, setExpandedProgram] = useState(null);
 
+  const [dynamicPrograms, setDynamicPrograms] = useState([]);
+  const [loadingPrograms, setLoadingPrograms] = useState(true);
+  const [dynamicTestimonials, setDynamicTestimonials] = useState([]);
+  const [academicContent, setAcademicContent] = useState({
+    title: "Academic Programs",
+    description1: "Academic nursing programs are structured educational pathways designed to prepare individuals for the nursing profession — from entry-level bedside care to advanced clinical practice, education, and research.",
+    description2: "Programs span 4 years (Undergraduate), 3 years (Diploma), 2 years (Masters in Nursing), and 1 year (Post-Basic Diploma)."
+  });
+
+  const testimonialsToDisplay = dynamicTestimonials.length > 0 ? dynamicTestimonials : TESTIMONIALS;
+
   useEffect(() => {
     const id = setInterval(() => {
-      setTestimonialsIndex((p) => (p + 1) % TESTIMONIALS.length);
+      setTestimonialsIndex((p) => (p + 1) % testimonialsToDisplay.length);
     }, 6000);
     return () => clearInterval(id);
-  }, []);
+  }, [testimonialsToDisplay.length]);
 
   useEffect(() => {
     const el = document.getElementById("academic-programs");
@@ -1081,9 +1093,6 @@ const HomePage=({ onNavigate }) => {
     obs.observe(el);
     return () => obs.disconnect();
   }, []);
-
-  const [dynamicPrograms, setDynamicPrograms] = useState([]);
-  const [loadingPrograms, setLoadingPrograms] = useState(true);
 
   useEffect(() => {
     const fetchDynamicPrograms = async () => {
@@ -1099,20 +1108,50 @@ const HomePage=({ onNavigate }) => {
     fetchDynamicPrograms();
   }, []);
 
+  useEffect(() => {
+    const fetchAcademicContent = async () => {
+      try {
+        const response = await axiosInstance.get("/content/academic");
+        if (response.data) setAcademicContent(response.data);
+      } catch (error) {
+        console.error("Error fetching academic content:", error);
+      }
+    };
+    fetchAcademicContent();
+  }, []);
+
+  useEffect(() => {
+    const fetchDynamicTestimonials = async () => {
+      try {
+        const response = await axiosInstance.get("/testimonials");
+        setDynamicTestimonials(response.data);
+      } catch (error) {
+        console.error("Error fetching testimonials:", error);
+      }
+    };
+    fetchDynamicTestimonials();
+  }, []);
+
   const duplicatedLogos = [...LOGOS, ...LOGOS, ...LOGOS];
   const LOGO_WIDTH = 184;
 
   const prevLogo = () => setLogoOffset((p) => Math.max(p - 1, 0));
   const nextLogo = () => setLogoOffset((p) => Math.min(p + 1, LOGOS.length - 1));
-  const prevTestimonial = () => setTestimonialsIndex((p) => (p === 0 ? TESTIMONIALS.length - 1 : p - 1));
-  const nextTestimonial = () => setTestimonialsIndex((p) => (p + 1) % TESTIMONIALS.length);
-  const current = TESTIMONIALS[testimonialsIndex];
+  const prevTestimonial = () => setTestimonialsIndex((p) => (p === 0 ? testimonialsToDisplay.length - 1 : p - 1));
+  const nextTestimonial = () => setTestimonialsIndex((p) => (p + 1) % testimonialsToDisplay.length);
+  
+  const current = testimonialsToDisplay[testimonialsIndex] || TESTIMONIALS[0];
 
   const toggleReadMore = (programId) => {
     setExpandedProgram(expandedProgram === programId ? null : programId);
   };
 
   const programsToDisplay = dynamicPrograms.length > 0 ? dynamicPrograms : PROGRAMS;
+
+  const scrollPrograms = (dir) => {
+    const el = document.getElementById("programs-slider");
+    if (el) el.scrollBy({ left: dir * 400, behavior: 'smooth' });
+  };
 
   return (
     <>
@@ -1171,26 +1210,45 @@ const HomePage=({ onNavigate }) => {
                 <Zap size={14} />
               </div>
               <h2 style={{ fontSize: "clamp(2rem, 4vw, 3rem)", fontWeight: 800, color: "#111827", marginBottom: 20, lineHeight: 1.2 }}>
-                Academic Programs
+                {academicContent.title}
               </h2>
               <p style={{ fontSize: 17, color: "#4b5563", maxWidth: 720, margin: "0 auto 12px", lineHeight: 1.7 }}>
-                Academic nursing programs are structured educational pathways designed to prepare individuals
-                for the nursing profession — from entry-level bedside care to advanced clinical practice,
-                education, and research.
+                {academicContent.description1}
               </p>
-              <p style={{ fontSize: 16, color: "#6b7280", maxWidth: 680, margin: "0 auto", lineHeight: 1.7 }}>
-                Programs span <strong>4 years</strong> (Undergraduate), <strong>3 years</strong> (Diploma),
-                <strong> 2 years</strong> (Masters in Nursing), and <strong>1 year</strong> (Post-Basic Diploma).
-              </p>
+              <p style={{ fontSize: 16, color: "#6b7280", maxWidth: 680, margin: "0 auto", lineHeight: 1.7 }} dangerouslySetInnerHTML={{ __html: academicContent.description2 }} />
             </motion.div>
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(350px, 1fr))",
-                gap: 28,
-                alignItems: "stretch",
-              }}
-            >
+            <div style={{ position: "relative" }}>
+              {programsToDisplay.length > 3 && (
+                <>
+                  <button 
+                    onClick={() => scrollPrograms(-1)}
+                    style={{ position: "absolute", left: -20, top: "50%", transform: "translateY(-50%)", zIndex: 10, width: 44, height: 44, borderRadius: "50%", background: "#fff", boxShadow: "0 4px 16px rgba(0,0,0,0.1)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", border: "1px solid #e2e8f0" }}
+                  >
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#374151" strokeWidth="2.5"><path d="M15 19l-7-7 7-7" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                  </button>
+                  <button 
+                    onClick={() => scrollPrograms(1)}
+                    style={{ position: "absolute", right: -20, top: "50%", transform: "translateY(-50%)", zIndex: 10, width: 44, height: 44, borderRadius: "50%", background: "#fff", boxShadow: "0 4px 16px rgba(0,0,0,0.1)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", border: "1px solid #e2e8f0" }}
+                  >
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#374151" strokeWidth="2.5"><path d="M9 5l7 7-7 7" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                  </button>
+                </>
+              )}
+              <div
+                id="programs-slider"
+                style={{
+                  display: "flex",
+                  gap: 28,
+                  overflowX: "auto",
+                  scrollSnapType: "x mandatory",
+                  scrollbarWidth: "none",
+                  msOverflowStyle: "none",
+                  paddingBottom: 24,
+                }}
+              >
+                <style>{`
+                  #programs-slider::-webkit-scrollbar { display: none; }
+                `}</style>
               {programsToDisplay.map((prog, i) => {
                 const programId = prog._id || i;
                 const isExpanded = expandedProgram === programId;
@@ -1217,7 +1275,9 @@ const HomePage=({ onNavigate }) => {
                       flexDirection: "column",
                       transition: "box-shadow 0.3s",
                       height: "100%",
-                      minHeight: 550,
+                      flexShrink: 0,
+                      width: 350,
+                      scrollSnapAlign: "start",
                     }}
                     onHoverStart={(e) => e.currentTarget.style.boxShadow = "var(--card-shadow-hover)"}
                     onHoverEnd={(e) => e.currentTarget.style.boxShadow = "var(--card-shadow)"}
@@ -1281,6 +1341,7 @@ const HomePage=({ onNavigate }) => {
                   </motion.div>
                 );
               })}
+              </div>
             </div>
             <motion.div
               variants={fadeUp} custom={3}
@@ -1373,7 +1434,7 @@ const HomePage=({ onNavigate }) => {
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1.4fr" }}>
                     <div style={{ position: "relative", minHeight: 320, overflow: "hidden" }}>
                       <img
-                        src={current.image}
+                        src={current.imageUrl ? (current.imageUrl.startsWith('http') ? current.imageUrl : `http://localhost:8080${current.imageUrl}`) : current.image}
                         alt={current.name}
                         style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
                       />
@@ -1411,7 +1472,7 @@ const HomePage=({ onNavigate }) => {
                 </motion.div>
               </AnimatePresence>
               <div style={{ display: "flex", justifyContent: "center", gap: 10, marginTop: 28 }}>
-                {TESTIMONIALS.map((_, di) => (
+                {testimonialsToDisplay.map((_, di) => (
                   <button
                     key={di}
                     onClick={() => setTestimonialsIndex(di)}

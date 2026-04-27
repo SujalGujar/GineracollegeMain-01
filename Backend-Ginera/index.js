@@ -28,8 +28,14 @@ if (!fs.existsSync(uploadsDir)) {
 // Routes
 const sliderRoutes = require('./routes/sliderRoutes');
 const programRoutes = require('./routes/programRoutes');
+const testimonialRoutes = require('./routes/testimonialRoutes');
+const contentRoutes = require('./routes/contentRoutes');
+const aboutRoutes = require('./routes/aboutRoutes');
 app.use('/api/sliders', sliderRoutes);
 app.use('/api/programs', programRoutes);
+app.use('/api/testimonials', testimonialRoutes);
+app.use('/api/content', contentRoutes);
+app.use('/api/about', aboutRoutes);
 
 // MongoDB Connection
 mongoose.set('bufferCommands', false);

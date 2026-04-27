@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Badge } from "./ui/badge";
 import CollegeMap from "./CollegeMap";
@@ -18,8 +18,9 @@ import { MapPin, Hospital } from "lucide-react";
 import ViewAllProgramsButton from "./Buttons/ViewAllProgramsButton";
 import { Button } from "./ui/button";
 import principleImage from "../images/principleImage.jpeg"
-
+import axiosInstance from "../api/axiosInstance";
 import campusLocationImg from "../images/coll.jpeg";
+
 
 // import collegeImage2 from "../images/collegeimage2.jpg";
 // import collegeImage3 from "../images/collegeimage3.jpg";
@@ -28,17 +29,33 @@ import campusLocationImg from "../images/coll.jpeg";
 // import collegeImage6 from "../images/collegeimage6.jpg";
 
 export function AboutLogo() {
-  const items = [
+  const [collegeBranding, setCollegeBranding] = useState(null);
+
+  useEffect(() => {
+    axiosInstance.get('/about/college-logo').then(r => setCollegeBranding(r.data)).catch(() => {});
+  }, []);
+
+  const [visionMission, setVisionMission] = useState([]);
+  useEffect(() => {
+    axiosInstance.get('/about/vision-mission').then(r => setVisionMission(r.data)).catch(() => {});
+  }, []);
+
+  const visionPoints = visionMission.filter(v => v.type === 'vision').map(v => v.content);
+  const missionPoints = visionMission.filter(v => v.type === 'mission').map(v => v.content);
+
+  const displayLogo = collegeBranding?.logoUrl
+    ? (collegeBranding.logoUrl.startsWith('http') ? collegeBranding.logoUrl : `http://localhost:8080${collegeBranding.logoUrl}`)
+    : logo;
+
+  const items = visionPoints.length ? visionPoints : [
     "A college of nursing's vision is to be a leader in nursing education, preparing competent, compassionate, and ethically grounded professionals who can contribute to global healthcare.",
     "This is achieved through fostering innovation, promoting research, and creating a learning environment that develops students into skilled and committed healthcare providers ready to meet diverse and changing societal needs.",
     "Ethical medical professionals with humanitarian values",
-    // "Fostering a culture of continuous learning and ethical practice.",
   ];
-  const items2 = [
+  const items2 = missionPoints.length ? missionPoints : [
     "The mission of a college of nursing is to prepare competent and compassionate nursing professionals to provide high-quality healthcare through excellence in education, clinical practice, and research.",
     "This includes developing nurses who can serve diverse communities, promote health, prevent illness, and contribute to the advancement of the nursing profession both locally and globally",
     "Deliver compassionate, ethical, and evidence-based healthcare services",
-    // "Fostering a culture of continuous learning and ethical practice.",
   ];
 
   return (
@@ -76,8 +93,8 @@ export function AboutLogo() {
               transition={{ duration: 0.4 }}
             >
               <motion.img
-                src={logo}
-                alt="College Logo"
+                src={displayLogo}
+                alt={collegeBranding?.collegeName || 'College Logo'}
                 className="w-32 h-32 object-contain"
                 whileHover={{ scale: 1.1 }}
                 transition={{ duration: 0.3 }}
@@ -273,7 +290,7 @@ export function AboutLogo() {
                 </motion.h3>
 
                 <div className="space-y-4 flex-1 overflow-y-auto">
-                  {items.map((text, i) => (
+                  {items2.map((text, i) => (
                     <motion.div
                       key={i}
                       initial={{ x: 30, opacity: 0 }}
@@ -397,6 +414,32 @@ const statsVariants = {
 };
 
 export function DeanMessage() {
+  const [dean, setDean] = useState(null);
+
+  useEffect(() => {
+    axiosInstance.get('/about/dean').then(r => setDean(r.data)).catch(() => {});
+  }, []);
+
+  const deanName = dean?.name || 'Dr. Hiral S. Shah';
+  const deanTitle = dean?.title || 'Principal';
+  const deanGreeting = dean?.greeting || 'Dear Students, Faculty and Visitors,';
+  const deanParagraphs = dean?.paragraphs?.length ? dean.paragraphs : [
+    "It is my immense pleasure to welcome all students, faculty members, and visitors to Government College of Nursing, GINERA, a beacon of excellence dedicated to shaping the future of healthcare.",
+    "I extend my deepest gratitude to our dedicated and highly qualified faculty who are the backbone of our institution, serving not just as instructors, but as mentors and role models who instill the core values of compassion, integrity, and ethical practice in our students.",
+    "Dear Students, You have chosen a noble profession—a calling to serve humanity with empathy, dedication, and skill. At Government College of Nursing, GINERA, you are at the heart of everything we do.",
+    "Dear Valued Visitors, Whether you are a prospective student, a parent, or a partner from a healthcare institution, we welcome you to our vibrant community."
+  ];
+  const deanHighlight = dean?.highlight || 'Together, let us continue to work towards our shared goal of creating a healthier world.';
+  const deanStats = dean?.stats?.length ? dean.stats : [
+    { number: "62+", label: "Years of Excellence", color: "#A2632E" },
+    { number: "10,000+", label: "Graduates", color: "#1e40af" },
+    { number: "50+", label: "Faculty Members", color: "#059669" },
+    { number: "35+", label: "Research Papers/Year", color: "#7c3aed" }
+  ];
+  const deanPhoto = dean?.photoUrl
+    ? (dean.photoUrl.startsWith('http') ? dean.photoUrl : `http://localhost:8080${dean.photoUrl}`)
+    : principleImage;
+
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
@@ -459,7 +502,7 @@ export function DeanMessage() {
             >
               <div style={{ height: '285px' }} className="relative w-80 md:h-16 rounded-full shadow-2xl border-8 border-white overflow-hidden bg-gradient-to-br from-[#A2632E] to-[#804C22]">
                 <img
-                  src={principleImage}
+                  src={deanPhoto}
                   className="w-full h-full object-cover relative z-10 rounded-full"
                   alt="Dean & Principal"
                 />
@@ -507,13 +550,8 @@ export function DeanMessage() {
               </motion.div>
 
               <motion.div className="space-y-4" variants={textVariants}>
-                <h2 className="text-3xl font-bold text-gray-800">
-                  Dr. Hiral S. Shah
-                </h2>
-                <p className="text-xl text-gray-600 font-medium">
-                  Principal
-                </p>
-
+                <h2 className="text-3xl font-bold text-gray-800">{deanName}</h2>
+                <p className="text-xl text-gray-600 font-medium">{deanTitle}</p>
               </motion.div>
             </motion.div>
           </motion.div>
@@ -528,9 +566,7 @@ export function DeanMessage() {
                   initial="hidden"
                   whileInView="visible"
                 >
-                  <p className="text-2xl font-semibold text-gray-800 mb-2">
-                    Dear Students, Faculty and Visitors,
-                  </p>
+                  <p className="text-2xl font-semibold text-gray-800 mb-2">{deanGreeting}</p>
                   <div className="w-24 h-1 bg-[#A2632E] rounded-full mx-auto"></div>
                 </motion.div>
 
@@ -541,32 +577,13 @@ export function DeanMessage() {
                   initial="hidden"
                   whileInView="visible"
                 >
-                  {[
-                    "It is my immense pleasure to welcome all students, faculty members, and visitors to Government College of Nursing, GINERA, a beacon of excellence dedicated to shaping the future of healthcare.",
-                    "I extend my deepest gratitude to our dedicated and highly qualified faculty who are the backbone of our institution, serving not just as instructors, but as mentors and role models who instill the core values of compassion, integrity, and ethical practice in our students. Your commitment to academic rigor and professional expertise ensures our students receive the highest standard of education and are prepared to meet the dynamic challenges of the healthcare environment.",
-
-                    "Dear Students, You have chosen a noble profession—a calling to serve humanity with empathy, dedication, and skill. At Government College of Nursing, GINERA, you are at the heart of everything we do. Our mission is to provide a nurturing and dynamic learning environment, state-of-the-art facilities, and extensive clinical experiences to help you grow personally and professionally. I encourage you to seize every opportunity, engage actively in your studies and extracurricular activities, and strive for excellence. We are committed to supporting you every step of the way on this remarkable journey.",
-                    "Dear Valued Visitors, Whether you are a prospective student, a parent, or a partner from a healthcare institution, we welcome you to our vibrant community. We are proud of our commitment to producing highly skilled, compassionate, and innovative nursing professionals who make a significant impact on society. I invite you to explore our campus, learn more about our programs, and discover how we are working together to uphold the noble spirit of nursing and better the well-being of our communities.",
-                  ].map((text, i) => (
-
-                    <motion.p
-                      key={i}
-                      className="text-gray-700 leading-relaxed text-lg text-justify"
-                      variants={textVariants}
-
-                    >
+                  {deanParagraphs.map((text, i) => (
+                    <motion.p key={i} className="text-gray-700 leading-relaxed text-lg text-justify" variants={textVariants}>
                       {text}
                     </motion.p>
-                  ))}
-
-                  {/* Highlight Box */}
-                  <motion.div
-                    className="bg-gradient-to-r from-[#F8F4F0] to-[#EDE7E1] p-6 rounded-2xl border-l-4 border-[#A2632E] shadow-md"
-                    variants={textVariants}
-                  >
-                    <p className="text-gray-700 leading-relaxed text-lg">
-                      Together, let us continue to work towards our shared goal of creating a healthier world.
-                    </p>
+                  ))}  
+                  <motion.div className="bg-gradient-to-r from-[#F8F4F0] to-[#EDE7E1] p-6 rounded-2xl border-l-4 border-[#A2632E] shadow-md" variants={textVariants}>
+                    <p className="text-gray-700 leading-relaxed text-lg">{deanHighlight}</p>
                   </motion.div>
                 </motion.div>
               </CardContent>
@@ -581,16 +598,7 @@ export function DeanMessage() {
             whileInView="visible"
             viewport={{ once: true }}
           >
-            {[
-              { number: "62+", label: "Years of Excellence", color: "#A2632E" },
-              { number: "10,000+", label: "Graduates", color: "#1e40af" },
-              { number: "50+", label: "Faculty Members", color: "#059669" },
-              {
-                number: "35+ ",
-                label: "Research Papers/Year",
-                color: "#7c3aed",
-              },
-            ].map((stat, index) => (
+            {deanStats.map((stat, index) => (
               <motion.div
                 key={index}
                 className="text-center p-6 bg-white/80 rounded-2xl shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300"
@@ -615,16 +623,7 @@ export function DeanMessage() {
 }
 
 // Animation variants
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.2,
-      delayChildren: 0.1,
-    },
-  },
-};
+
 
 const itemVariants = {
   hidden: { opacity: 0, y: 20 },
@@ -669,13 +668,16 @@ const fadeInLeft = {
 const fadeInRight = {
   hidden: { opacity: 0, x: 50 },
   visible: { opacity: 1, x: 0, transition: { duration: 0.8 } },
+};const fadeInUp = {
+  hidden: { opacity: 0, y: 30 },
+  visible: { 
+    opacity: 1, 
+    y: 0, 
+    transition: { duration: 0.6, ease: "easeOut" } 
+  },
 };
 
-const fadeInUp = {
-  hidden: { opacity: 0, y: 30 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.6 } },
-};
-const timelineVariants = {
+const containerVariants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
@@ -684,19 +686,7 @@ const timelineVariants = {
     },
   },
 };
-const milestoneVariants = {
-  hidden: { opacity: 0, x: -50 },
-  visible: {
-    opacity: 1,
-    x: 0,
-    transition: { duration: 0.6, ease: "easeOut" },
-  },
-  hover: {
-    scale: 1.03,
-    x: 10,
-    transition: { duration: 0.3 },
-  },
-};
+
 const imageAnimation = {
   hidden: { opacity: 0, scale: 0.85 },
   visible: {
@@ -706,9 +696,29 @@ const imageAnimation = {
   },
 };
 
+
+
 export function History() {
+  const [dynamicMilestones, setDynamicMilestones] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [isHistoryExpanded, setIsHistoryExpanded] = React.useState(false);
   const [expandedMilestones, setExpandedMilestones] = React.useState([]);
+
+  useEffect(() => {
+    setLoading(true);
+    axiosInstance.get('/about/milestones')
+      .then(r => {
+        setDynamicMilestones(r.data);
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error("Failed to fetch milestones:", err);
+        setLoading(false);
+      });
+  }, []);
+
+  const milestonesToDisplay = dynamicMilestones;
+
   return (
     <motion.div
       className="w-full"
@@ -871,150 +881,83 @@ export function History() {
             </CardHeader>
 
             <CardContent className="px-4 pb-12">
-              <motion.div
-                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
-                variants={containerVariants}
-              >
-                {[
-                  {
-                    year: "1963",
-                    event: "College established with 50 students",
-                    icon: "🎯",
-                    color: "#1e3a8a",
-                    description:
-                      "The college has the roots in the post basic Nursing School, which was started in 1963. At the time Gujarat was very young state and the need for P.H.N. nurses was acute. So the diploma course in Public Health Nursing was started. Two years later with the increasing in Nursing Schools a especially the ANM schools the need for tutors was felt, so in 1965 a Diploma in Nursing Education course was started.",
-                  },
-                  {
-                    year: "1975",
-                    event: "First postgraduate programs introduced",
-                    icon: "📚",
-                    color: "#3b82f6",
-                    description:
-                      "Expanded educational offerings to advanced levels",
-                  },
-                  {
-                    year: "1993",
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {loading ? (
+                  <div className="col-span-full py-20 text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
+                    <p className="text-gray-500">Loading milestones...</p>
+                  </div>
+                ) : milestonesToDisplay.length === 0 ? (
+                  <div className="col-span-full py-20 text-center bg-gray-50 rounded-2xl border-2 border-dashed border-gray-200">
+                    <p className="text-gray-400">No milestones found in database.</p>
+                  </div>
+                ) : (
+                  milestonesToDisplay.map((milestone, index) => (
+                    <motion.div
+                      key={milestone._id || index}
+                      className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden hover:shadow-xl transition-all duration-300"
+                      initial={{ opacity: 0, y: 20 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      viewport={{ once: true }}
+                      transition={{ duration: 0.5, delay: index * 0.05 }}
+                      whileHover={{ scale: 1.03, y: -5 }}
+                    >
+                      <div
+                        className="h-2 w-full"
+                        style={{ backgroundColor: milestone.color || '#f59e0b' }}
+                      ></div>
+                      <div className="p-6" style={{ color: "#6b7280" }}>
+                        <div className="flex items-center justify-between mb-4">
+                          <motion.div
+                            className="w-14 h-14 rounded-full flex items-center justify-center text-white font-bold text-xl shadow-lg"
+                            style={{ backgroundColor: milestone.color || '#f59e0b' }}
+                            whileHover={{ scale: 1.1, rotate: 5 }}
+                          >
+                            {milestone.icon || '🎯'}
+                          </motion.div>
+                          <span className="font-bold text-gray-800 text-xl bg-gray-100 px-3 py-1 rounded-lg">
+                            {milestone.year}
+                          </span>
+                        </div>
 
-                    event: "Basic B.Sc. Nursing program",
-                    icon: "🔬",
-                    color: "#10b981",
-                    description:
-                      "College of Nursing was started basic B.Sc. Nursing program which affiliated with Gujarat university  and is recognized by Indian Nursing council and Gujarat Nursing Council with annual in take of 30 students. The program is designed to qualify female students to take position as base line worker in hospitals and community.Annually intake was 30 students and intake are increased to 60 students in 2006.",
-                  },
-                  {
-                    year: "2005",
-                    event: "M.Sc. Nursing program",
-                    icon: "🎓",
-                    color: "#f59e0b",
-                    description:
-                      "The College of Nursing Ahmedabad Has started M.Sc. Nursing program in Month of November 2005 with total intake of 10 students.The college of Nursing is offered different post Graduate specialty in  Nursing, i.e. Medical Surgical Nursing, Pediatric Nursing, Child health Nursing, Community health Nursing and Obstetrical and Gynecological Nursing.As per the need of the state and Nursing profession the annual intake of P G Nursing is 25 seats since 2008 ",
+                        <h3 className="font-bold text-gray-800 text-lg mb-2 leading-tight">
+                          {milestone.event}
+                        </h3>
+                        <p className="text-sm leading-relaxed">
+                          {(milestone.description || '').length > 100 ? (
+                            <>
+                              {expandedMilestones.includes(index)
+                                ? milestone.description
+                                : milestone.description.slice(0, 100) + "..."}
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setExpandedMilestones((prev) =>
+                                    prev.includes(index)
+                                      ? prev.filter((i) => i !== index)
+                                      : [...prev, index]
+                                  );
+                                }}
+                                className="text-orange-600 font-semibold hover:underline text-xs ml-1 focus:outline-none"
+                              >
+                                {expandedMilestones.includes(index) ? "Read less" : "Read more"}
+                              </button>
+                            </>
+                          ) : (
+                            milestone.description
+                          )}
+                        </p>
 
-                  },
-
-                  {
-                    year: "2017",
-                    event: "NPCC",
-                    icon: "🏥",
-                    color: "#ef4444",
-                    description:
-                      "Nurse practitioner in critical care nursing, A post graduate residential program was started in year 2017 with annual intake of 10 seats",
-                  },
-                  {
-                    year: "2023",
-                    event: "Diamond Jubilee celebration",
-                    icon: "💎",
-                    color: "#8b5cf6",
-                    description: "60 years of excellence in Nursing education",
-                  },
-                  {
-                      year:"2025",
-                      event:"Post Basic Diploma – Residency Programs- 1 year ",
-                      icon:"📜",
-                      color:"#10b981",
-                      description:"Post Basic Diploma – Residency Programs- 1 year  (7 Courses) was started in 2025 with intake of 20 students each."
-      //                 programs: [
-      //   
-      //   "Post Basic Diploma in Burn & Reconstructive Surgery Specialty Nursing - Residency Program (1 Years)",
-      //   "Post Basic Diploma in Orthopaedic & Rehabilitation Specialty Nursing - Residency Program (1 Years)",
-      //   "Post Basic Diploma in Neonatal Specialty Nursing - Residency Program (1 Years)",
-        
-      //   "Post Basic Diploma in Oncology Specialty Nursing Residency Program (1 Years)",
-      //   "POST BASIC DIPLOMA IN CRITICAL CARE SPECIALTY NURSING - RESIDENCY PROGRAM) (1 Years)",
-      //   "POST BASIC DIPLOMA IN EMERGENCY AND DISASTER SPECIALTY NURSING – RESIDENCY PROGRAM) (1 Years)",
-      //   "POST BASIC DIPLOMA IN CARDIOTHORACIC SPECIALTY NURSING – RESIDENCY PROGRAM (1 Years)",
-      //   
-      // ],
-                  },
-                  {
-                    year: "2024",
-                    event: "Excellence in Midwifery",
-                    icon: "🌟",
-                    color: "#8b5cf6",
-                    description: "POST BASIC DIPLOMA IN NURSE PRACTITIONERS IN MIDWIFERY ( 1 YEAR 6 MONTHS) NURSE PRACTITIONER MIDWIFERY (NPM) EDUCATOR PROGRAM,"
-                  },
-                ].map((milestone, index) => (
-                  <motion.div
-                    key={index}
-                    className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden hover:shadow-xl transition-all duration-300"
-                    variants={fadeInUp}
-                    whileHover={{ scale: 1.03, y: -5 }}
-                  >
-                    <div
-                      className="h-2 w-full"
-                      style={{ backgroundColor: milestone.color }}
-                    ></div>
-                    <div className="p-6" style={{ color: "#6b7280" }}>
-                      <div className="flex items-center justify-between mb-4">
                         <motion.div
-                          className="w-14 h-14 rounded-full flex items-center justify-center text-white font-bold text-xl shadow-lg"
-                          style={{ backgroundColor: milestone.color }}
-                          whileHover={{ scale: 1.1, rotate: 5 }}
-                        >
-                          {milestone.icon}
-                        </motion.div>
-                        <span className="font-bold text-gray-800 text-xl bg-gray-100 px-3 py-1 rounded-lg">
-                          {milestone.year}
-                        </span>
-
+                          className="h-1 w-12 rounded-full mt-4"
+                          style={{ backgroundColor: milestone.color || '#f59e0b' }}
+                          whileHover={{ width: "100%" }}
+                        />
                       </div>
-
-                      <h3 className="font-bold text-gray-800 text-lg mb-2 leading-tight">
-                        {milestone.event}
-                      </h3>
-                      <p className="text-sm leading-relaxed">
-                        {milestone.description.length > 100 ? (
-                          <>
-                            {expandedMilestones.includes(index)
-                              ? milestone.description
-                              : milestone.description.slice(0, 100) + "..."}
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setExpandedMilestones((prev) =>
-                                  prev.includes(index)
-                                    ? prev.filter((i) => i !== index)
-                                    : [...prev, index]
-                                );
-                              }}
-                              className="text-orange-600 font-semibold hover:underline text-xs ml-1 focus:outline-none"
-                            >
-                              {expandedMilestones.includes(index) ? "Read less" : "Read more"}
-                            </button>
-                          </>
-                        ) : (
-                          milestone.description
-                        )}
-                      </p>
-
-                      <motion.div
-                        className="h-1 w-12 rounded-full mt-4"
-                        style={{ backgroundColor: milestone.color }}
-                        whileHover={{ width: "100%" }}
-                      />
-                    </div>
-                  </motion.div>
-                ))}
-              </motion.div>
+                    </motion.div>
+                  ))
+                )}
+              </div>
 
               {/* Additional Info */}
               <motion.div
@@ -1354,6 +1297,48 @@ export function VisionMission() {
         : [...prev, title]
     );
   };
+  const [visionMission, setVisionMission] = useState([]);
+  const [coreValuesData, setCoreValuesData] = useState([]);
+
+  useEffect(() => {
+    axiosInstance.get('/about/vision-mission').then(r => setVisionMission(r.data)).catch(() => {});
+    axiosInstance.get('/about/core-values').then(r => setCoreValuesData(r.data)).catch(() => {});
+  }, []);
+
+  const visionPoints = visionMission.filter(v => v.type === 'vision').map(v => v.content);
+  const missionPoints = visionMission.filter(v => v.type === 'mission').map(v => v.content);
+
+  const items = visionPoints.length ? visionPoints : [
+    "A college of nursing's vision is to be a leader in nursing education, preparing competent, compassionate, and ethically grounded professionals who can contribute to global healthcare.",
+    "This is achieved through fostering innovation, promoting research, and creating a learning environment that develops students into skilled and committed healthcare providers ready to meet diverse and changing societal needs.",
+    "Ethical medical professionals with humanitarian values",
+  ];
+  const items2 = missionPoints.length ? missionPoints : [
+    "The mission of a college of nursing is to prepare competent and compassionate nursing professionals to provide high-quality healthcare through excellence in education, clinical practice, and research.",
+    "This includes developing nurses who can serve diverse communities, promote health, prevent illness, and contribute to the advancement of the nursing profession both locally and globally",
+    "Deliver compassionate, ethical, and evidence-based healthcare services",
+  ];
+
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1,
+      },
+    },
+  };
+
+  const listItemVariants = {
+    hidden: { opacity: 0, x: -20 },
+    visible: {
+      opacity: 1,
+      x: 0,
+      transition: {
+        duration: 0.5,
+      },
+    },
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-amber-50 to-orange-50 py-16 relative">
@@ -1470,42 +1455,21 @@ export function VisionMission() {
                     className="space-y-4"
                     variants={containerVariants}
                   >
-                    <motion.div
-                      className="flex items-start gap-3 p-4 bg-amber-50 rounded-lg border border-amber-200 group cursor-pointer"
-                      variants={listItemVariants}
-                      whileHover={{ scale: 1.02, backgroundColor: "#fef3c7" }}
-                    >
-                      <span className="text-amber-600 mt-1 text-xl flex-shrink-0 group-hover:text-orange-600">
-                        ✓
-                      </span>
-                      <span className="text-gray-700 font-medium group-hover:text-amber-900">
-                        A college of nursing's vision is to be a leader in nursing education, preparing competent, compassionate, and ethically grounded professionals who can contribute to global healthcare.
-                      </span>
-                    </motion.div>
-                    <motion.div
-                      className="flex items-start gap-3 p-4 bg-orange-50 rounded-lg border border-orange-200 group cursor-pointer"
-                      variants={listItemVariants}
-                      whileHover={{ scale: 1.02, backgroundColor: "#ffedd5" }}
-                    >
-                      <span className="text-orange-600 mt-1 text-xl flex-shrink-0 group-hover:text-amber-600">
-                        ✓
-                      </span>
-                      <span className="text-gray-700 font-medium group-hover:text-orange-900">
-                        This is achieved through fostering innovation, promoting research, and creating a learning environment that develops students into skilled and committed healthcare providers ready to meet diverse and changing societal needs.
-                      </span>
-                    </motion.div>
-                    <motion.div
-                      className="flex items-start gap-3 p-4 bg-yellow-50 rounded-lg border border-yellow-200 group cursor-pointer"
-                      variants={listItemVariants}
-                      whileHover={{ scale: 1.02, backgroundColor: "#fef9c3" }}
-                    >
-                      <span className="text-yellow-600 mt-1 text-xl flex-shrink-0 group-hover:text-amber-600">
-                        ✓
-                      </span>
-                      <span className="text-gray-700 font-medium group-hover:text-yellow-900">
-                        Ethical Nursing professionals with humanitarian values
-                      </span>
-                    </motion.div>
+                    {items.map((text, i) => (
+                      <motion.div
+                        key={i}
+                        className={`flex items-start gap-3 p-4 ${i % 3 === 0 ? 'bg-amber-50 border-amber-200' : i % 3 === 1 ? 'bg-orange-50 border-orange-200' : 'bg-yellow-50 border-yellow-200'} rounded-lg border group cursor-pointer`}
+                        variants={listItemVariants}
+                        whileHover={{ scale: 1.02, backgroundColor: i % 3 === 0 ? "#fef3c7" : i % 3 === 1 ? "#ffedd5" : "#fef9c3" }}
+                      >
+                        <span className={`${i % 3 === 0 ? 'text-amber-600' : i % 3 === 1 ? 'text-orange-600' : 'text-yellow-600'} mt-1 text-xl flex-shrink-0 group-hover:text-orange-600`}>
+                          ✓
+                        </span>
+                        <span className="text-gray-700 font-medium group-hover:text-amber-900">
+                          {text}
+                        </span>
+                      </motion.div>
+                    ))}
                   </motion.div>
                 </CardContent>
 
@@ -1555,17 +1519,13 @@ export function VisionMission() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-6 pt-6">
-                  <div className="space-y-4">
-
-                    <motion.ul
-                      className="space-y-4"
-                      variants={containerVariants}
-                    >
-                      {[
-                        "The mission of a college of nursing is to prepare competent and compassionate nursing professionals to provide high-quality healthcare through excellence in education, clinical practice, and research.",
-                        ". This includes developing nurses who can serve diverse communities, promote health, prevent illness, and contribute to the advancement of the nursing profession both locally and globally",
-                        "Deliver compassionate, ethical, and evidence-based healthcare services",
-                      ].map((item, index) => (
+                  <motion.ul
+                    className="space-y-4"
+                    variants={containerVariants}
+                    initial="hidden"
+                    whileInView="visible"
+                  >
+                    {items2.map((item, index) => (
                         <motion.li
                           key={index}
                           className="flex items-start gap-3 p-3 rounded-lg hover:bg-amber-50 transition-colors group cursor-pointer border border-transparent hover:border-amber-200"
@@ -1591,7 +1551,6 @@ export function VisionMission() {
                         </motion.li>
                       ))}
                     </motion.ul>
-                  </div>
                 </CardContent>
 
                 {/* Animated Border */}
@@ -1633,7 +1592,6 @@ export function VisionMission() {
               </div>
             </motion.div>
           </motion.div>
-
           {/* Core Values */}
           <motion.div
             initial={{ opacity: 0, y: 30 }}
@@ -1672,66 +1630,7 @@ export function VisionMission() {
                   initial="hidden"
                   animate="visible"
                 >
-                  {[
-                    {
-                      icon: "🤝",
-                      title: "Excellence in education",
-                      description:
-                        "Upholding the highest ethical standards in all our endeavors, maintaining transparency and honesty in every action",
-                      color: "from-amber-500 to-orange-500",
-                    },
-                    {
-                      icon: "🌟",
-                      title: "Nurses for the future",
-                      description:
-                        " To train professionals who are not only knowledgeable and skillful but also intellectually enlightened, morally upright, and emotionally balanced.",
-                      color: "from-orange-500 to-amber-500",
-                    },
-                    {
-                      icon: "❤️",
-                      title: "Innovation and research",
-                      description:
-                        "To become a center for excellence in nursing education by encouraging innovative practices and research to improve patient care and the nursing profession itself.To develop future nursing leaders and equip them to provide holistic, compassionate, and quality care to individuals and communities.",
-                      color: "from-red-500 to-orange-500",
-                    },
-                    {
-                      icon: "🌍",
-                      title: "Leadership and community impact",
-                      description:
-                        "To develop future nursing leaders and equip them to provide holistic, compassionate, and quality care to individuals and communities.",
-                      color: "from-yellow-500 to-amber-500",
-                    },
-                    {
-                      icon: "👥",
-                      title: "Lifelong learning",
-                      description:
-                        "To create a vibrant learning environment that fosters a spirit of inquiry and commitment to lifelong learning",
-                      color: "from-amber-500 to-yellow-500",
-                    },
-                    {
-                      icon: "🎓",
-                      title: "Human dignity",
-                      description:
-                        " Respecting the inherent worth and uniqueness of every individual.",
-                      color: "from-orange-500 to-red-500",
-                    },
-                    {
-                      icon: "🎓",
-                      title: "Integrity",
-                      description:
-                        "Acting with honesty and upholding a strong set of moral principles.",
-                      color: "from-orange-500 to-red-500",
-                    },
-                    {
-                      icon: "🎓",
-                      title: "Autonomy",
-                      description:
-                        "Recognizing and respecting a patient's right to make their own healthcare decisions",
-                      color: "from-orange-500 to-red-500",
-                    },
-
-
-                  ].map((value, index) => (
+                  {coreValuesData.map((value, index) => (
                     <motion.div
                       key={index}
                       variants={valueCardVariants}
