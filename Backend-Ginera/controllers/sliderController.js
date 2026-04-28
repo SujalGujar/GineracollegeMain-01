@@ -18,8 +18,10 @@ exports.getSliders = async (req, res) => {
   try {
     const { department } = req.query;
     let sliders;
-    if (department && department !== 'null' && department !== 'undefined') {
+    if (department && department !== 'null' && department !== 'undefined' && department !== 'all') {
       sliders = await sliderService.getSlidersByDepartment(department);
+    } else if (department === 'null') {
+      sliders = await sliderService.getHomepageSliders();
     } else {
       sliders = await sliderService.getAllSliders();
     }
@@ -38,11 +40,17 @@ exports.uploadSliders = async (req, res) => {
       return res.status(400).json({ message: 'No images uploaded' });
     }
 
-    const sliderDataArray = req.files.map(file => ({
-      title: req.body.title || 'Ginera College Slider',
-      imageUrl: `/uploads/${file.filename}`,
-      department: req.body.department || null
-    }));
+    const sliderDataArray = req.files.map(file => {
+      let dept = req.body.department;
+      if (dept === 'null' || dept === 'undefined' || !dept) {
+        dept = null;
+      }
+      return {
+        title: req.body.title || 'Ginera College Slider',
+        imageUrl: `/uploads/${file.filename}`,
+        department: dept
+      };
+    });
 
     const savedSliders = await sliderService.createSliders(sliderDataArray);
     res.status(201).json(savedSliders);

@@ -50,14 +50,14 @@ const NAV_ITEMS = [
   {
     key: "departments",
     label: "Departments",
-    subpages: departmentItems[0].items.map((item) => ({
-      label: item,
-      page: `department-${item
-        .toLowerCase()
-        .replace(/\s+/g, "-")
-        .replace(/[()&]/g, "")
-        .replace(/,/g, "")}`,
-    })),
+    subpages: [
+      { label: "Department of Fundamentals Of Nursing", page: "department-fundamentals" },
+      { label: "Department of Medical Surgical Nursing", page: "department-medical-surgical" },
+      { label: "Department of Obstetric and Gynaecological Nursing", page: "department-obstetric" },
+      { label: "Department of Child Health Nursing", page: "department-child-health" },
+      { label: "Department of Community Health Nursing", page: "department-community" },
+      { label: "Department of Mental Health Nursing", page: "department-mental-health" },
+    ],
   },
   {
     key: "gallery",
@@ -108,10 +108,7 @@ export function Header({ currentPage, onNavigate }) {
           // Create the dynamic subpages for departments
           const deptSubpages = response.data.map(dept => ({
             label: dept.name,
-            page: `department-${dept.name.toLowerCase()
-              .replace(/\s+/g, "-")
-              .replace(/[()&]/g, "")
-              .replace(/,/g, "")}`
+            page: `department-${dept.slug || dept.name.toLowerCase().replace(/\s+/g, "-")}`
           }));
 
           // Re-generate NAV_ITEMS with dynamic departments

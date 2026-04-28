@@ -1255,7 +1255,12 @@ const HomePage=({ onNavigate }) => {
                 const courses = Array.isArray(prog.courses) ? prog.courses : [];
                 const displayCourses = isExpanded ? courses : courses.slice(0, 5);
                 const hasMore = courses.length > 5;
-                const imageUrl = prog.imageUrl ? (prog.imageUrl.startsWith('http') ? prog.imageUrl : `http://localhost:8080${prog.imageUrl}`) : prog.image;
+                const getImgUrl = (url) => {
+                  if (!url) return "/placeholder.png";
+                  if (url.startsWith("http")) return url;
+                  return `http://localhost:8080${url}`;
+                };
+                const imageUrl = getImgUrl(prog.imageUrl || prog.image);
                 
                 return (
                   <motion.div

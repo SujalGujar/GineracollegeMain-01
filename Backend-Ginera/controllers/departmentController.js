@@ -25,6 +25,7 @@ exports.seedDepartments = async (req, res) => {
         { name: "Mrs Gauri Patel", designation: "Nursing Tutor", qualification: "B.Sc.Nursing" },
         { name: "Mrs Pinal Panchal", designation: "Nursing Tutor", qualification: "B.Sc.Nursing" }
       ],
+      slug: "fundamentals",
       facilities: [
         "Key Equipment & Setup: Labs are designed like hospital wards, featuring mannequins (high-fidelity & basic), patient beds with linens, bedside lockers, IV poles, and oxygen cylinders.",
         "Skill Development: Key skills practiced include vital sign assessment, physical assessment, medication administration, wound dressing, catheterization, hygiene, and infection control techniques.",
@@ -53,6 +54,7 @@ exports.seedDepartments = async (req, res) => {
         { name: "Mrs. Anjana Nayka", designation: "Nursing Tutor", qualification: "M.Sc. (Medical Surgical Nursing)" },
         { name: "Mrs. Mittal P. Patel", designation: "Nursing Tutor", qualification: "B.Sc. (Nursing)" }
       ],
+      slug: "medical-surgical",
       facilities: [
         "High-Fidelity Simulators: Manikins that breathe, have pulses, display vital signs, and can talk, used for complex clinical scenarios.",
         "Specialized Task Trainers: Focused simulators for specific procedures like IV insertion, central line care, catheterization, and tracheostomy care.",
@@ -75,6 +77,7 @@ exports.seedDepartments = async (req, res) => {
         { name: "Mrs. Komal Panchal", designation: "Nursing Tutor", qualification: "M.Sc. in Obstetrics and Gynaecological Nursing" },
         { name: "Mrs. Amita Parekh", designation: "Nursing Tutor", qualification: "M.Sc. in Obstetrics and Gynaecological Nursing" }
       ],
+      slug: "obstetric",
       facilities: [
         "Specialized Equipment: The lab is equipped with birthing simulators, pelvic models, fetal skulls, and newborn manikins.",
         "Simulation Scenarios: Students practice normal delivery, high-risk pregnancies, breech delivery, and emergency situations (e.g., postpartum hemorrhage).",
@@ -95,6 +98,7 @@ exports.seedDepartments = async (req, res) => {
         { name: "Mr. Hasmukh D. Patel", designation: "Nursing Tutor", qualification: "M.Sc. In psychiatric and Mental Health Nursing" },
         { name: "Mrs. Jigna Patel", designation: "Nursing Tutor", qualification: "M.Sc. In psychiatric and Mental Health Nursing" }
       ],
+      slug: "mental-health",
       facilities: [
         "Clinical Skills Training: Instruction in therapeutic nurse-patient relationships, psychotropic drug administration, process recording, and managing psychiatric emergencies.",
         "Academic & Practical Focus: Combines classroom education with clinical placements in psychiatry, nursing labs, and community outreach programs.",
@@ -118,6 +122,7 @@ exports.seedDepartments = async (req, res) => {
         { name: "Mrs. Dhara Patel", designation: "Nursing Tutor", qualification: "M.Sc.In Child Health Nursing" },
         { name: "Mrs. Urvi Patel", designation: "Nursing Tutor", qualification: "M.Sc.In Child Health Nursing" }
       ],
+      slug: "child-health",
       facilities: [
         "Mannequins & Manikins: NeoNatalie neonatal resuscitation mannequins, advanced neonatal resuscitation equipment, CPR manikins, and infant/toddler dolls.",
         "Clinical Procedures Setup: Phototherapy machines, radiant warmers, oxygen hoods, incubators, and specialized instruments for neonates.",
@@ -144,6 +149,7 @@ exports.seedDepartments = async (req, res) => {
         { name: "Ms. Payal Joshi", designation: "Nursing Tutor", qualification: "B.Sc. Nursing" },
         { name: "Ms. Parul Patel", designation: "Demonstrator", qualification: "B.Sc. Nursing" }
       ],
+      slug: "community",
       facilities: [
         "Home Visiting Bags: Equipped with essential supplies for nursing care in community settings.",
         "Simulation Setup: A simulated home environment is often included to facilitate training in home-based care.",
@@ -154,7 +160,8 @@ exports.seedDepartments = async (req, res) => {
       activities: [
         "Home Visiting Techniques: Practicing nursing procedures during simulated home visits.", "Family Health Care: Assessing and addressing health needs at the familial level.", "Health Education: Developing materials for community campaigns and awareness programs.", "Procedure Practice: Simulating nursing procedures like wound care and injections under instructor supervision.", "Community Assessment: Utilizing survey tools and environmental checklists."
       ],
-      icon: "🏥"
+      icon: "🏥",
+      slug: "community"
     }
   };
 
@@ -183,9 +190,9 @@ exports.getDepartments = async (req, res) => {
   }
 };
 
-exports.getDepartmentByName = async (req, res) => {
+exports.getDepartmentBySlug = async (req, res) => {
   try {
-    const department = await Department.findOne({ name: req.params.name });
+    const department = await Department.findOne({ slug: req.params.slug });
     if (!department) return res.status(404).json({ message: 'Department not found' });
     res.status(200).json(department);
   } catch (error) {

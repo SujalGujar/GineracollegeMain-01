@@ -36,8 +36,10 @@ const admissionRuleRoutes = require('./routes/admissionRuleRoutes');
 const bondRoutes = require('./routes/bondRoutes');
 const guidelineRoutes = require('./routes/guidelineRoutes');
 const departmentRoutes = require('./routes/departmentRoutes');
+const galleryRoutes = require('./routes/galleryRoutes');
 
 app.use('/api/sliders', sliderRoutes);
+app.use('/api/gallery', galleryRoutes);
 app.use('/api/programs', programRoutes);
 app.use('/api/testimonials', testimonialRoutes);
 app.use('/api/content', contentRoutes);

@@ -7,6 +7,13 @@ const departmentSchema = new mongoose.Schema({
     unique: true,
     trim: true
   },
+  slug: {
+    type: String,
+    required: true,
+    unique: true,
+    trim: true,
+    lowercase: true
+  },
   category: {
     type: String,
     required: true,
@@ -18,7 +25,7 @@ const departmentSchema = new mongoose.Schema({
   },
   overview: {
     type: String,
-    required: true
+    required: false
   },
   overview2: {
     type: String,

@@ -3,7 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Badge } from "./ui/badge";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
 import { motion } from "framer-motion";
- 
+import axiosInstance from '../api/axiosInstance';
+
 
 const containerVariants = {
   hidden: { opacity: 0, y: 20 },
@@ -22,83 +23,21 @@ const cardVariants = {
 
 export function CollegePhotos() {
   const [collegeImages, setCollegeImages] = useState([]);
-
-  // Default images as fallback
-  const defaultImages = [
-    {
-      id: "1",
-      title: "Main Academic Building",
-      description:
-        "The iconic main building houses lecture halls, laboratories, and administrative offices. Built in 1960, it represents the architectural heritage of our institution.",
-      imageUrl:
-        "https://images.unsplash.com/photo-1562774053-701939374585?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtZWRpY2FsJTIwY29sbGVnZSUyMGJ1aWxkaW5nfGVufDF8fHx8MTc1ODM5MTQxMnww&ixlib=rb-4.1.0&q=80&w=1080",
-      category: "campus",
-    },
-    {
-      id: "2",
-      title: "Modern Library Complex",
-      description:
-        "State-of-the-art library facility with digital resources, study halls, and research areas. Open 24/7 for students with extensive medical literature collection.",
-      imageUrl:
-        "https://images.unsplash.com/photo-1481627834876-b7833e8f5570?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtZWRpY2FsJTIwbGlicmFyeXxlbnwxfHx8fDE3NTgzOTE0MTJ8MA&ixlib=rb-4.1.0&q=80&w=1080",
-      category: "campus",
-    },
-    {
-      id: "3",
-      title: "Student Recreation Center",
-      description:
-        "Modern recreational facilities including sports complex, student lounge, and cafeteria. A perfect place for students to relax and engage in extracurricular activities.",
-      imageUrl:
-        "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxzdHVkZW50JTIwY2VudGVyfGVufDF8fHx8MTc1ODM5MTQxMnww&ixlib=rb-4.1.0&q=80&w=1080",
-      category: "campus",
-    },
-  ];
+  const [additionalImages, setAdditionalImages] = useState([]);
 
   useEffect(() => {
-    // Load images from localStorage
-    const saved = localStorage.getItem("galleryImages");
-    if (saved) {
-      const allImages = JSON.parse(saved);
-      const campusImages = allImages.filter((img) => img.category === "campus");
-      setCollegeImages(campusImages.length > 0 ? campusImages : defaultImages);
-    } else {
-      // Initialize with default images
-      setCollegeImages(defaultImages);
-      const allDefaults = [
-        ...defaultImages,
-        // Add default hospital and events images here if needed
-      ];
-      localStorage.setItem("galleryImages", JSON.stringify(allDefaults));
-    }
+    const fetchGallery = async () => {
+      try {
+        const res = await axiosInstance.get('/gallery');
+        const images = res.data;
+        setCollegeImages(images.filter(img => img.category === 'college_highlight'));
+        setAdditionalImages(images.filter(img => img.category === 'college_campus_view'));
+      } catch (err) {
+        console.error("Error fetching gallery:", err);
+      }
+    };
+    fetchGallery();
   }, []);
-
-  // Placeholder images for additional gallery items
-  const additionalImages = [
-    {
-      title: "Library & Study Hall",
-      description: "Extensive collection of medical books and journals",
-    },
-    {
-      title: "Anatomy Museum",
-      description: "Well-preserved specimens and anatomical models",
-    },
-    {
-      title: "Lecture Theaters",
-      description: "Modern amphitheater-style classrooms",
-    },
-    {
-      title: "Student Hostels",
-      description: "Comfortable accommodation for outstation students",
-    },
-    {
-      title: "Cafeteria",
-      description: "Spacious dining area with nutritious meals",
-    },
-    {
-      title: "Sports Complex",
-      description: "Recreation facilities for physical fitness",
-    },
-  ];
 
   return (
     <motion.div
@@ -118,16 +57,17 @@ export function CollegePhotos() {
           Campus Highlights
         </h2>
         <div className="grid md:grid-cols-3 gap-8">
+          {collegeImages.length === 0 && <p className="text-gray-500 col-span-3 text-center">No campus highlights uploaded yet.</p>}
           {collegeImages.map((image, index) => (
             <motion.div
-              key={image.id || index}
+              key={image._id || index}
               variants={cardVariants}
               whileHover="hover"
               className="rounded-lg overflow-hidden cursor-pointer bg-white shadow-md"
             >
               <div className="aspect-video overflow-hidden">
                 <ImageWithFallback
-                  src={image.imageUrl}
+                  src={image.imageUrl.startsWith('http') ? image.imageUrl : `http://localhost:8080${image.imageUrl}`}
                   alt={image.title}
                   className="w-full h-full object-cover transition-transform duration-300 ease-in-out hover:scale-105"
                 />
@@ -149,22 +89,31 @@ export function CollegePhotos() {
           More Campus Views
         </h2>
         <div className="grid md:grid-cols-3 lg:grid-cols-4 gap-6">
+          {additionalImages.length === 0 && <p className="text-gray-500 col-span-4 text-center">No additional campus views uploaded yet.</p>}
           {additionalImages.map((image, index) => (
             <motion.div
-              key={index}
+              key={image._id || index}
               variants={cardVariants}
               whileHover="hover"
               className="rounded-lg overflow-hidden cursor-pointer bg-white shadow-sm flex flex-col"
             >
-              <div className="aspect-square bg-gray-100 flex items-center justify-center">
-                <div className="text-center p-4">
-                  <div className="text-5xl mb-3 select-none">🏢</div>
-                  <h4 className="font-medium text-base text-gray-900">
-                    {image.title}
-                  </h4>
-                </div>
+              <div className="aspect-video overflow-hidden bg-gray-100 flex items-center justify-center relative group">
+                {image.imageUrl ? (
+                  <img
+                    src={image.imageUrl.startsWith('http') ? image.imageUrl : `http://localhost:8080${image.imageUrl}`}
+                    alt={image.title}
+                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-300 ease-in-out group-hover:scale-105"
+                  />
+                ) : (
+                  <div className="text-center p-4">
+                    <div className="text-5xl mb-3 select-none">🏢</div>
+                  </div>
+                )}
               </div>
-              <CardContent className="p-4 flex-grow">
+              <CardContent className="p-4 flex-grow border-t">
+                <h4 className="font-medium text-base text-gray-900 mb-1">
+                  {image.title}
+                </h4>
                 <p className="text-xs text-gray-500">{image.description}</p>
               </CardContent>
             </motion.div>
@@ -215,43 +164,21 @@ export function CollegePhotos() {
 
 export function HospitalPhotos() {
   const [hospitalImages, setHospitalImages] = useState([]);
-
-  // Default hospital image
-  const defaultHospitalImage = {
-    id: "h1",
-    title: "Advanced Medical Equipment",
-    description:
-      "State-of-the-art diagnostic and treatment equipment for comprehensive patient care and medical education.",
-    imageUrl:
-      "https://images.unsplash.com/photo-1595464144526-5fb181b74625?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxob3NwaXRhbCUyMG1lZGljYWwlMjBlcXVpcG1lbnR8ZW58MXx8fHwxNzU4MzY5Mzk4fDA&ixlib=rb-4.1.0&q=80&w=1080",
-    category: "hospital",
-  };
+  const [hospitalFacilities, setHospitalFacilities] = useState([]);
 
   useEffect(() => {
-    const saved = localStorage.getItem("galleryImages");
-    if (saved) {
-      const allImages = JSON.parse(saved);
-      const hospitalImgs = allImages.filter((img) => img.category === "hospital");
-      setHospitalImages(hospitalImgs.length > 0 ? hospitalImgs : [defaultHospitalImage]);
-    } else {
-      setHospitalImages([defaultHospitalImage]);
-    }
+    const fetchGallery = async () => {
+      try {
+        const res = await axiosInstance.get('/gallery');
+        const images = res.data;
+        setHospitalImages(images.filter(img => img.category === 'hospital'));
+        setHospitalFacilities(images.filter(img => img.category === 'hospital_facility'));
+      } catch (err) {
+        console.error("Error fetching gallery:", err);
+      }
+    };
+    fetchGallery();
   }, []);
-
-  const hospitalFacilities = [
-    { title: "Emergency Department", description: "24/7 emergency services with trauma care", icon: "🚨" },
-    { title: "Operation Theaters", description: "Modern surgical suites with advanced equipment", icon: "🏥" },
-    { title: "ICU & Critical Care", description: "Intensive care units with monitoring systems", icon: "💓" },
-    { title: "Radiology Department", description: "CT, MRI, X-ray and ultrasound facilities", icon: "📸" },
-    { title: "Laboratory Services", description: "Comprehensive diagnostic laboratory", icon: "🔬" },
-    { title: "Pharmacy", description: "24-hour pharmacy with essential medicines", icon: "💊" },
-    { title: "Blood Bank", description: "Well-equipped blood bank and transfusion services", icon: "🩸" },
-    { title: "Dialysis Unit", description: "Modern dialysis center for kidney patients", icon: "⚕️" },
-    { title: "Maternity Ward", description: "Specialized care for mothers and newborns", icon: "👶" },
-    { title: "Pediatric Wing", description: "Child-friendly environment for young patients", icon: "🧸" },
-    { title: "Cardiac Unit", description: "Advanced cardiac care and monitoring", icon: "❤️" },
-    { title: "Rehabilitation Center", description: "Physiotherapy and rehabilitation services", icon: "🏃" },
-  ];
 
   return (
     <motion.div
@@ -274,7 +201,7 @@ export function HospitalPhotos() {
         >
           <div className="aspect-video overflow-hidden rounded-t-lg">
             <ImageWithFallback
-              src={hospitalImages[0].imageUrl}
+              src={hospitalImages[0].imageUrl.startsWith('http') ? hospitalImages[0].imageUrl : `http://localhost:8080${hospitalImages[0].imageUrl}`}
               alt={hospitalImages[0].title}
               className="w-full h-full object-cover transition-transform duration-300 ease-in-out hover:scale-105"
             />
@@ -314,7 +241,7 @@ export function HospitalPhotos() {
             >
               <div className="aspect-video overflow-hidden">
                 <ImageWithFallback
-                  src={image.imageUrl}
+                  src={image.imageUrl.startsWith('http') ? image.imageUrl : `http://localhost:8080${image.imageUrl}`}
                   alt={image.title}
                   className="w-full h-full object-cover transition-transform duration-300 ease-in-out hover:scale-105"
                 />
@@ -337,18 +264,31 @@ export function HospitalPhotos() {
           variants={containerVariants}
           className="grid md:grid-cols-3 lg:grid-cols-4 gap-6"
         >
+          {hospitalFacilities.length === 0 && <p className="text-gray-500 col-span-4 text-center">No facilities added yet. Upload them from the admin panel.</p>}
           {hospitalFacilities.map((facility, index) => (
             <motion.div
-              key={index}
+              key={facility._id || index}
               variants={cardVariants}
               whileHover="hover"
-              className="rounded-lg shadow-sm bg-white cursor-pointer text-center p-6 flex flex-col items-center"
+              className="rounded-lg shadow-sm bg-white cursor-pointer text-center flex flex-col items-center overflow-hidden border"
             >
-              <div className="text-4xl mb-3 select-none">{facility.icon}</div>
-              <h3 className="font-semibold mb-1 text-gray-900 text-sm">
-                {facility.title}
-              </h3>
-              <p className="text-xs text-gray-500">{facility.description}</p>
+              <div className="w-full aspect-video bg-gray-100 flex items-center justify-center overflow-hidden">
+                {facility.imageUrl ? (
+                  <img
+                    src={facility.imageUrl.startsWith('http') ? facility.imageUrl : `http://localhost:8080${facility.imageUrl}`}
+                    alt={facility.title}
+                    className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
+                  />
+                ) : (
+                  <div className="text-4xl">🏥</div>
+                )}
+              </div>
+              <div className="p-5 w-full">
+                <h3 className="font-semibold mb-2 text-gray-900 text-sm">
+                  {facility.title}
+                </h3>
+                <p className="text-xs text-gray-500 leading-relaxed">{facility.description}</p>
+              </div>
             </motion.div>
           ))}
         </motion.div>
@@ -396,71 +336,42 @@ export function HospitalPhotos() {
 
 export function EventsPhotos() {
   const [eventImages, setEventImages] = useState([]);
-
-  // Default events image
-  const defaultEventImage = {
-    id: "e1",
-    title: "Graduation Ceremony 2024",
-    description:
-      "Annual convocation ceremony celebrating our graduating doctors and their achievements in medical education.",
-    imageUrl:
-      "https://images.unsplash.com/photo-1757143137392-0b1e1a27a7de?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtZWRpY2FsJTIwc3R1ZGVudHMlMjBncmFkdWF0aW9uJTIwY2VyZW1vbnl8ZW58MXx8fHwxNzU4MzkwNTIzfDA&ixlib=rb-4.1.0&q=80&w=1080",
-    category: "events",
-  };
+  const [eventCategories, setEventCategories] = useState([]);
 
   useEffect(() => {
-    const saved = localStorage.getItem("galleryImages");
-    if (saved) {
-      const allImages = JSON.parse(saved);
-      const eventImgs = allImages.filter((img) => img.category === "events");
-      setEventImages(eventImgs.length > 0 ? eventImgs : [defaultEventImage]);
-    } else {
-      setEventImages([defaultEventImage]);
-    }
+    const fetchGallery = async () => {
+      try {
+        const res = await axiosInstance.get('/gallery');
+        const images = res.data;
+        
+        setEventImages(images.filter(img => img.category === 'event'));
+        
+        const catMap = {
+          event_academic: { title: "Academic Events", icon: "🎓", events: [] },
+          event_cultural: { title: "Cultural Events", icon: "🎭", events: [] },
+          event_sports: { title: "Sports Events", icon: "🏆", events: [] },
+          event_community: { title: "Community Service", icon: "🤝", events: [] }
+        };
+        
+        images.forEach(img => {
+          if (catMap[img.category]) {
+            catMap[img.category].events.push({
+              _id: img._id,
+              name: img.title,
+              date: new Date(img.createdAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
+              description: img.description,
+              imageUrl: img.imageUrl
+            });
+          }
+        });
+        
+        setEventCategories(Object.values(catMap));
+      } catch (err) {
+        console.error("Error fetching gallery:", err);
+      }
+    };
+    fetchGallery();
   }, []);
-
-  const eventCategories = [
-    {
-      title: "Academic Events",
-      icon: "🎓",
-      events: [
-        { name: "Annual Convocation", date: "March 2024", description: "Graduation ceremony for MBBS students" },
-        { name: "Research Symposium", date: "February 2024", description: "Student and faculty research presentations" },
-        { name: "Medical Conference", date: "January 2024", description: "International medical conference on modern healthcare" },
-        { name: "Guest Lectures", date: "Ongoing", description: "Weekly lectures by renowned medical experts" },
-      ],
-    },
-    {
-      title: "Cultural Events",
-      icon: "🎭",
-      events: [
-        { name: "Annual Cultural Fest", date: "December 2023", description: "Three-day cultural celebration with competitions" },
-        { name: "Traditional Day", date: "November 2023", description: "Celebration of Indian culture and traditions" },
-        { name: "Talent Show", date: "October 2023", description: "Students showcase their artistic talents" },
-        { name: "Music Concert", date: "September 2023", description: "Live musical performances by students and guests" },
-      ],
-    },
-    {
-      title: "Sports Events",
-      icon: "🏆",
-      events: [
-        { name: "Annual Sports Meet", date: "February 2024", description: "Inter-departmental sports competition" },
-        { name: "Marathon for Health", date: "January 2024", description: "Health awareness marathon in the city" },
-        { name: "Cricket Tournament", date: "December 2023", description: "Inter-college cricket championship" },
-        { name: "Indoor Games", date: "November 2023", description: "Chess, table tennis, and badminton competitions" },
-      ],
-    },
-    {
-      title: "Community Service",
-      icon: "🤝",
-      events: [
-        { name: "Health Camp", date: "March 2024", description: "Free medical check-up camp in rural areas" },
-        { name: "Blood Donation Drive", date: "February 2024", description: "Annual blood donation campaign" },
-        { name: "Awareness Rally", date: "January 2024", description: "Health awareness rally in local communities" },
-        { name: "Medical Camp", date: "December 2023", description: "Free medical services for underprivileged" },
-      ],
-    },
-  ];
 
   return (
     <motion.div
@@ -475,6 +386,7 @@ export function EventsPhotos() {
       </h1>
 
       {/* Main Event Image */}
+      {eventImages.length === 0 && <p className="text-center text-gray-500 col-span-full">No event highlights uploaded yet.</p>}
       {eventImages.length > 0 && (
         <motion.div
           variants={cardVariants}
@@ -483,7 +395,7 @@ export function EventsPhotos() {
         >
           <div className="aspect-video overflow-hidden rounded-t-lg">
             <ImageWithFallback
-              src={eventImages[0].imageUrl}
+              src={eventImages[0].imageUrl.startsWith('http') ? eventImages[0].imageUrl : `http://localhost:8080${eventImages[0].imageUrl}`}
               alt={eventImages[0].title}
               className="w-full h-full object-cover transition-transform duration-300 ease-in-out hover:scale-105"
             />
@@ -520,7 +432,7 @@ export function EventsPhotos() {
             >
               <div className="aspect-video overflow-hidden">
                 <ImageWithFallback
-                  src={image.imageUrl}
+                  src={image.imageUrl.startsWith('http') ? image.imageUrl : `http://localhost:8080${image.imageUrl}`}
                   alt={image.title}
                   className="w-full h-full object-cover transition-transform duration-300 ease-in-out hover:scale-105"
                 />
@@ -547,6 +459,7 @@ export function EventsPhotos() {
               variants={containerVariants}
               className="grid md:grid-cols-2 lg:grid-cols-4 gap-6"
             >
+              {category.events.length === 0 && <p className="text-gray-500 text-sm italic col-span-full">No events added to this category yet.</p>}
               {category.events.map((event, eventIndex) => (
                 <motion.div
                   key={eventIndex}
@@ -555,8 +468,16 @@ export function EventsPhotos() {
                 >
                   <Card className="cursor-pointer rounded-lg shadow-sm bg-white">
                     <CardContent className="p-4">
-                      <div className="aspect-square bg-gray-100 rounded-lg mb-3 flex items-center justify-center">
-                        <span className="text-2xl select-none">📸</span>
+                      <div className="aspect-video bg-gray-100 rounded-lg mb-3 flex items-center justify-center overflow-hidden">
+                        {event.imageUrl ? (
+                          <img
+                            src={event.imageUrl.startsWith('http') ? event.imageUrl : `http://localhost:8080${event.imageUrl}`}
+                            alt={event.name}
+                            className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
+                          />
+                        ) : (
+                          <span className="text-2xl select-none">📸</span>
+                        )}
                       </div>
                       <div className="mb-2">
                         <Badge variant="outline" className="text-xs mb-2 px-2 py-1">

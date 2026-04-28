@@ -23,5 +23,13 @@ router.get('/', sliderController.getSliders);
 router.post('/upload', upload.array('images', 20), sliderController.uploadSliders);
 router.put('/:id', upload.single('image'), sliderController.updateSlider);
 router.delete('/:id', sliderController.deleteSlider);
+router.get('/cleanup/invalid', async (req, res) => {
+  try {
+    const Slider = require('../models/Slider');
+    await Slider.collection.deleteMany({ department: 'all' });
+    await Slider.collection.deleteMany({ department: 'null' });
+    res.send('Cleaned');
+  } catch(e) { res.status(500).send(e.message); }
+});
 
 module.exports = router;

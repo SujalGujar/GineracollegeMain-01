@@ -480,9 +480,65 @@
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import axiosInstance from "../api/axiosInstance";
-import { Users, BookOpen, Microscope, GraduationCap } from "lucide-react";
+import { Users, BookOpen, Microscope, GraduationCap, ChevronLeft, ChevronRight } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Badge } from "./ui/badge";
+import { AnimatePresence } from "framer-motion";
+
+const imgUrl = (url) =>
+  !url ? "/placeholder.png"
+       : url.startsWith("http") ? url
+       : `http://localhost:8080${url}`;
+
+const ImageSlider = ({ images }) => {
+  const [index, setIndex] = useState(0);
+
+  if (!images || images.length === 0) return null;
+
+  const next = () => setIndex((prev) => (prev + 1) % images.length);
+  const prev = () => setIndex((prev) => (prev - 1 + images.length) % images.length);
+
+  useEffect(() => {
+    const timer = setInterval(next, 5000);
+    return () => clearInterval(timer);
+  }, [images]);
+
+  return (
+    <div className="relative w-full aspect-[21/9] rounded-3xl overflow-hidden shadow-2xl mb-12 group">
+      <AnimatePresence mode="wait">
+        <motion.img
+          key={index}
+          src={imgUrl(images[index]?.imageUrl)}
+          initial={{ opacity: 0, scale: 1.1 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.8 }}
+          className="absolute inset-0 w-full h-full object-cover"
+        />
+      </AnimatePresence>
+      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+      
+      <div className="absolute inset-x-0 bottom-0 p-8 flex justify-between items-end">
+        <div className="flex gap-2">
+          {images.map((_, i) => (
+            <div
+              key={i}
+              className={`h-1.5 rounded-full transition-all duration-300 ${i === index ? "w-8 bg-white" : "w-2 bg-white/40"}`}
+            />
+          ))}
+        </div>
+        <div className="flex gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
+          <button onClick={prev} className="p-3 rounded-full bg-white/10 backdrop-blur-md text-white hover:bg-white/20 transition-all border border-white/20">
+            <ChevronLeft size={20} />
+          </button>
+          <button onClick={next} className="p-3 rounded-full bg-white/10 backdrop-blur-md text-white hover:bg-white/20 transition-all border border-white/20">
+            <ChevronRight size={20} />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const fadeInUp = {
   hidden: { opacity: 0, y: 30 },
@@ -499,10 +555,11 @@ const staggerContainer = {
   }
 };
 
-function DepartmentPage({ department }) {
+function DepartmentPage({ department, sliders }) {
   return (
-    <div className="container mx-auto px-4 py-16">
-      <div className="max-w-6xl mx-auto">
+    <div className="min-h-screen bg-[#FDFCFB] pb-20">
+      <div className="container mx-auto px-4 pt-12">
+        <div className="max-w-6xl mx-auto">
         <div className="mb-8">
           <div className="flex items-center gap-4 mb-4">
             <div className="text-4xl">{department.icon}</div>
@@ -610,6 +667,7 @@ function DepartmentPage({ department }) {
             </div>
           </CardContent>
         </Card>
+        </div>
       </div>
     </div>
   );
@@ -617,7 +675,7 @@ function DepartmentPage({ department }) {
 
 // Complete department data for all nursing departments
 const allDepartments = {
-  "Department of Fundamentals Of Nursing": {
+  "fundamentals": {
     name: "Department of Fundamentals Of Nursing",
     category: "Nursing Department",
     description: "The Fundamentals of Nursing Laboratory is a simulated clinical environment where students learn, practice, and master essential nursing procedures before patient interaction. It bridges theoretical knowledge with clinical skills using mannequins, medical equipment, and simulated scenarios to foster competence and safety.",
@@ -665,7 +723,7 @@ const allDepartments = {
     icon: "🦴",
   },
 
-  "Department of Medical Surgical Nursing": {
+  "medical-surgical": {
     name: "Department of Medical Surgical Nursing",
     category: "Nursing Department",
     description: "Study of Advanced Medical Surgical Nursing",
@@ -729,7 +787,7 @@ const allDepartments = {
     icon: "❤️",
   },
 
-  "Department of Obstetric and Gynaecological Nursing": {
+  "obstetric": {
     name: "Department of Obstetric and Gynaecological Nursing",
     category: "Nursing Department",
     description: "Study of comprehensive care for women throughout their reproductive lives, including pregnancy, childbirth, the postpartum period, and reproductive system health",
@@ -771,7 +829,7 @@ const allDepartments = {
     icon: "🤰",
   },
 
-  "Department of Mental Health Nursing": {
+  "mental-health": {
     name: "Department of Mental Health Nursing",
     category: "Nursing Department",
     description: "The Department of Mental Health Nursing specializes in preparing nurses to promote mental health, prevent illness, and rehabilitate individuals with mental health issues across the lifespan. It focuses on training in psychiatric history collection, mental status exams, therapeutic communication, and crisis intervention.",
@@ -806,7 +864,7 @@ const allDepartments = {
     icon: "🧠",
   },
 
-  "Department of Child Health Nursing": {
+  "child-health": {
     name: "Department of Child Health Nursing",
     category: "Nursing Department",
     description: "The Department of Child Health Nursing is dedicated to promoting the health and well-being of infants, children, and adolescents. It prepares nurses to provide comprehensive, family-centered care to children in both hospital and community settings.",
@@ -845,7 +903,7 @@ const allDepartments = {
     icon: "👶",
   },
 
-  "Department of Community Health Nursing": {
+  "community": {
     name: "Department of Community Health Nursing",
     category: "Nursing Department",
     description: "The Department of Community Health Nursing focuses on improving the health of individuals, families, and communities through preventive, promotive, and rehabilitative care. It prepares nurses to work beyond hospital settings and serve people in their own environments.",
@@ -907,31 +965,36 @@ const allDepartments = {
 };
 
 // Export GenericDepartment component that uses the department data
-export function GenericDepartment({ deptName, category }) {
+export function GenericDepartment({ slug, category }) {
   const [department, setDepartment] = useState(null);
+  const [sliders, setSliders] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchDepartment = async () => {
       setLoading(true);
       try {
-        const response = await axiosInstance.get(`/departments/${deptName}`);
+        const response = await axiosInstance.get(`/departments/${slug}`);
         if (response.data) {
           setDepartment(response.data);
+          try {
+            const sRes = await axiosInstance.get(`/sliders?department=${response.data._id}`);
+            setSliders(sRes.data);
+          } catch (e) { console.error("Sliders load error", e); }
         } else {
           // Fallback to static data if not in DB
-          setDepartment(allDepartments[deptName] || allDepartments["Department of Fundamentals Of Nursing"]);
+          setDepartment(allDepartments[slug] || Object.values(allDepartments)[0]);
         }
       } catch (error) {
         console.error("Error fetching department:", error);
         // Fallback to static data on error
-        setDepartment(allDepartments[deptName] || allDepartments["Department of Fundamentals Of Nursing"]);
+        setDepartment(allDepartments[slug] || Object.values(allDepartments)[0]);
       } finally {
         setLoading(false);
       }
     };
     fetchDepartment();
-  }, [deptName]);
+  }, [slug]);
 
   if (loading) {
     return (
@@ -949,30 +1012,30 @@ export function GenericDepartment({ deptName, category }) {
     finalDept.category = category;
   }
   
-  return <DepartmentPage department={finalDept} />;
+  return <DepartmentPage department={finalDept} sliders={sliders} />;
 }
 
 // Also export individual department components for backward compatibility
 export function AnatomyDepartment() {
-  return <GenericDepartment deptName="Department of Fundamentals Of Nursing" />;
+  return <GenericDepartment slug="fundamentals" />;
 }
 
 export function PhysiologyDepartment() {
-  return <GenericDepartment deptName="Department of Medical Surgical Nursing" />;
+  return <GenericDepartment slug="medical-surgical" />;
 }
 
 export function BiochemistryDepartment() {
-  return <GenericDepartment deptName="Department of Obstetric and Gynaecological Nursing" />;
+  return <GenericDepartment slug="obstetric" />;
 }
 
 export function PharmacologyDepartment() {
-  return <GenericDepartment deptName="Department of Mental Health Nursing" />;
+  return <GenericDepartment slug="mental-health" />;
 }
 
 export function MicrobiologyDepartment() {
-  return <GenericDepartment deptName="Department of Child Health Nursing" />;
+  return <GenericDepartment slug="child-health" />;
 }
 
 export function MedicineDepartment() {
-  return <GenericDepartment deptName="Department of Community Health Nursing" />;
+  return <GenericDepartment slug="community" />;
 }

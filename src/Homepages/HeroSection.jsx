@@ -36,11 +36,10 @@ const HeroSection = ({ departmentName }) => {
           const depts = deptsRes.data;
           
           const matchedDept = depts.find(d => {
-            const slug = d.name.toLowerCase()
-              .replace(/\s+/g, "-")
-              .replace(/[()&]/g, "")
-              .replace(/,/g, "");
-            return slug === departmentName;
+            if (d.slug) return d.slug === departmentName;
+            // Fallback to legacy slug generation if slug field is missing
+            const legacySlug = d.name.toLowerCase().replace(/\s+/g, "-");
+            return legacySlug === departmentName;
           });
 
           if (matchedDept) {

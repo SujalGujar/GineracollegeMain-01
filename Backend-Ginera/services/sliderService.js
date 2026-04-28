@@ -1,11 +1,15 @@
 const Slider = require('../models/Slider');
 
 exports.getAllSliders = async () => {
+  return await Slider.find().populate('department').sort({ createdAt: -1 });
+};
+
+exports.getHomepageSliders = async () => {
   return await Slider.find({ department: null }).sort({ createdAt: -1 });
 };
 
 exports.getSlidersByDepartment = async (departmentId) => {
-  return await Slider.find({ department: departmentId }).sort({ createdAt: -1 });
+  return await Slider.find({ department: departmentId }).populate('department').sort({ createdAt: -1 });
 };
 
 exports.createSliders = async (sliderDataArray) => {

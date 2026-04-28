@@ -1,163 +1,1280 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { 
-  LayoutDashboard, 
-  Image as ImageIcon, 
-  BookOpen, 
-  Users, 
-  Settings, 
-  LogOut, 
-  Plus, 
-  Trash2, 
-  Edit3, 
-  ChevronRight,
-  Upload,
-  FileText,
-  X,
-  Menu,
-  Save,
-  CheckCircle2,
-  AlertCircle,
-  MoreVertical,
-  Layers,
-  Info,
-  ArrowRight,
-  Building2,
-  Zap
+import {
+  LayoutDashboard, Image as ImageIcon, BookOpen, Users, Settings,
+  LogOut, Plus, Trash2, Edit3, ChevronRight, Upload, FileText,
+  X, Menu, Save, CheckCircle2, AlertCircle, Layers, Info,
+  ArrowLeft, Building2, Zap, ChevronDown, ChevronUp, Eye
 } from "lucide-react";
 import axiosInstance from "../api/axiosInstance";
 
+/* ─── Design Tokens ─────────────────────────────────────── */
+const C = {
+  brand:    "#6B3F1D",
+  accent:   "#E07B39",
+  accentSoft: "#FDF0E6",
+  surface:  "#FFFFFF",
+  bg:       "#F4F1EE",
+  border:   "#E8E0D8",
+  text:     "#1A1208",
+  muted:    "#8A7A6A",
+  danger:   "#DC2626",
+  dangerSoft: "#FEF2F2",
+  success:  "#16A34A",
+  successSoft: "#F0FDF4",
+};
+
+/* ─── Tiny helpers ───────────────────────────────────────── */
+const imgUrl = (url) =>
+  !url ? "/placeholder.png"
+       : url.startsWith("http") ? url
+       : `http://localhost:8080${url}`;
+
+const Pill = ({ children, color = C.accent }) => (
+  <span style={{ background: color + "20", color }}
+        className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md">
+    {children}
+  </span>
+);
+
+const IconBtn = ({ onClick, danger, children, className = "" }) => (
+  <button onClick={onClick}
+    className={`p-2 rounded-lg transition-all hover:scale-105 active:scale-95 ${
+      danger
+        ? "bg-red-50 text-red-500 hover:bg-red-100"
+        : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+    } ${className}`}>
+    {children}
+  </button>
+);
+
+const Toast = ({ note }) => (
+  <AnimatePresence>
+    {note && (
+      <motion.div
+        initial={{ opacity: 0, y: -24 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -24 }}
+        className="fixed top-4 left-1/2 -translate-x-1/2 z-[200] flex items-center gap-3 px-5 py-3 rounded-2xl shadow-2xl border text-sm font-semibold"
+        style={{
+          background: note.type === "error" ? C.dangerSoft : C.successSoft,
+          borderColor: note.type === "error" ? "#FCA5A5" : "#86EFAC",
+          color: note.type === "error" ? C.danger : C.success,
+        }}>
+        {note.type === "error" ? <AlertCircle size={18}/> : <CheckCircle2 size={18}/>}
+        {note.message}
+      </motion.div>
+    )}
+  </AnimatePresence>
+);
+
+const Field = ({ label, children }) => (
+  <div className="space-y-1.5">
+    <label className="block text-xs font-bold uppercase tracking-wider" style={{ color: C.muted }}>{label}</label>
+    {children}
+  </div>
+);
+
+const inputCls = "w-full px-4 py-2.5 rounded-xl border text-sm outline-none transition-all focus:ring-2";
+const inputStyle = { borderColor: C.border, "--tw-ring-color": C.accent + "40" };
+
+const Modal = ({ show, onClose, title, subtitle, children }) => (
+  <AnimatePresence>
+    {show && (
+      <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4">
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+          onClick={onClose} className="absolute inset-0 bg-black/50 backdrop-blur-sm"/>
+        <motion.div
+          initial={{ opacity: 0, y: 60 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 60 }}
+          className="relative w-full sm:max-w-2xl max-h-[92dvh] flex flex-col rounded-t-3xl sm:rounded-3xl overflow-hidden shadow-2xl"
+          style={{ background: C.surface }}>
+          <div className="flex items-start justify-between p-6 border-b shrink-0" style={{ borderColor: C.border, background: C.bg }}>
+            <div>
+              <h3 className="text-xl font-bold" style={{ color: C.text }}>{title}</h3>
+              {subtitle && <p className="text-sm mt-0.5" style={{ color: C.muted }}>{subtitle}</p>}
+            </div>
+            <button onClick={onClose}
+              className="p-2 rounded-full border transition hover:bg-gray-100 shrink-0 ml-4"
+              style={{ borderColor: C.border }}>
+              <X size={18} style={{ color: C.muted }}/>
+            </button>
+          </div>
+          <div className="overflow-y-auto flex-1 p-6 space-y-5">
+            {children}
+          </div>
+        </motion.div>
+      </div>
+    )}
+  </AnimatePresence>
+);
+
+// ── MODAL FORM COMPONENTS ───────────────────────────────
+
+const ProgramForm = ({ editItem, programForm, setProgramForm, closeModal, fetchData, notify }) => (
+  <form onSubmit={async e => { 
+    e.preventDefault(); 
+    if (!editItem && !programForm.image) {
+      return notify("Please select a cover image", "error");
+    }
+    const fd=new FormData(); 
+    Object.entries(programForm).forEach(([k,v]) => { 
+      if(k==="courses") fd.append(k,JSON.stringify(typeof v === 'string' ? v.split(",").map(c=>c.trim()).filter(Boolean) : v)); 
+      else if(k==="image"&&v instanceof File) fd.append("image",v); 
+      else if(k!=="image" && k!=="courses") fd.append(k,v||""); 
+    }); 
+    const url=editItem?`/programs/${editItem._id}`:"/programs"; 
+    try{
+      if(editItem) await axiosInstance.put(url,fd); 
+      else await axiosInstance.post(url,fd); 
+      notify(editItem?"Updated":"Created"); closeModal(); fetchData();
+    } catch { notify("Failed","error"); }
+  }} className="space-y-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <Field label="Program Title"><input required value={programForm.title} onChange={e=>setProgramForm({...programForm,title:e.target.value})} className={inputCls} style={inputStyle} placeholder="e.g. B.Sc. Nursing"/></Field>
+      <Field label="Category">
+        <select value={programForm.category} onChange={e=>setProgramForm({...programForm,category:e.target.value})} className={inputCls} style={inputStyle}>
+          <option>Undergraduate</option><option>Postgraduate</option><option>Diploma</option>
+        </select>
+      </Field>
+    </div>
+    <Field label="Description"><textarea required rows={3} value={programForm.description} onChange={e=>setProgramForm({...programForm,description:e.target.value})} className={`${inputCls} resize-none`} style={inputStyle}/></Field>
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <Field label="Duration"><input value={programForm.duration} onChange={e=>setProgramForm({...programForm,duration:e.target.value})} className={inputCls} style={inputStyle} placeholder="e.g. 4 Years"/></Field>
+      <Field label="Cover Image">
+        <label className="flex items-center gap-2 px-4 py-2.5 rounded-xl border cursor-pointer hover:bg-gray-50 transition text-sm" style={{ borderColor: C.border, color: C.muted }}>
+          <ImageIcon size={16}/>{programForm.image && typeof programForm.image === 'object' ? programForm.image.name : "Select image"}
+          <input type="file" className="hidden" onChange={e=>setProgramForm({...programForm,image:e.target.files[0]})} />
+        </label>
+      </Field>
+    </div>
+    <Field label="Courses (comma separated)"><textarea rows={2} value={programForm.courses} onChange={e=>setProgramForm({...programForm,courses:e.target.value})} className={`${inputCls} resize-none`} style={inputStyle}/></Field>
+    <div className="flex gap-3 pt-2">
+      <button type="button" onClick={closeModal} className="flex-1 py-3 rounded-xl border font-bold text-sm transition hover:bg-gray-50" style={{ borderColor: C.border, color: C.muted }}>Cancel</button>
+      <button type="submit" className="flex-[2] py-3 rounded-xl text-sm font-bold text-white flex items-center justify-center gap-2" style={{ background: C.brand }}><Save size={16}/>{editItem?"Save Changes":"Create"}</button>
+    </div>
+  </form>
+);
+
+const TestimonialForm = ({ editItem, testimonialForm, setTestimonialForm, closeModal, fetchData, notify }) => (
+  <form onSubmit={async e => { 
+    e.preventDefault(); 
+    if (!editItem && !testimonialForm.image) {
+      return notify("Please select a photo", "error");
+    }
+    const fd=new FormData(); 
+    Object.entries(testimonialForm).forEach(([k,v]) => { 
+      if(k==="image"&&v instanceof File) fd.append("image",v); 
+      else if(k!=="image") fd.append(k,v); 
+    }); 
+    const url=editItem?`/testimonials/${editItem._id}`:"/testimonials"; 
+    try{
+      if(editItem) await axiosInstance.put(url,fd); 
+      else await axiosInstance.post(url,fd); 
+      notify(editItem?"Updated":"Created"); closeModal(); fetchData();
+    } catch { notify("Failed","error"); }
+  }} className="space-y-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <Field label="Student Name"><input required value={testimonialForm.name} onChange={e=>setTestimonialForm({...testimonialForm,name:e.target.value})} className={inputCls} style={inputStyle}/></Field>
+      <Field label="Role / Batch"><input required value={testimonialForm.role} onChange={e=>setTestimonialForm({...testimonialForm,role:e.target.value})} className={inputCls} style={inputStyle}/></Field>
+    </div>
+    <Field label="Testimonial"><textarea required rows={4} value={testimonialForm.content} onChange={e=>setTestimonialForm({...testimonialForm,content:e.target.value})} className={`${inputCls} resize-none`} style={inputStyle}/></Field>
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <Field label="Rating (1–5)"><input type="number" min={1} max={5} value={testimonialForm.rating} onChange={e=>setTestimonialForm({...testimonialForm,rating:parseInt(e.target.value)})} className={inputCls} style={inputStyle}/></Field>
+      <Field label="Photo">
+        <label className="flex items-center gap-2 px-4 py-2.5 rounded-xl border cursor-pointer hover:bg-gray-50 text-sm transition" style={{ borderColor: C.border, color: C.muted }}>
+          <ImageIcon size={16}/>{testimonialForm.image && typeof testimonialForm.image === 'object' ? testimonialForm.image.name : "Select photo"}
+          <input type="file" className="hidden" onChange={e=>setTestimonialForm({...testimonialForm,image:e.target.files[0]})} />
+        </label>
+      </Field>
+    </div>
+    <div className="flex gap-3 pt-2">
+      <button type="button" onClick={closeModal} className="flex-1 py-3 rounded-xl border font-bold text-sm hover:bg-gray-50 transition" style={{ borderColor: C.border, color: C.muted }}>Cancel</button>
+      <button type="submit" className="flex-[2] py-3 rounded-xl text-sm font-bold text-white flex items-center justify-center gap-2" style={{ background: C.brand }}><Save size={16}/>{editItem?"Save Changes":"Create"}</button>
+    </div>
+  </form>
+);
+
+const MilestoneForm = ({ editItem, milestoneForm, setMilestoneForm, closeModal, fetchData, notify }) => (
+  <form onSubmit={async e => { 
+    e.preventDefault(); 
+    const url=editItem?`/about/milestones/${editItem._id}`:"/about/milestones"; 
+    try{
+      if(editItem) await axiosInstance.put(url,milestoneForm); 
+      else await axiosInstance.post(url,milestoneForm); 
+      notify("Saved"); closeModal(); fetchData();
+    } catch { notify("Failed","error"); }
+  }} className="space-y-4">
+    <div className="grid grid-cols-2 gap-4">
+      <Field label="Year"><input required value={milestoneForm.year} onChange={e=>setMilestoneForm({...milestoneForm,year:e.target.value})} placeholder="1963" className={inputCls} style={inputStyle}/></Field>
+      <Field label="Icon (emoji)"><input value={milestoneForm.icon} onChange={e=>setMilestoneForm({...milestoneForm,icon:e.target.value})} className={inputCls} style={inputStyle}/></Field>
+    </div>
+    <Field label="Event Title"><input required value={milestoneForm.event} onChange={e=>setMilestoneForm({...milestoneForm,event:e.target.value})} className={inputCls} style={inputStyle}/></Field>
+    <Field label="Accent Color">
+      <div className="flex gap-3 items-center">
+        <input type="color" value={milestoneForm.color} onChange={e=>setMilestoneForm({...milestoneForm,color:e.target.value})} className="w-12 h-10 rounded-lg border cursor-pointer" style={{ borderColor: C.border }}/>
+        <input value={milestoneForm.color} onChange={e=>setMilestoneForm({...milestoneForm,color:e.target.value})} className={`${inputCls} flex-1`} style={inputStyle}/>
+      </div>
+    </Field>
+    <Field label="Description"><textarea required rows={3} value={milestoneForm.description} onChange={e=>setMilestoneForm({...milestoneForm,description:e.target.value})} className={`${inputCls} resize-none`} style={inputStyle}/></Field>
+    <div className="flex gap-3 pt-2">
+      <button type="button" onClick={closeModal} className="flex-1 py-3 rounded-xl border font-bold text-sm hover:bg-gray-50" style={{ borderColor: C.border, color: C.muted }}>Cancel</button>
+      <button type="submit" className="flex-[2] py-3 rounded-xl text-sm font-bold text-white" style={{ background: C.brand }}>{editItem?"Save":"Add"}</button>
+    </div>
+  </form>
+);
+
+const VisionMissionForm = ({ editItem, vmForm, setVmForm, closeModal, fetchData, notify }) => (
+  <form onSubmit={async e => { 
+    e.preventDefault(); 
+    const url=editItem?`/about/vision-mission/${editItem._id}`:"/about/vision-mission"; 
+    try{
+      if(editItem) await axiosInstance.put(url,vmForm); 
+      else await axiosInstance.post(url,vmForm); 
+      notify("Saved"); closeModal(); fetchData();
+    } catch { notify("Failed","error"); }
+  }} className="space-y-4">
+    <Field label="Type">
+      <select value={vmForm.type} onChange={e=>setVmForm({...vmForm,type:e.target.value})} className={inputCls} style={inputStyle}>
+        <option value="vision">Vision</option><option value="mission">Mission</option>
+      </select>
+    </Field>
+    <Field label="Content"><textarea required rows={4} value={vmForm.content} onChange={e=>setVmForm({...vmForm,content:e.target.value})} className={`${inputCls} resize-none`} style={inputStyle}/></Field>
+    <div className="flex gap-3 pt-2">
+      <button type="button" onClick={closeModal} className="flex-1 py-3 rounded-xl border font-bold text-sm hover:bg-gray-50" style={{ borderColor: C.border, color: C.muted }}>Cancel</button>
+      <button type="submit" className="flex-[2] py-3 rounded-xl text-sm font-bold text-white" style={{ background: C.brand }}>{editItem?"Update":"Add"}</button>
+    </div>
+  </form>
+);
+
+const CoreValueForm = ({ editItem, cvForm, setCvForm, closeModal, fetchData, notify }) => (
+  <form onSubmit={async e => { 
+    e.preventDefault(); 
+    const url=editItem?`/about/core-values/${editItem._id}`:"/about/core-values"; 
+    try{
+      if(editItem) await axiosInstance.put(url,cvForm); 
+      else await axiosInstance.post(url,cvForm); 
+      notify("Saved"); closeModal(); fetchData();
+    } catch { notify("Failed","error"); }
+  }} className="space-y-4">
+    <div className="grid grid-cols-2 gap-4">
+      <Field label="Title"><input required value={cvForm.title} onChange={e=>setCvForm({...cvForm,title:e.target.value})} className={inputCls} style={inputStyle}/></Field>
+      <Field label="Icon (emoji)"><input value={cvForm.icon} onChange={e=>setCvForm({...cvForm,icon:e.target.value})} className={inputCls} style={inputStyle}/></Field>
+    </div>
+    <Field label="Description"><textarea required rows={3} value={cvForm.description} onChange={e=>setCvForm({...cvForm,description:e.target.value})} className={`${inputCls} resize-none`} style={inputStyle}/></Field>
+    <Field label="Gradient (Tailwind classes)"><input value={cvForm.color} onChange={e=>setCvForm({...cvForm,color:e.target.value})} placeholder="from-amber-500 to-orange-500" className={inputCls} style={inputStyle}/></Field>
+    <div className="flex gap-3 pt-2">
+      <button type="button" onClick={closeModal} className="flex-1 py-3 rounded-xl border font-bold text-sm hover:bg-gray-50" style={{ borderColor: C.border, color: C.muted }}>Cancel</button>
+      <button type="submit" className="flex-[2] py-3 rounded-xl text-sm font-bold text-white" style={{ background: C.brand }}>{editItem?"Update":"Add"}</button>
+    </div>
+  </form>
+);
+
+const CourseForm = ({ editItem, courseForm, setCourseForm, closeModal, fetchData, notify }) => (
+  <form onSubmit={async e => { 
+    e.preventDefault(); 
+    const url=editItem?`/courses/${editItem._id}`:"/courses"; 
+    try{
+      if(editItem) await axiosInstance.put(url,courseForm); 
+      else await axiosInstance.post(url,courseForm); 
+      notify("Saved"); closeModal(); fetchData();
+    } catch { notify("Failed","error"); }
+  }} className="space-y-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <Field label="Name"><input required value={courseForm.name} onChange={e=>setCourseForm({...courseForm,name:e.target.value})} className={inputCls} style={inputStyle}/></Field>
+      <Field label="Category">
+        <select value={courseForm.category} onChange={e=>setCourseForm({...courseForm,category:e.target.value})} className={inputCls} style={inputStyle}>
+          <option>Undergraduate Programs</option><option>Postgraduate Programs</option><option>Diploma Programs</option>
+        </select>
+      </Field>
+      <Field label="Duration"><input value={courseForm.duration} onChange={e=>setCourseForm({...courseForm,duration:e.target.value})} className={inputCls} style={inputStyle}/></Field>
+      <Field label="Seats"><input value={courseForm.seats} onChange={e=>setCourseForm({...courseForm,seats:e.target.value})} className={inputCls} style={inputStyle}/></Field>
+      <Field label="Icon (emoji)"><input value={courseForm.icon} onChange={e=>setCourseForm({...courseForm,icon:e.target.value})} className={inputCls} style={inputStyle}/></Field>
+    </div>
+    <Field label="Eligibility"><textarea rows={2} value={courseForm.eligibility} onChange={e=>setCourseForm({...courseForm,eligibility:e.target.value})} className={`${inputCls} resize-none`} style={inputStyle}/></Field>
+    <Field label="Highlights (comma separated)"><textarea rows={2} value={courseForm.highlights} onChange={e=>setCourseForm({...courseForm,highlights:e.target.value})} className={`${inputCls} resize-none`} style={inputStyle}/></Field>
+    <div className="flex gap-3 pt-2">
+      <button type="button" onClick={closeModal} className="flex-1 py-3 rounded-xl border font-bold text-sm hover:bg-gray-50" style={{ borderColor: C.border, color: C.muted }}>Cancel</button>
+      <button type="submit" className="flex-[2] py-3 rounded-xl text-sm font-bold text-white flex items-center justify-center gap-2" style={{ background: C.brand }}><Save size={16}/>{editItem?"Save Changes":"Create"}</button>
+    </div>
+  </form>
+);
+
+const StepForm = ({ editItem, stepForm, setStepForm, closeModal, fetchData, notify }) => (
+  <form onSubmit={async e => { 
+    e.preventDefault(); 
+    const url=editItem?`/admission-steps/${editItem._id}`:"/admission-steps"; 
+    try{
+      if(editItem) await axiosInstance.put(url,stepForm); 
+      else await axiosInstance.post(url,stepForm); 
+      notify("Saved"); closeModal(); fetchData();
+    } catch { notify("Failed","error"); }
+  }} className="space-y-4">
+    <div className="grid grid-cols-2 gap-4">
+      <Field label="Step #"><input type="number" required value={stepForm.step} onChange={e=>setStepForm({...stepForm,step:parseInt(e.target.value)})} className={inputCls} style={inputStyle}/></Field>
+      <Field label="Icon">
+        <select value={stepForm.icon} onChange={e=>setStepForm({...stepForm,icon:e.target.value})} className={inputCls} style={inputStyle}>
+          {["Calendar","Users","CheckCircle","GraduationCap","FileText","Download"].map(i=><option key={i}>{i}</option>)}
+        </select>
+      </Field>
+    </div>
+    <Field label="Title"><input required value={stepForm.title} onChange={e=>setStepForm({...stepForm,title:e.target.value})} className={inputCls} style={inputStyle}/></Field>
+    <Field label="Description"><textarea required rows={3} value={stepForm.description} onChange={e=>setStepForm({...stepForm,description:e.target.value})} className={`${inputCls} resize-none`} style={inputStyle}/></Field>
+    <div className="flex gap-3 pt-2">
+      <button type="button" onClick={closeModal} className="flex-1 py-3 rounded-xl border font-bold text-sm hover:bg-gray-50" style={{ borderColor: C.border, color: C.muted }}>Cancel</button>
+      <button type="submit" className="flex-[2] py-3 rounded-xl text-sm font-bold text-white" style={{ background: C.brand }}>{editItem?"Save":"Add"} Step</button>
+    </div>
+  </form>
+);
+
+const RuleForm = ({ editItem, ruleForm, setRuleForm, closeModal, fetchData, notify }) => (
+  <form onSubmit={async e => { 
+    e.preventDefault(); 
+    const url=editItem?`/admission-rules/${editItem._id}`:"/admission-rules"; 
+    try{
+      if(editItem) await axiosInstance.put(url,ruleForm); 
+      else await axiosInstance.post(url,ruleForm); 
+      notify("Saved"); closeModal(); fetchData();
+    } catch { notify("Failed","error"); }
+  }} className="space-y-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <Field label="Category">
+        <select value={ruleForm.category} onChange={e=>setRuleForm({...ruleForm,category:e.target.value})} className={inputCls} style={inputStyle}>
+          <option>UnderGraduated Programs</option><option>PostGraduated Programs</option><option>General Rules</option>
+        </select>
+      </Field>
+      <Field label="Icon">
+        <select value={ruleForm.icon} onChange={e=>setRuleForm({...ruleForm,icon:e.target.value})} className={inputCls} style={inputStyle}>
+          {["CheckCircle","Calendar","Stethoscope","GraduationCap","Info"].map(i=><option key={i}>{i}</option>)}
+        </select>
+      </Field>
+    </div>
+    <Field label="Title"><input required value={ruleForm.title} onChange={e=>setRuleForm({...ruleForm,title:e.target.value})} className={inputCls} style={inputStyle}/></Field>
+    <Field label="Description"><textarea required rows={4} value={ruleForm.description} onChange={e=>setRuleForm({...ruleForm,description:e.target.value})} className={`${inputCls} resize-none`} style={inputStyle}/></Field>
+    <div className="flex gap-3 pt-2">
+      <button type="button" onClick={closeModal} className="flex-1 py-3 rounded-xl border font-bold text-sm hover:bg-gray-50" style={{ borderColor: C.border, color: C.muted }}>Cancel</button>
+      <button type="submit" className="flex-[2] py-3 rounded-xl text-sm font-bold text-white" style={{ background: C.brand }}>{editItem?"Save":"Add"} Rule</button>
+    </div>
+  </form>
+);
+
+const BondForm = ({ editItem, bondForm, setBondForm, closeModal, fetchData, notify }) => (
+  <form onSubmit={async e => { 
+    e.preventDefault(); 
+    const url=editItem?`/bonds/${editItem._id}`:"/bonds"; 
+    try{
+      if(editItem) await axiosInstance.put(url,bondForm); 
+      else await axiosInstance.post(url,bondForm); 
+      notify("Saved"); closeModal(); fetchData();
+    } catch { notify("Failed","error"); }
+  }} className="space-y-4">
+    <Field label="Title"><input required value={bondForm.title} onChange={e=>setBondForm({...bondForm,title:e.target.value})} className={inputCls} style={inputStyle}/></Field>
+    <Field label="Content"><textarea required rows={4} value={bondForm.content} onChange={e=>setBondForm({...bondForm,content:e.target.value})} className={`${inputCls} resize-none`} style={inputStyle}/></Field>
+    <Field label="Display Order"><input type="number" value={bondForm.order} onChange={e=>setBondForm({...bondForm,order:parseInt(e.target.value)})} className={inputCls} style={inputStyle}/></Field>
+    <div className="flex gap-3 pt-2">
+      <button type="button" onClick={closeModal} className="flex-1 py-3 rounded-xl border font-bold text-sm hover:bg-gray-50" style={{ borderColor: C.border, color: C.muted }}>Cancel</button>
+      <button type="submit" className="flex-[2] py-3 rounded-xl text-sm font-bold text-white" style={{ background: C.brand }}>{editItem?"Update":"Add"}</button>
+    </div>
+  </form>
+);
+
+const GuidelineForm = ({ editItem, guidelineForm, setGuidelineForm, closeModal, fetchData, notify }) => (
+  <form onSubmit={async e => { 
+    e.preventDefault(); 
+    const data={...guidelineForm,points:typeof guidelineForm.points==="string"?guidelineForm.points.split("\n").filter(p=>p.trim()):guidelineForm.points}; 
+    const url=editItem?`/guidelines/${editItem._id}`:"/guidelines"; 
+    try{
+      if(editItem) await axiosInstance.put(url,data); 
+      else await axiosInstance.post(url,data); 
+      notify("Saved"); closeModal(); fetchData();
+    } catch { notify("Failed","error"); }
+  }} className="space-y-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <Field label="Category">
+        <select value={guidelineForm.category} onChange={e=>setGuidelineForm({...guidelineForm,category:e.target.value})} className={inputCls} style={inputStyle}>
+          {["General Guidelines","Code of Conduct","Academic Requirements","For Parents/Guardians","Contact Information"].map(c=><option key={c}>{c}</option>)}
+        </select>
+      </Field>
+      <Field label="Sub-Category / Title"><input required value={guidelineForm.subCategory} onChange={e=>setGuidelineForm({...guidelineForm,subCategory:e.target.value})} className={inputCls} style={inputStyle}/></Field>
+    </div>
+    <Field label="Points (one per line)"><textarea required rows={6} value={guidelineForm.points} onChange={e=>setGuidelineForm({...guidelineForm,points:e.target.value})} className={`${inputCls} resize-none`} style={inputStyle}/></Field>
+    <div className="flex gap-3 pt-2">
+      <button type="button" onClick={closeModal} className="flex-1 py-3 rounded-xl border font-bold text-sm hover:bg-gray-50" style={{ borderColor: C.border, color: C.muted }}>Cancel</button>
+      <button type="submit" className="flex-[2] py-3 rounded-xl text-sm font-bold text-white" style={{ background: C.brand }}>{editItem?"Update":"Add"}</button>
+    </div>
+  </form>
+);
+
+const DeptForm = ({ editItem, deptForm, setDeptForm, closeModal, fetchData, notify }) => (
+  <form onSubmit={async e => { 
+    e.preventDefault(); 
+    const url=editItem?`/departments/${editItem._id}`:"/departments"; 
+    try{
+      if(editItem) await axiosInstance.put(url,deptForm); 
+      else await axiosInstance.post("/departments",deptForm); 
+      notify("Saved"); closeModal(); fetchData();
+    } catch { notify("Failed","error"); }
+  }} className="space-y-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <Field label="Name"><input required value={deptForm.name} onChange={e=>setDeptForm({...deptForm,name:e.target.value})} className={inputCls} style={inputStyle}/></Field>
+      <Field label="URL Slug (fixed ID)"><input required value={deptForm.slug} onChange={e=>setDeptForm({...deptForm,slug:e.target.value.toLowerCase().replace(/\s+/g,'-')})} className={inputCls} style={inputStyle} placeholder="e.g. fundamentals"/></Field>
+      <Field label="Category"><input required value={deptForm.category} onChange={e=>setDeptForm({...deptForm,category:e.target.value})} className={inputCls} style={inputStyle}/></Field>
+      <Field label="Icon (emoji)"><input value={deptForm.icon} onChange={e=>setDeptForm({...deptForm,icon:e.target.value})} className={inputCls} style={inputStyle}/></Field>
+    </div>
+    <Field label="Short Description"><input required value={deptForm.description} onChange={e=>setDeptForm({...deptForm,description:e.target.value})} className={inputCls} style={inputStyle}/></Field>
+    <div className="flex gap-3 pt-2">
+      <button type="button" onClick={closeModal} className="flex-1 py-3 rounded-xl border font-bold text-sm hover:bg-gray-50" style={{ borderColor: C.border, color: C.muted }}>Cancel</button>
+      <button type="submit" className="flex-[2] py-3 rounded-xl text-sm font-bold text-white" style={{ background: C.brand }}>{editItem?"Update":"Create"}</button>
+    </div>
+  </form>
+);
+
+
+const SubTabs = ({ tabs, active, onChange }) => (
+  <div className="flex gap-1.5 p-1.5 rounded-2xl overflow-x-auto scrollbar-hide" style={{ background: C.bg, border: `1px solid ${C.border}` }}>
+    {tabs.map(t => (
+      <button key={t} onClick={() => onChange(t)}
+        className="shrink-0 px-4 py-2 rounded-xl text-sm font-bold transition-all whitespace-nowrap"
+        style={{
+          background: active === t ? C.surface : "transparent",
+          color: active === t ? C.text : C.muted,
+          boxShadow: active === t ? "0 1px 6px rgba(0,0,0,0.08)" : "none",
+        }}>
+        {t}
+      </button>
+    ))}
+  </div>
+);
+
+const SectionHeader = ({ icon: Icon, title, subtitle, action }) => (
+  <div className="flex flex-col sm:flex-row sm:items-center gap-4 p-5 rounded-2xl"
+       style={{ background: C.surface, border: `1px solid ${C.border}` }}>
+    <div className="flex items-center gap-3 flex-1 min-w-0">
+      <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+           style={{ background: C.accentSoft }}>
+        <Icon size={20} style={{ color: C.accent }}/>
+      </div>
+      <div className="min-w-0">
+        <h3 className="font-bold text-base truncate" style={{ color: C.text }}>{title}</h3>
+        {subtitle && <p className="text-xs mt-0.5 truncate" style={{ color: C.muted }}>{subtitle}</p>}
+      </div>
+    </div>
+    {action}
+  </div>
+);
+
+const AddBtn = ({ onClick, label = "Add New" }) => (
+  <button onClick={onClick}
+    className="shrink-0 flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold text-white transition-all shadow hover:opacity-90 active:scale-95"
+    style={{ background: C.brand }}>
+    <Plus size={16}/>{label}
+  </button>
+);
+
+const RowItem = ({ icon, badge, title, sub, onEdit, onDelete, left }) => (
+  <div className="flex items-center gap-4 p-4 rounded-2xl group transition-all hover:shadow-sm"
+       style={{ background: C.surface, border: `1px solid ${C.border}` }}>
+    {left || (
+      <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl shrink-0"
+           style={{ background: C.accentSoft }}>
+        {icon || "📌"}
+      </div>
+    )}
+    <div className="flex-1 min-w-0">
+      {badge && <div className="mb-0.5"><Pill>{badge}</Pill></div>}
+      <p className="font-bold text-sm truncate" style={{ color: C.text }}>{title}</p>
+      {sub && <p className="text-xs truncate mt-0.5" style={{ color: C.muted }}>{sub}</p>}
+    </div>
+    <div className="flex gap-1.5 opacity-0 group-hover:opacity-100 sm:opacity-100 transition-opacity shrink-0">
+      {onEdit && <IconBtn onClick={onEdit}><Edit3 size={15}/></IconBtn>}
+      {onDelete && <IconBtn onClick={onDelete} danger><Trash2 size={15}/></IconBtn>}
+    </div>
+  </div>
+);
+
+const EmptyState = ({ icon: Icon, text }) => (
+  <div className="flex flex-col items-center justify-center py-20 rounded-3xl border-2 border-dashed shadow-inner" style={{ borderColor: C.border, background: C.surface }}>
+    <Icon size={48} style={{ color: C.muted }} className="mb-4 opacity-10"/>
+    <p className="text-sm font-bold tracking-tight" style={{ color: C.muted }}>{text}</p>
+  </div>
+);
+
+// ── SIDEBAR COMPONENTS ───────────────────────────────────
+
+const SidebarContent = ({ onClose, activeTab, setActiveTab, selectedDept, setSelectedDept, navItems, onLogout }) => (
+  <div className="flex flex-col h-full">
+    <div className="flex items-center gap-3 p-6 border-b border-white/10 shrink-0">
+      <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center shadow-inner">
+        <LayoutDashboard size={20} className="text-white"/>
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-white font-bold text-sm leading-tight truncate">Ginera Admin</p>
+        <p className="text-white/40 text-[10px] uppercase tracking-widest mt-0.5 font-medium">Dashboard Console</p>
+      </div>
+      {onClose && (
+        <button onClick={onClose} className="lg:hidden p-2 text-white/40 hover:text-white transition-colors">
+          <X size={20}/>
+        </button>
+      )}
+    </div>
+
+    <nav className="flex-1 overflow-y-auto py-6 px-4 space-y-1 custom-scrollbar scrollbar-hide">
+      {navItems.map(({ name, icon: Icon }) => {
+        const active = activeTab === name && !selectedDept;
+        return (
+          <button key={name}
+            onClick={() => { setActiveTab(name); setSelectedDept(null); if (onClose) onClose(); }}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all group"
+            style={{
+              background: active ? "rgba(255,255,255,0.12)" : "transparent",
+              color: active ? "#fff" : "rgba(255,255,255,0.55)",
+            }}>
+            <Icon size={18} className={`transition-transform ${active ? "scale-110" : "group-hover:scale-110"}`}/>
+            <span className="truncate">{name}</span>
+            {active && <ChevronRight size={14} className="ml-auto opacity-60"/>}
+          </button>
+        );
+      })}
+
+      {selectedDept && (
+        <div className="mt-8 pt-6 border-t border-white/5 px-2">
+          <p className="text-[10px] font-bold text-white/30 uppercase tracking-[0.2em] mb-3 px-2">Active Editor</p>
+          <div className="p-4 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md shadow-lg">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-2 h-2 rounded-full bg-amber-400 animate-pulse"/>
+              <p className="text-white text-xs font-bold truncate">{selectedDept.name}</p>
+            </div>
+            <button onClick={() => setSelectedDept(null)} className="w-full py-2.5 rounded-lg bg-white/10 text-[10px] font-bold text-white/70 hover:bg-white/20 transition-all border border-white/5 uppercase tracking-wider">
+              Exit Management
+            </button>
+          </div>
+        </div>
+      )}
+    </nav>
+
+    <div className="p-5 border-t border-white/10 shrink-0">
+      <button onClick={onLogout}
+        className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-bold text-red-300 hover:bg-red-500/20 transition-all active:scale-95">
+        <LogOut size={18}/> Sign Out
+      </button>
+    </div>
+  </div>
+);
+
+const Sidebar = ({ sidebarOpen, setSidebarOpen, ...props }) => (
+  <>
+    <aside className="hidden lg:flex flex-col w-80 shrink-0 h-full border-r border-black/10"
+           style={{ background: C.brand }}>
+      <SidebarContent onClose={null} {...props} />
+    </aside>
+
+    <AnimatePresence>
+      {sidebarOpen && (
+        <>
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            onClick={() => setSidebarOpen(false)}
+            className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm lg:hidden"/>
+          <motion.aside
+            initial={{ x: -340 }} animate={{ x: 0 }} exit={{ x: -340 }}
+            transition={{ type: "tween", duration: 0.3 }}
+            className="fixed inset-y-0 left-0 z-[110] w-80 flex flex-col lg:hidden shadow-2xl"
+            style={{ background: C.brand }}>
+            <SidebarContent onClose={() => setSidebarOpen(false)} {...props} />
+          </motion.aside>
+        </>
+      )}
+    </AnimatePresence>
+  </>
+);
+
+const Header = ({ setSidebarOpen, selectedDept, activeTab }) => (
+  <header className="h-14 lg:h-16 flex items-center px-4 lg:px-6 border-b shrink-0 z-10"
+          style={{ background: C.surface, borderColor: C.border }}>
+    <button onClick={() => setSidebarOpen(true)}
+      className="p-2 rounded-xl hover:bg-gray-100 lg:hidden mr-3 transition"
+      style={{ color: C.muted }}>
+      <Menu size={22}/>
+    </button>
+    <div className="min-w-0">
+      <h2 className="font-bold text-base lg:text-lg truncate" style={{ color: C.text }}>
+        {selectedDept ? selectedDept.name : activeTab}
+      </h2>
+      <p className="text-xs hidden sm:block" style={{ color: C.muted }}>
+        {selectedDept ? "Department management console" : `Manage ${activeTab.toLowerCase()} system content`}
+      </p>
+    </div>
+  </header>
+);
+
+// ── TAB COMPONENTS ───────────────────────────────────────
+
+const HomeTab = ({ selectedDeptForSlider, setSelectedDeptForSlider, departments, sliders, handleSliderUpload, updateSliderImage, del }) => (
+  <div className="space-y-6">
+    <div className="flex flex-col sm:flex-row gap-3 p-5 rounded-2xl shadow-sm" style={{ background: C.surface, border:`1px solid ${C.border}` }}>
+      <div className="flex-1">
+        <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1.5 ml-1">Target Section</label>
+        <select value={selectedDeptForSlider} onChange={e => setSelectedDeptForSlider(e.target.value)}
+          className="w-full px-4 py-2.5 rounded-xl border text-sm font-semibold outline-none transition-all focus:border-amber-500"
+          style={{ borderColor: C.border, background: C.bg, color: C.text }}>
+          <option value="null">Homepage Sliders</option>
+          {departments.map(d => <option key={d._id} value={d._id}>{d.name}</option>)}
+        </select>
+      </div>
+      <div className="flex items-end">
+        <label className="flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold text-white cursor-pointer transition-all hover:opacity-90 active:scale-95 shadow-md"
+               style={{ background: C.brand }}>
+          <Upload size={16}/> Upload Images
+          <input type="file" multiple className="hidden" onChange={handleSliderUpload}/>
+        </label>
+      </div>
+    </div>
+
+    {sliders.length === 0 ? (
+      <EmptyState icon={ImageIcon} text="No slider images yet. Upload images to populate the section."/>
+    ) : (
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5">
+        <AnimatePresence>
+          {sliders.filter(s => selectedDeptForSlider === "null" ? !s.department : s.department?._id === selectedDeptForSlider).map(s => (
+            <motion.div key={s._id} layout initial={{ opacity:0, scale:0.9 }} animate={{ opacity:1, scale:1 }} exit={{ opacity:0, scale:0.9 }}
+              className="group relative aspect-video rounded-2xl overflow-hidden border-2 shadow-sm"
+              style={{ borderColor: C.border }}>
+              <img src={imgUrl(s.imageUrl)} alt="" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"/>
+              <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2 backdrop-blur-[2px]">
+                <label className="flex items-center gap-2 px-4 py-2 bg-white rounded-xl text-xs font-bold cursor-pointer hover:bg-gray-50 text-gray-800 shadow-lg">
+                  <Edit3 size={14}/> Replace
+                  <input type="file" className="hidden" onChange={e => updateSliderImage(s._id, e.target.files[0])}/>
+                </label>
+                <button onClick={() => del(`/sliders/${s._id}`)}
+                  className="flex items-center gap-2 px-4 py-2 bg-red-500 text-white rounded-xl text-xs font-bold hover:bg-red-600 shadow-lg">
+                  <Trash2 size={14}/> Remove
+                </button>
+              </div>
+            </motion.div>
+          ))}
+        </AnimatePresence>
+      </div>
+    )}
+  </div>
+);
+
+const AcademicTab = ({ programs, academicContent, setAcademicContent, axiosInstance, notify, openModal, setProgramForm, del }) => (
+  <div className="space-y-6">
+    <SectionHeader icon={BookOpen} title="Academic Programs"
+      subtitle={`${programs.length} programs currently active`}
+      action={<AddBtn onClick={() => { setProgramForm({title:"",description:"",duration:"",category:"Undergraduate",courses:"",image:null}); openModal("program"); }} label="Add New Program"/>}/>
+
+    <div className="p-6 rounded-2xl space-y-4 shadow-sm" style={{ background: C.surface, border:`1px solid ${C.border}` }}>
+      <p className="text-sm font-bold uppercase tracking-widest" style={{ color: C.muted }}>Section Banner Content</p>
+      <input value={academicContent.title} onChange={e => setAcademicContent({...academicContent, title:e.target.value})}
+        placeholder="Section Display Title" className={inputCls} style={inputStyle}/>
+      <textarea value={academicContent.description1} onChange={e => setAcademicContent({...academicContent, description1:e.target.value})}
+        placeholder="Primary Description Paragraph" rows={3} className={`${inputCls} resize-none`} style={inputStyle}/>
+      <textarea value={academicContent.description2} onChange={e => setAcademicContent({...academicContent, description2:e.target.value})}
+        placeholder="Secondary Description Paragraph (Optional)" rows={2} className={`${inputCls} resize-none`} style={inputStyle}/>
+      <button onClick={async () => { try { await axiosInstance.put("/content/academic", academicContent); notify("Content Saved Successfully"); } catch { notify("Failed to save content","error"); }}}
+        className="px-6 py-2.5 rounded-xl text-sm font-bold text-white shadow-md hover:opacity-90" style={{ background: C.brand }}>
+        Update Content
+      </button>
+    </div>
+
+    <div className="grid grid-cols-1 gap-3">
+      {programs.map(p => (
+        <RowItem key={p._id}
+          left={<div className="w-16 h-12 rounded-xl overflow-hidden border-2 shrink-0 shadow-sm" style={{ borderColor: C.border }}>
+            <img src={imgUrl(p.imageUrl)} className="w-full h-full object-cover" alt=""/>
+          </div>}
+          badge={p.category} title={p.title} sub={p.duration}
+          onEdit={() => { setProgramForm({ title:p.title,description:p.description,duration:p.duration,category:p.category,courses:p.courses?.join(", ")||"",image:null }); openModal("program",p); }}
+          onDelete={() => del(`/programs/${p._id}`)}/>
+      ))}
+      {programs.length === 0 && <EmptyState icon={BookOpen} text="No programs registered yet"/>}
+    </div>
+  </div>
+);
+
+const TestimonialsTab = ({ testimonials, testimonialForm, setTestimonialForm, openModal, del }) => (
+  <div className="space-y-6">
+    <SectionHeader icon={Users} title="Student Testimonials" subtitle={`${testimonials.length} reviews published`}
+      action={<AddBtn onClick={() => { setTestimonialForm({name:"",role:"",content:"",rating:5,image:null}); openModal("testimonial"); }}/>}/>
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+      {testimonials.map(t => (
+        <motion.div key={t._id} initial={{ opacity:0, scale:0.95 }} animate={{ opacity:1, scale:1 }}
+          className="p-5 rounded-2xl group relative shadow-sm transition-all hover:shadow-md" style={{ background: C.surface, border:`1px solid ${C.border}` }}>
+          <div className="absolute top-4 right-4 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+            <IconBtn onClick={() => { setTestimonialForm({name:t.name,role:t.role,content:t.content,rating:t.rating,image:null}); openModal("testimonial",t); }}><Edit3 size={14}/></IconBtn>
+            <IconBtn danger onClick={() => del(`/testimonials/${t._id}`)}><Trash2 size={14}/></IconBtn>
+          </div>
+          <div className="flex items-center gap-4 mb-4">
+            <img src={imgUrl(t.imageUrl)} alt={t.name} className="w-14 h-14 rounded-full object-cover border-2 shadow-inner" style={{ borderColor: C.accentSoft }}/>
+            <div>
+              <p className="font-bold text-sm" style={{ color: C.text }}>{t.name}</p>
+              <p className="text-xs font-medium" style={{ color: C.muted }}>{t.role}</p>
+              <div className="flex gap-0.5 mt-1">
+                {[...Array(5)].map((_,i) => <span key={i} className="text-sm" style={{ color: i < t.rating ? "#F59E0B" : C.border }}>★</span>)}
+              </div>
+            </div>
+          </div>
+          <p className="text-xs leading-relaxed italic text-gray-600 line-clamp-4">"{t.content}"</p>
+        </motion.div>
+      ))}
+      {testimonials.length === 0 && <div className="col-span-full"><EmptyState icon={Users} text="No testimonials available"/></div>}
+    </div>
+  </div>
+);
+
+const AboutTab = ({ aboutSub, setAboutSub, collegeLogo, setCollegeLogo, logoFile, setLogoFile, deanMessage, setDeanMessage, deanPhotoFile, setDeanPhotoFile, milestones, milestoneForm, setMilestoneForm, openModal, setMilestones, visionMission, setVmForm, coreValues, setCvForm, axiosInstance, notify, del }) => (
+  <div className="space-y-6">
+    <SubTabs tabs={["Branding","Principal","Timeline","Vision & Mission","Core Values"]} active={aboutSub} onChange={setAboutSub}/>
+    <AnimatePresence mode="wait">
+      <motion.div key={aboutSub} initial={{ opacity:0, y:8 }} animate={{ opacity:1, y:0 }} exit={{ opacity:0, y:-8 }}>
+        {aboutSub === "Branding" && (
+          <div className="p-6 rounded-3xl space-y-6 shadow-sm" style={{ background: C.surface, border:`1px solid ${C.border}` }}>
+            <p className="font-bold text-base" style={{ color: C.text }}>Institution Branding</p>
+            <div className="flex flex-col sm:flex-row items-start gap-6">
+              <div className="w-24 h-24 rounded-3xl border-2 border-dashed overflow-hidden bg-gray-50 flex items-center justify-center shrink-0 shadow-inner"
+                   style={{ borderColor: C.border }}>
+                {collegeLogo.logoUrl ? <img src={imgUrl(collegeLogo.logoUrl)} className="w-full h-full object-contain p-2" alt=""/> : <ImageIcon size={32} style={{ color: C.muted }}/>}
+              </div>
+              <div className="flex-1 w-full space-y-4">
+                <Field label="College Full Name">
+                  <input value={collegeLogo.collegeName||""} onChange={e=>setCollegeLogo({...collegeLogo,collegeName:e.target.value})} placeholder="e.g. Ginera Nursing College" className={inputCls} style={inputStyle}/>
+                </Field>
+                <Field label="Tagline / Motto">
+                  <input value={collegeLogo.tagline||""} onChange={e=>setCollegeLogo({...collegeLogo,tagline:e.target.value})} placeholder="e.g. Excellence in Healthcare" className={inputCls} style={inputStyle}/>
+                </Field>
+              </div>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-3 pt-2">
+              <label className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl border-2 border-dashed text-sm font-semibold cursor-pointer hover:bg-gray-50 transition-all"
+                     style={{ borderColor: C.border, color: C.muted }}>
+                <Upload size={16}/> {logoFile ? logoFile.name : "Choose New Logo File"}
+                <input type="file" className="hidden" accept="image/*" onChange={e=>setLogoFile(e.target.files[0])}/>
+              </label>
+              <button onClick={async()=>{ const fd=new FormData(); fd.append("collegeName",collegeLogo.collegeName||""); fd.append("tagline",collegeLogo.tagline||""); if(logoFile) fd.append("logo",logoFile); try{const r=await axiosInstance.put("/about/college-logo",fd); setCollegeLogo(r.data); setLogoFile(null); notify("Branding Updated Successfully");}catch{notify("Update failed","error");}}}
+                className="px-8 py-3 rounded-xl text-sm font-bold text-white shadow-lg active:scale-95 transition-all" style={{ background: C.brand }}>Save Branding</button>
+            </div>
+          </div>
+        )}
+
+        {aboutSub === "Principal" && (
+          <div className="p-6 rounded-3xl space-y-5 shadow-sm" style={{ background: C.surface, border:`1px solid ${C.border}` }}>
+            <p className="font-bold text-base" style={{ color: C.text }}>Dean / Principal's Message</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+              <Field label="Full Name"><input value={deanMessage.name||""} onChange={e=>setDeanMessage({...deanMessage,name:e.target.value})} placeholder="e.g. Dr. Jane Doe" className={inputCls} style={inputStyle}/></Field>
+              <Field label="Official Title"><input value={deanMessage.title||""} onChange={e=>setDeanMessage({...deanMessage,title:e.target.value})} placeholder="e.g. Dean of Nursing" className={inputCls} style={inputStyle}/></Field>
+            </div>
+            <Field label="Opening Greeting"><input value={deanMessage.greeting||""} onChange={e=>setDeanMessage({...deanMessage,greeting:e.target.value})} placeholder="e.g. Welcome to Ginera..." className={inputCls} style={inputStyle}/></Field>
+            <Field label="Message Content (New line for each paragraph)">
+              <textarea rows={6} className={`${inputCls} resize-none`} style={inputStyle}
+                value={(deanMessage.paragraphs||[]).join("\n")} onChange={e=>setDeanMessage({...deanMessage,paragraphs:e.target.value.split("\n")})}/>
+            </Field>
+            <Field label="Highlight Quote">
+              <textarea rows={2} className={`${inputCls} resize-none font-medium italic`} style={inputStyle}
+                placeholder="A powerful summary statement..." value={deanMessage.highlight||""} onChange={e=>setDeanMessage({...deanMessage,highlight:e.target.value})}/>
+            </Field>
+            <div className="flex items-center gap-5 p-4 rounded-2xl bg-gray-50 border border-dashed" style={{ borderColor: C.border }}>
+              <div className="w-16 h-16 rounded-2xl overflow-hidden border-2 shadow-sm shrink-0" style={{ borderColor: C.brand + "40" }}>
+                {deanMessage.photoUrl ? <img src={imgUrl(deanMessage.photoUrl)} className="w-full h-full object-cover" alt=""/> : <div className="w-full h-full bg-white flex items-center justify-center"><Users size={24} style={{ color: C.muted }}/></div>}
+              </div>
+              <label className="flex-1 flex items-center gap-2 px-4 py-2.5 bg-white rounded-xl border text-xs font-bold cursor-pointer hover:shadow-sm transition-all shadow-sm"
+                     style={{ borderColor: C.border, color: C.text }}>
+                <Upload size={14}/> {deanPhotoFile ? deanPhotoFile.name : "Replace Official Photo"}
+                <input type="file" className="hidden" accept="image/*" onChange={e=>setDeanPhotoFile(e.target.files[0])}/>
+              </label>
+            </div>
+            <button onClick={async()=>{ const fd=new FormData(); ["name","title","greeting","highlight"].forEach(k=>fd.append(k,deanMessage[k]||"")); fd.append("paragraphs",JSON.stringify(deanMessage.paragraphs||[])); fd.append("stats",JSON.stringify(deanMessage.stats||[])); if(deanPhotoFile) fd.append("photo",deanPhotoFile); try{const r=await axiosInstance.put("/about/dean",fd); setDeanMessage(r.data); setDeanPhotoFile(null); notify("Message Updated Successfully");}catch{notify("Update failed","error");}}}
+              className="w-full sm:w-auto px-10 py-3.5 rounded-xl text-sm font-bold text-white shadow-xl active:scale-95 transition-all" style={{ background: C.brand }}>Publish Message</button>
+          </div>
+        )}
+
+        {aboutSub === "Timeline" && (
+          <div className="space-y-6">
+            <SectionHeader icon={Zap} title="Historical Milestones" subtitle={`Tracing our growth since inception`}
+              action={<AddBtn onClick={() => { setMilestoneForm({year:"",event:"",icon:"🎯",color:"#1e3a8a",description:""}); openModal("milestone"); }} label="New Milestone"/>}/>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+              {milestones.map(m => (
+                <div key={m._id} className="p-5 rounded-2xl group relative transition-all hover:shadow-md" style={{ background: C.surface, border:`1px solid ${C.border}`, borderLeft:`5px solid ${m.color}` }}>
+                  <div className="flex items-start gap-4">
+                    <span className="text-3xl filter grayscale group-hover:grayscale-0 transition-all">{m.icon}</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[11px] font-extrabold uppercase tracking-[0.15em]" style={{ color: m.color }}>{m.year}</p>
+                      <p className="font-bold text-sm truncate mt-0.5" style={{ color: C.text }}>{m.event}</p>
+                      <p className="text-xs line-clamp-2 mt-1.5 leading-relaxed" style={{ color: C.muted }}>{m.description}</p>
+                    </div>
+                  </div>
+                  <div className="absolute top-3 right-3 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <IconBtn onClick={() => { setMilestoneForm({year:m.year,event:m.event,icon:m.icon,color:m.color,description:m.description}); openModal("milestone",m); }}><Edit3 size={13}/></IconBtn>
+                    <IconBtn danger onClick={async()=>{ try{await axiosInstance.delete(`/about/milestones/${m._id}`); setMilestones(milestones.filter(x=>x._id!==m._id)); notify("Milestone Removed");}catch{notify("Delete failed","error");}}}><Trash2 size={13}/></IconBtn>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {aboutSub === "Vision & Mission" && (
+           <div className="space-y-6">
+             <SectionHeader icon={Info} title="Vision & Mission" subtitle="Strategic direction statements"
+                action={<AddBtn onClick={() => { setVmForm({type:"vision",content:"",order:0}); openModal("visionMission"); }} label="Add Statement"/>}/>
+             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {["vision","mission"].map(type => (
+                  <div key={type} className="space-y-3">
+                    <p className="text-xs font-bold uppercase tracking-widest pl-2" style={{ color: C.muted }}>{type} Statement</p>
+                    {visionMission.filter(v=>v.type===type).map(v => (
+                      <div key={v._id} className="p-5 rounded-2xl relative group shadow-sm" style={{ background: C.surface, border:`1px solid ${C.border}` }}>
+                        <p className="text-sm leading-relaxed" style={{ color: C.text }}>{v.content}</p>
+                        <div className="absolute top-3 right-3 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <IconBtn onClick={() => { setVmForm({type:v.type,content:v.content,order:v.order}); openModal("visionMission",v); }}><Edit3 size={13}/></IconBtn>
+                          <IconBtn danger onClick={() => del(`/about/vision-mission/${v._id}`)}><Trash2 size={13}/></IconBtn>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ))}
+             </div>
+           </div>
+        )}
+
+        {aboutSub === "Core Values" && (
+           <div className="space-y-6">
+             <SectionHeader icon={CheckCircle2} title="Institutional Values" subtitle="The pillars of our culture"
+                action={<AddBtn onClick={() => { setCvForm({icon:"🌟",title:"",description:"",color:"from-amber-500 to-orange-500",order:0}); openModal("coreValue"); }} label="Add Core Value"/>}/>
+             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                {coreValues.map(v => (
+                  <div key={v._id} className="p-6 rounded-3xl group relative transition-all hover:shadow-lg overflow-hidden" style={{ background: C.surface, border:`1px solid ${C.border}` }}>
+                    <div className={`absolute top-0 right-0 w-24 h-24 bg-gradient-to-br ${v.color} opacity-[0.03] rounded-bl-[100px] transition-all group-hover:opacity-[0.08]`}/>
+                    <span className="text-4xl block mb-4 filter drop-shadow-sm">{v.icon}</span>
+                    <p className="font-bold text-base mb-2" style={{ color: C.text }}>{v.title}</p>
+                    <p className="text-xs leading-relaxed" style={{ color: C.muted }}>{v.description}</p>
+                    <div className="absolute top-4 right-4 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <IconBtn onClick={() => { setCvForm({icon:v.icon,title:v.title,description:v.description,color:v.color,order:v.order}); openModal("coreValue",v); }}><Edit3 size={13}/></IconBtn>
+                      <IconBtn danger onClick={() => del(`/about/core-values/${v._id}`)}><Trash2 size={13}/></IconBtn>
+                    </div>
+                  </div>
+                ))}
+             </div>
+           </div>
+        )}
+      </motion.div>
+    </AnimatePresence>
+  </div>
+);
+
+const AdmissionTab = ({ admSub, setAdmSub, courses, openModal, setCourseForm, del, admissionSteps, setStepForm, admissionRules, setRuleForm, bonds, setBondForm, guidelines, setGuidelineForm }) => (
+  <div className="space-y-6">
+    <SubTabs tabs={["Courses","Procedure","Eligibility","Student Bond","Guidelines"]} active={admSub} onChange={setAdmSub}/>
+    
+    {admSub === "Courses" && (
+      <div className="space-y-6">
+        <SectionHeader icon={GraduationCap} title="Program Offerings" subtitle={`${courses.length} courses listed`}
+          action={<AddBtn onClick={() => { setCourseForm({category:"Undergraduate Programs",name:"",duration:"",seats:"",eligibility:"",description:"",icon:"👨‍⚕️",highlights:"",fees:"",admission:"",websiteLink:""}); openModal("course"); }} label="Add Course"/>}/>
+        <div className="grid grid-cols-1 gap-3">
+          {courses.map(c => <RowItem key={c._id} icon={c.icon} badge={c.category} title={c.name} sub={`${c.duration} | ${c.seats} Seats`}
+            onEdit={() => { setCourseForm({...c,highlights:c.highlights?.join(", ")||""}); openModal("course",c); }} onDelete={() => del(`/courses/${c._id}`)}/>)}
+        </div>
+      </div>
+    )}
+
+    {admSub === "Procedure" && (
+      <div className="space-y-6">
+        <SectionHeader icon={Layers} title="Admission Steps" subtitle="Step-by-step guidance for applicants"
+          action={<AddBtn onClick={() => { setStepForm({step:1,title:"",description:"",details:"",icon:"Calendar"}); openModal("step"); }} label="Add Step"/>}/>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {admissionSteps.sort((a,b)=>a.step-b.step).map(s => (
+            <div key={s._id} className="p-5 rounded-3xl group relative shadow-sm hover:shadow-md transition-all" style={{ background: C.surface, border:`1px solid ${C.border}` }}>
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-xl font-bold text-white shadow-md" style={{ background: C.brand }}>{s.step}</div>
+                <div className="min-w-0">
+                  <p className="font-bold text-sm truncate" style={{ color: C.text }}>{s.title}</p>
+                  <p className="text-xs line-clamp-1" style={{ color: C.muted }}>{s.description}</p>
+                </div>
+              </div>
+              <div className="absolute top-4 right-4 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <IconBtn onClick={() => { setStepForm({...s}); openModal("step",s); }}><Edit3 size={13}/></IconBtn>
+                <IconBtn danger onClick={() => del(`/admission-steps/${s._id}`)}><Trash2 size={13}/></IconBtn>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    )}
+
+    {admSub === "Eligibility" && (
+      <div className="space-y-6">
+        <SectionHeader icon={AlertCircle} title="Admission Rules" subtitle="Criteria for selection"
+          action={<AddBtn onClick={() => { setRuleForm({category:"UnderGraduated Programs",title:"",description:"",icon:"CheckCircle"}); openModal("rule"); }} label="Add Rule"/>}/>
+        {["UnderGraduated Programs","PostGraduated Programs","General Rules"].map(cat => {
+          const items = admissionRules.filter(r=>r.category===cat);
+          if (!items.length) return null;
+          return (
+            <div key={cat} className="space-y-3">
+              <p className="text-[10px] font-extrabold uppercase tracking-[0.2em] px-2" style={{ color: C.muted }}>{cat}</p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {items.map(r => <RowItem key={r._id} icon={r.icon === "CheckCircle" ? "✅" : "📋"} title={r.title} sub={r.description?.slice(0,60)+"..."}
+                  onEdit={() => { setRuleForm({...r}); openModal("rule",r); }} onDelete={() => del(`/admission-rules/${r._id}`)}/>)}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    )}
+
+    {admSub === "Student Bond" && (
+      <div className="space-y-6">
+        <SectionHeader icon={FileText} title="Legal Bond Agreement" subtitle="Institutional agreement points"
+          action={<AddBtn onClick={() => { setBondForm({type:"student",title:"",content:"",order:0}); openModal("bond"); }} label="Add Point"/>}/>
+        <div className="grid grid-cols-1 gap-3">
+          {bonds.filter(b=>b.type==="student").map(b => <RowItem key={b._id} icon={<FileText size={20} style={{color:C.accent}}/>} title={b.title} sub={b.content?.slice(0,100)+"..."}
+            onEdit={() => { setBondForm({...b}); openModal("bond",b); }} onDelete={() => del(`/bonds/${b._id}`)}/>)}
+        </div>
+      </div>
+    )}
+
+    {admSub === "Guidelines" && (
+      <div className="space-y-6">
+        <SectionHeader icon={Info} title="Guidelines & Conduct" subtitle="Rules for students and guardians"
+          action={<AddBtn onClick={() => { setGuidelineForm({category:"General Guidelines",subCategory:"",points:"",order:0}); openModal("guideline"); }} label="Add Section"/>}/>
+        {["General Guidelines","Code of Conduct","Academic Requirements","For Parents/Guardians","Contact Information"].map(cat => {
+          const items = guidelines.filter(g=>g.category===cat);
+          if (!items.length) return null;
+          return (
+            <div key={cat} className="rounded-3xl overflow-hidden shadow-sm border" style={{ borderColor: C.border }}>
+              <div className="px-6 py-3.5 border-b" style={{ background: C.bg, borderColor: C.border }}>
+                <p className="font-bold text-xs uppercase tracking-widest" style={{ color: C.text }}>{cat}</p>
+              </div>
+              <div className="divide-y divide-gray-100" style={{ background: C.surface }}>
+                {items.map(g => (
+                  <div key={g._id} className="flex items-start gap-5 p-5 group transition-all hover:bg-gray-50/50">
+                    <div className="flex-1 min-w-0">
+                      <p className="font-bold text-sm mb-2" style={{ color: C.text }}>{g.subCategory}</p>
+                      <ul className="space-y-1.5">
+                        {g.points.map((p,i) => <li key={i} className="flex items-start gap-2 text-xs leading-relaxed" style={{ color: C.muted }}><span className="mt-1.5 w-1 h-1 rounded-full bg-amber-500 shrink-0"/>{p}</li>)}
+                      </ul>
+                    </div>
+                    <div className="flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <IconBtn onClick={() => { setGuidelineForm({...g,points:g.points.join("\n")}); openModal("guideline",g); }}><Edit3 size={14}/></IconBtn>
+                      <IconBtn danger onClick={() => del(`/guidelines/${g._id}`)}><Trash2 size={14}/></IconBtn>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    )}
+  </div>
+);
+
+const DepartmentsTab = ({ selectedDept, setSelectedDept, departments, deptForm, setDeptForm, deptSub, setDeptSub, deptFacultyForm, setDeptFacultyForm, deptFacilityInput, setDeptFacilityInput, deptActivityInput, setDeptActivityInput, sliders, axiosInstance, fetchData, notify, openModal, del, handleSliderUpload }) => {
+  if (!selectedDept) return (
+    <div className="space-y-6">
+      <SectionHeader icon={Building2} title="Academic Departments" subtitle={`Managing ${departments.length} nursing specialties`}
+        action={<AddBtn onClick={() => { setDeptForm({name:"",slug:"",category:"Nursing Department",description:"",overview:"",overview2:"",faculty:[],facilities:[],activities:[],icon:"🏥"}); openModal("department"); }} label="New Department"/>}/>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+        {departments.map(d => (
+          <motion.div key={d._id} whileHover={{ y:-4, shadow:"0 12px 24px -10px rgba(0,0,0,0.1)" }}
+            onClick={() => { setSelectedDept(d); setDeptForm({...d}); setDeptSub("Overview"); }}
+            className="p-6 rounded-3xl cursor-pointer group transition-all relative overflow-hidden"
+            style={{ background: C.surface, border:`1px solid ${C.border}` }}>
+            <div className={`absolute top-0 right-0 w-20 h-20 bg-amber-500 opacity-[0.02] rounded-bl-[80px] group-hover:opacity-[0.06] transition-all`}/>
+            <div className="flex items-center gap-4 mb-5">
+              <span className="text-4xl group-hover:scale-110 transition-transform duration-300 block drop-shadow-sm">{d.icon||"🏥"}</span>
+              <div className="min-w-0">
+                <p className="font-bold text-sm truncate leading-tight mb-1" style={{ color: C.text }}>{d.name}</p>
+                <Pill color={C.brand}>{d.category}</Pill>
+              </div>
+            </div>
+            <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-wider" style={{ color: C.muted }}>
+              <div className="flex gap-3">
+                <span>{d.faculty?.length||0} Staff</span>
+                <span>{d.facilities?.length||0} Labs</span>
+              </div>
+              <ChevronRight size={14} className="group-hover:translate-x-1 transition-transform" style={{ color: C.accent }}/>
+            </div>
+          </motion.div>
+        ))}
+        {departments.length===0 && <div className="col-span-full"><EmptyState icon={Building2} text="No departments found"/></div>}
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col lg:flex-row items-start lg:items-center gap-6 p-6 rounded-3xl shadow-sm border overflow-hidden"
+           style={{ background: C.surface, borderColor: C.border }}>
+        <div className="flex items-center gap-4 flex-1 min-w-0">
+          <button onClick={() => setSelectedDept(null)} className="p-3 rounded-2xl hover:bg-gray-50 transition-all shrink-0 border shadow-sm group" style={{ borderColor: C.border, color: C.muted }}>
+            <ArrowLeft size={20} className="group-hover:-translate-x-1 transition-transform"/>
+          </button>
+          <span className="text-4xl shrink-0 drop-shadow-sm">{deptForm.icon||"🏥"}</span>
+          <div className="min-w-0 flex-1">
+            <p className="font-bold text-base sm:text-xl whitespace-nowrap overflow-hidden text-ellipsis leading-tight" style={{ color: C.text }}>{selectedDept.name}</p>
+            <div className="flex items-center gap-2 mt-1">
+              <span className="text-[10px] font-extrabold uppercase tracking-[0.2em]" style={{ color: C.accent }}>{selectedDept.category}</span>
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"/>
+              <span className="text-[11px] font-bold text-muted-foreground">Editor Mode</span>
+            </div>
+          </div>
+        </div>
+        <button
+          onClick={async () => {
+            try {
+              await axiosInstance.put(`/departments/${selectedDept._id}`, deptForm);
+              notify("Department Updated Successfully");
+              fetchData();
+            } catch { notify("Failed to save changes","error"); }
+          }}
+          className="w-full lg:w-auto flex items-center justify-center gap-2 px-8 py-3.5 rounded-2xl text-sm font-bold text-white shadow-xl hover:opacity-90 active:scale-95 transition-all"
+          style={{ background: C.brand }}>
+          <Save size={18}/> Save All Changes
+        </button>
+      </div>
+
+      <div className="flex flex-col gap-6">
+        <SubTabs tabs={["Overview","Faculty","Facilities","Activities","Sliders"]} active={deptSub} onChange={setDeptSub}/>
+
+        <div className="p-7 rounded-3xl shadow-sm border" style={{ background: C.surface, borderColor: C.border }}>
+          {deptSub === "Overview" && (
+            <div className="space-y-5 animate-in fade-in slide-in-from-bottom-2 duration-300">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+                <Field label="Department Display Name"><input value={deptForm.name} onChange={e=>setDeptForm({...deptForm,name:e.target.value})} className={inputCls} style={inputStyle}/></Field>
+                <Field label="URL Slug (fixed ID)"><input value={deptForm.slug} onChange={e=>setDeptForm({...deptForm,slug:e.target.value})} className={inputCls} style={inputStyle} readOnly/></Field>
+                <Field label="Academic Category"><input value={deptForm.category} onChange={e=>setDeptForm({...deptForm,category:e.target.value})} className={inputCls} style={inputStyle}/></Field>
+                <Field label="Identity Icon (Emoji)"><input value={deptForm.icon} onChange={e=>setDeptForm({...deptForm,icon:e.target.value})} className={inputCls} style={inputStyle}/></Field>
+              </div>
+              <Field label="Short Introduction"><input value={deptForm.description} onChange={e=>setDeptForm({...deptForm,description:e.target.value})} className={inputCls} style={inputStyle}/></Field>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                <Field label="Primary Overview Paragraph"><textarea rows={5} value={deptForm.overview} onChange={e=>setDeptForm({...deptForm,overview:e.target.value})} className={`${inputCls} resize-none`} style={inputStyle}/></Field>
+                <Field label="Secondary Details (Optional)"><textarea rows={5} value={deptForm.overview2} onChange={e=>setDeptForm({...deptForm,overview2:e.target.value})} className={`${inputCls} resize-none`} style={inputStyle}/></Field>
+              </div>
+            </div>
+          )}
+
+          {deptSub === "Faculty" && (
+            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 p-5 rounded-2xl shadow-inner border border-dashed" style={{ background: C.bg, borderColor: C.border }}>
+                {["name","designation","qualification"].map(k => (
+                  <input key={k} placeholder={k.charAt(0).toUpperCase()+k.slice(1)} value={deptFacultyForm[k]}
+                    onChange={e=>setDeptFacultyForm({...deptFacultyForm,[k]:e.target.value})}
+                    className={inputCls} style={inputStyle}/>
+                ))}
+                <button onClick={() => { if(!deptFacultyForm.name) return; setDeptForm({...deptForm,faculty:[...deptForm.faculty,deptFacultyForm]}); setDeptFacultyForm({name:"",designation:"",qualification:"",specialization:""}); }}
+                  className="px-4 py-2.5 rounded-xl text-sm font-bold text-white shadow hover:opacity-90 active:scale-95 transition-all" style={{ background: C.brand }}>Add Staff</button>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {deptForm.faculty.map((f,i) => (
+                  <div key={i} className="flex items-center justify-between p-4 rounded-2xl shadow-sm border group hover:border-amber-200 transition-all" style={{ background: C.bg, borderColor: C.border }}>
+                    <div className="min-w-0">
+                      <p className="font-bold text-sm truncate" style={{ color: C.text }}>{f.name}</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <p className="text-[10px] font-bold uppercase text-amber-600">{f.designation}</p>
+                        <span className="w-1 h-1 rounded-full bg-gray-300"/>
+                        <p className="text-[10px] font-medium text-gray-500 truncate">{f.qualification}</p>
+                      </div>
+                    </div>
+                    <IconBtn danger onClick={() => setDeptForm({...deptForm,faculty:deptForm.faculty.filter((_,idx)=>idx!==i)})}><Trash2 size={15}/></IconBtn>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {(deptSub === "Facilities" || deptSub === "Activities") && (() => {
+            const key = deptSub === "Facilities" ? "facilities" : "activities";
+            const input = deptSub === "Facilities" ? deptFacilityInput : deptActivityInput;
+            const setInput = deptSub === "Facilities" ? setDeptFacilityInput : setDeptActivityInput;
+            const add = () => { if(!input.trim()) return; setDeptForm({...deptForm,[key]:[...deptForm[key],input.trim()]}); setInput(""); };
+            return (
+              <div className="space-y-5 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                <div className="flex gap-3">
+                  <input value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>e.key==="Enter"&&add()}
+                    placeholder={`Describe new ${deptSub.toLowerCase()} point...`} className={`${inputCls} flex-1 shadow-sm`} style={inputStyle}/>
+                  <button onClick={add} className="px-6 py-2.5 rounded-xl font-bold text-white shadow-lg hover:opacity-90 active:scale-95 transition-all shrink-0" style={{ background: C.brand }}><Plus size={20}/></button>
+                </div>
+                <div className="grid grid-cols-1 gap-3">
+                  {deptForm[key].map((item,i) => (
+                    <div key={i} className="flex items-center justify-between p-4 rounded-2xl group transition-all hover:bg-gray-50 border shadow-sm" style={{ background: C.bg, borderColor: C.border }}>
+                      <div className="flex items-center gap-3">
+                        <div className="w-6 h-6 rounded-lg bg-white flex items-center justify-center shadow-sm shrink-0">
+                          <span className="text-[10px] font-bold" style={{ color: C.accent }}>{i+1}</span>
+                        </div>
+                        <p className="text-sm leading-relaxed" style={{ color: C.text }}>{item}</p>
+                      </div>
+                      <IconBtn danger onClick={() => setDeptForm({...deptForm,[key]:deptForm[key].filter((_,idx)=>idx!==i)})}><Trash2 size={14}/></IconBtn>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
+
+          {deptSub === "Sliders" && (
+            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-5 rounded-2xl shadow-inner border border-dashed" style={{ background: C.bg, borderColor: C.border }}>
+                <div>
+                  <p className="font-bold text-sm" style={{ color: C.text }}>Department Hero Sliders</p>
+                  <p className="text-[11px] font-medium mt-0.5" style={{ color: C.muted }}>High-resolution images for the department landing page</p>
+                </div>
+                <label className="flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-bold text-white cursor-pointer shadow-lg active:scale-95 transition-all" style={{ background: C.brand }}>
+                  <Upload size={16}/> Bulk Upload
+                  <input type="file" className="hidden" onChange={e => { if(e.target.files[0]) handleSliderUpload(e, selectedDept._id); }}/>
+                </label>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
+                {sliders.filter(s=>s.department?._id===selectedDept._id).map(s => (
+                  <div key={s._id} className="group relative aspect-video rounded-2xl overflow-hidden shadow-md transition-all hover:shadow-xl" style={{ border:`2px solid ${C.border}` }}>
+                    <img src={imgUrl(s.imageUrl)} alt="" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"/>
+                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-[1px]">
+                      <button onClick={() => del(`/sliders/${s._id}`)} className="p-3 bg-red-500 text-white rounded-2xl shadow-xl hover:bg-red-600 transform transition-transform group-hover:scale-110"><Trash2 size={18}/></button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const GalleryForm = ({ editItem, formState, setFormState, closeModal, fetchData, notify, axiosInstance }) => (
+  <form onSubmit={async e => { 
+    e.preventDefault(); 
+    if (!editItem && !formState.image) {
+      return notify("Please select an image", "error");
+    }
+    const fd = new FormData(); 
+    if(formState.image instanceof File) fd.append("image", formState.image); 
+    fd.append("title", formState.title || "");
+    fd.append("description", formState.description || "");
+    fd.append("category", formState.category || "college_campus_view");
+    
+    const url = editItem ? `/gallery/${editItem._id}` : "/gallery"; 
+    try {
+      if(editItem) await axiosInstance.put(url, fd); 
+      else await axiosInstance.post(url, fd); 
+      notify(editItem ? "Updated" : "Created"); closeModal(); fetchData();
+    } catch { notify("Failed", "error"); }
+  }} className="space-y-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <Field label="Title"><input required value={formState.title} onChange={e=>setFormState({...formState,title:e.target.value})} className={inputCls} style={inputStyle} placeholder="e.g. Main Academic Building"/></Field>
+      <Field label="Category">
+        <select value={formState.category} onChange={e=>setFormState({...formState,category:e.target.value})} className={inputCls} style={inputStyle}>
+          <option value="college_campus_view">College Campus View</option>
+          <option value="college_highlight">College Highlight</option>
+          <option value="hospital">Hospital Main/Additional Images</option>
+          <option value="hospital_facility">Hospital Facility & Department</option>
+          <option value="event">Main/Additional Event Images</option>
+          <option value="event_academic">Academic Events</option>
+          <option value="event_cultural">Cultural Events</option>
+          <option value="event_sports">Sports Events</option>
+          <option value="event_community">Community Service Events</option>
+        </select>
+      </Field>
+    </div>
+    <Field label="Description"><textarea rows={3} value={formState.description} onChange={e=>setFormState({...formState,description:e.target.value})} className={`${inputCls} resize-none`} style={inputStyle}/></Field>
+    <Field label="Image">
+      <label className="flex items-center gap-2 px-4 py-2.5 rounded-xl border cursor-pointer hover:bg-gray-50 transition text-sm" style={{ borderColor: C.border, color: C.muted }}>
+        <ImageIcon size={16}/>{formState.image && typeof formState.image === 'object' ? formState.image.name : "Select image"}
+        <input type="file" className="hidden" onChange={e=>setFormState({...formState,image:e.target.files[0]})} />
+      </label>
+    </Field>
+    <div className="flex gap-3 pt-2">
+      <button type="button" onClick={closeModal} className="flex-1 py-3 rounded-xl border font-bold text-sm transition hover:bg-gray-50" style={{ borderColor: C.border, color: C.muted }}>Cancel</button>
+      <button type="submit" className="flex-1 py-3 rounded-xl font-bold text-sm transition" style={{ background: C.accent, color: "#fff" }}>{editItem ? "Save Changes" : "Create Image"}</button>
+    </div>
+  </form>
+);
+
+const GalleryTab = ({ galleryImages, galleryForm, setGalleryForm, openModal, del }) => (
+  <div className="space-y-6">
+    <div className="flex items-center justify-between">
+      <div>
+        <h2 className="text-2xl font-bold" style={{ color: C.text }}>Photo Gallery</h2>
+        <p className="text-sm mt-1" style={{ color: C.muted }}>Manage all photos in the gallery</p>
+      </div>
+      <button onClick={() => { setGalleryForm({ title:"", description:"", category:"college_campus_view", image:null }); openModal("gallery"); }} className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition hover:opacity-90 shadow-sm" style={{ background: C.accent, color: "#fff" }}><Plus size={16}/>Add Photo</button>
+    </div>
+    <div className="grid grid-cols-1 gap-3">
+      {galleryImages.map(img => (
+        <RowItem key={img._id}
+          left={<div className="w-16 h-12 rounded-xl overflow-hidden border-2 shrink-0 shadow-sm" style={{ borderColor: C.border }}>
+            <img src={imgUrl(img.imageUrl)} className="w-full h-full object-cover" alt=""/>
+          </div>}
+          badge={img.category.replace(/_/g, ' ')} title={img.title} sub={img.description?.substring(0, 50) + "..."}
+          onEdit={() => { setGalleryForm({ ...img, image: null }); openModal("gallery", img); }}
+          onDelete={() => del(`/gallery/${img._id}`)}/>
+      ))}
+      {galleryImages.length === 0 && <EmptyState icon={ImageIcon} text="No gallery photos yet. Add your first photo." />}
+    </div>
+  </div>
+);
+
+// ── MAIN ADMIN PANEL ─────────────────────────────────────
+
 const AdminPanel = ({ onLogout }) => {
   const [activeTab, setActiveTab] = useState("Home Page");
-  const [aboutActiveSubTab, setAboutActiveSubTab] = useState("Branding");
-  const [admissionActiveSubTab, setAdmissionActiveSubTab] = useState("Courses");
+  const [aboutSub, setAboutSub] = useState("Branding");
+  const [admSub, setAdmSub] = useState("Courses");
+  const [deptSub, setDeptSub] = useState("Overview");
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [selectedDeptForSlider, setSelectedDeptForSlider] = useState("null");
+  const [selectedDept, setSelectedDept] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [note, setNote] = useState(null);
+  const [showModal, setShowModal] = useState(false);
+  const [modalType, setModalType] = useState("");
+  const [editItem, setEditItem] = useState(null);
+
+  // Data
   const [sliders, setSliders] = useState([]);
   const [programs, setPrograms] = useState([]);
-  const [academicContent, setAcademicContent] = useState({ title: "", description1: "", description2: "" });
   const [testimonials, setTestimonials] = useState([]);
-  // About Us
+  const [academicContent, setAcademicContent] = useState({ title: "", description1: "", description2: "" });
   const [milestones, setMilestones] = useState([]);
-  const [deanMessage, setDeanMessage] = useState({ name: '', title: '', greeting: '', paragraphs: [], highlight: '', photoUrl: '', stats: [] });
-  const [collegeLogo, setCollegeLogo] = useState({ logoUrl: '', collegeName: '', tagline: '' });
-  const [milestoneForm, setMilestoneForm] = useState({ year: '', event: '', icon: '🎯', color: '#1e3a8a', description: '' });
-  const [deanPhotoFile, setDeanPhotoFile] = useState(null);
-  const [logoFile, setLogoFile] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [showModal, setShowModal] = useState(false);
-  const [modalType, setModalType] = useState(""); // slider, program, testimonial, milestone
-  const [editItem, setEditItem] = useState(null);
-  const [notification, setNotification] = useState(null);
-
-  // Vision & Mission
+  const [deanMessage, setDeanMessage] = useState({ name:"",title:"",greeting:"",paragraphs:[],highlight:"",photoUrl:"",stats:[] });
+  const [collegeLogo, setCollegeLogo] = useState({ logoUrl:"",collegeName:"",tagline:"" });
   const [visionMission, setVisionMission] = useState([]);
-  const [vmForm, setVmForm] = useState({ type: 'vision', content: '', order: 0 });
-
-  // Core Values
   const [coreValues, setCoreValues] = useState([]);
-  const [cvForm, setCvForm] = useState({ icon: '🌟', title: '', description: '', color: 'from-amber-500 to-orange-500', order: 0 });
-
-  // Admission States
   const [courses, setCourses] = useState([]);
   const [admissionSteps, setAdmissionSteps] = useState([]);
   const [admissionRules, setAdmissionRules] = useState([]);
   const [bonds, setBonds] = useState([]);
   const [guidelines, setGuidelines] = useState([]);
   const [departments, setDepartments] = useState([]);
-  
-  const [courseForm, setCourseForm] = useState({
-    category: "Undergraduate Programs",
-    name: "",
-    duration: "",
-    seats: "",
-    eligibility: "",
-    description: "",
-    icon: "👨‍⚕️",
-    highlights: "",
-    fees: "",
-    admission: "",
-    websiteLink: ""
-  });
-
-  const [admissionStepForm, setAdmissionStepForm] = useState({
-    step: 1,
-    title: "",
-    description: "",
-    details: "",
-    icon: "Calendar"
-  });
-
-  const [admissionRuleForm, setAdmissionRuleForm] = useState({
-    category: "UnderGraduated Programs",
-    title: "",
-    description: "",
-    icon: "CheckCircle"
-  });
-
-  const [bondForm, setBondForm] = useState({
-    type: "student",
-    title: "",
-    content: "",
-    order: 0
-  });
-
-  const [guidelineForm, setGuidelineForm] = useState({
-    category: "General Guidelines",
-    subCategory: "",
-    points: "",
-    order: 0
-  });
-
-  const [deptForm, setDeptForm] = useState({
-    name: "",
-    category: "Nursing Department",
-    description: "",
-    overview: "",
-    overview2: "",
-    faculty: [],
-    facilities: [],
-    activities: [],
-    icon: "🏥"
-  });
-
-  const [deptFacultyForm, setDeptFacultyForm] = useState({ name: '', designation: '', qualification: '', specialization: '' });
-  const [deptFacilityInput, setDeptFacilityInput] = useState("");
-  const [deptActivityInput, setDeptActivityInput] = useState("");
-  const [selectedDeptForSlider, setSelectedDeptForSlider] = useState("null");
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-
-  // Department Management States
-  const [selectedDeptForEdit, setSelectedDeptForEdit] = useState(null);
-  const [deptActiveSubTab, setDeptActiveSubTab] = useState("Overview");
 
   // Form States
-  const [programForm, setProgramForm] = useState({
-    title: "",
-    description: "",
-    duration: "",
-    category: "",
-    courses: "",
-    image: null
-  });
+  const [programForm, setProgramForm] = useState({ title:"",description:"",duration:"",category:"Undergraduate",courses:"",image:null });
+  const [testimonialForm, setTestimonialForm] = useState({ name:"",role:"",content:"",rating:5,image:null });
+  const [milestoneForm, setMilestoneForm] = useState({ year:"",event:"",icon:"🎯",color:"#1e3a8a",description:"" });
+  const [vmForm, setVmForm] = useState({ type:"vision",content:"",order:0 });
+  const [cvForm, setCvForm] = useState({ icon:"🌟",title:"",description:"",color:"from-amber-500 to-orange-500",order:0 });
+  const [courseForm, setCourseForm] = useState({ category:"Undergraduate Programs",name:"",duration:"",seats:"",eligibility:"",description:"",icon:"👨‍⚕️",highlights:"",fees:"",admission:"",websiteLink:"" });
+  const [stepForm, setStepForm] = useState({ step:1,title:"",description:"",details:"",icon:"Calendar" });
+  const [ruleForm, setRuleForm] = useState({ category:"UnderGraduated Programs",title:"",description:"",icon:"CheckCircle" });
+  const [bondForm, setBondForm] = useState({ type:"student",title:"",content:"",order:0 });
+  const [guidelineForm, setGuidelineForm] = useState({ category:"General Guidelines",subCategory:"",points:"",order:0 });
+  const [deptForm, setDeptForm] = useState({ name:"",slug:"",category:"Nursing Department",description:"",overview:"",overview2:"",faculty:[],facilities:[],activities:[],icon:"🏥" });
+  const [deptFacultyForm, setDeptFacultyForm] = useState({ name:"",designation:"",qualification:"",specialization:"" });
+  const [deptFacilityInput, setDeptFacilityInput] = useState("");
+  const [deptActivityInput, setDeptActivityInput] = useState("");
+  const [deanPhotoFile, setDeanPhotoFile] = useState(null);
+  const [logoFile, setLogoFile] = useState(null);
 
-  const [testimonialForm, setTestimonialForm] = useState({
-    name: "",
-    role: "",
-    content: "",
-    rating: 5,
-    image: null
-  });
+  const [galleryImages, setGalleryImages] = useState([]);
+  const [galleryForm, setGalleryForm] = useState({ title:"", description:"", category:"college_campus_view", image:null });
 
-  const [sliderFiles, setSliderFiles] = useState([]);
+  const notify = (message, type = "success") => {
+    setNote({ message, type });
+    setTimeout(() => setNote(null), 3000);
+  };
 
-  useEffect(() => {
-    fetchData();
-  }, [selectedDeptForSlider]);
+  useEffect(() => { fetchData(); }, []);
 
   const fetchData = async () => {
     setLoading(true);
     try {
-      const results = await Promise.all([
-        axiosInstance.get("/sliders"), // Home sliders fallback
+      const r = await Promise.all([
         axiosInstance.get("/programs"),
         axiosInstance.get("/testimonials"),
         axiosInstance.get("/content/academic"),
@@ -172,2256 +1289,133 @@ const AdminPanel = ({ onLogout }) => {
         axiosInstance.get("/bonds"),
         axiosInstance.get("/guidelines"),
         axiosInstance.get("/departments"),
-        axiosInstance.get(`/sliders?department=${selectedDeptForSlider}`)
+        axiosInstance.get("/sliders?department=all"),
+        axiosInstance.get("/gallery"),
       ]);
-
-      // setSliders(results[0].data); // Global sliders if needed
-      setPrograms(results[1].data);
-      setTestimonials(results[2].data);
-      setAcademicContent(results[3].data);
-      setMilestones(results[4].data);
-      setDeanMessage(results[5].data);
-      setCollegeLogo(results[6].data);
-      setVisionMission(results[7].data);
-      setCoreValues(results[8].data);
-      setCourses(results[9].data);
-      setAdmissionSteps(results[10].data);
-      setAdmissionRules(results[11].data);
-      setBonds(results[12].data);
-      setGuidelines(results[13].data);
-      setDepartments(results[14].data);
-      setSliders(results[15].data); // Filtered sliders
-    } catch (error) {
-      console.error("Error fetching data:", error);
-      showNotify("Error fetching data", "error");
-    } finally {
-      setLoading(false);
-    }
+      setPrograms(r[0].data); setTestimonials(r[1].data); setAcademicContent(r[2].data);
+      setMilestones(r[3].data); setDeanMessage(r[4].data); setCollegeLogo(r[5].data);
+      setVisionMission(r[6].data); setCoreValues(r[7].data); setCourses(r[8].data);
+      setAdmissionSteps(r[9].data); setAdmissionRules(r[10].data); setBonds(r[11].data);
+      setGuidelines(r[12].data); setDepartments(r[13].data); setSliders(r[14].data); setGalleryImages(r[15].data);
+    } catch { notify("Error fetching data", "error"); }
+    finally { setLoading(false); }
   };
 
-  const showNotify = (message, type = "success") => {
-    setNotification({ message, type });
-    setTimeout(() => setNotification(null), 3000);
+  const del = async (url, refetch = true) => {
+    if (!window.confirm("Are you sure?")) return;
+    try { await axiosInstance.delete(url); notify("Deleted"); if (refetch) fetchData(); }
+    catch { notify("Delete failed", "error"); }
   };
 
-  // --- SLIDER ACTIONS ---
-  const handleSliderUpload = async (eOrFile, deptIdOverride = null) => {
-    let files = [];
-    if (eOrFile.target) {
-      files = Array.from(eOrFile.target.files);
-    } else {
-      files = [eOrFile];
-    }
-    
-    if (files.length === 0) return;
-
-    const formData = new FormData();
-    files.forEach(file => formData.append("images", file));
-    
-    const finalDeptId = deptIdOverride || selectedDeptForSlider;
-    if (finalDeptId !== "null" && finalDeptId) {
-      formData.append("department", finalDeptId);
-    }
-
-    try {
-      await axiosInstance.post("/sliders/upload", formData);
-      showNotify("Images uploaded successfully");
-      fetchData();
-    } catch (error) {
-      showNotify("Upload failed", "error");
-    }
-  };
-
-  const deleteSlider = async (id) => {
-    if (!window.confirm("Delete this slider image?")) return;
-    try {
-      await axiosInstance.delete(`/sliders/${id}`);
-      showNotify("Slider deleted");
-      fetchData();
-    } catch (error) {
-      showNotify("Delete failed", "error");
-    }
+  const handleSliderUpload = async (e, deptOverride) => {
+    const files = Array.from(e.target?.files || [e]);
+    if (!files.length) return;
+    const fd = new FormData();
+    files.forEach(f => fd.append("images", f));
+    const dept = deptOverride || selectedDeptForSlider;
+    if (dept !== "null") fd.append("department", dept);
+    try { await axiosInstance.post("/sliders/upload", fd); notify("Uploaded"); fetchData(); }
+    catch { notify("Upload failed", "error"); }
   };
 
   const updateSliderImage = async (id, file) => {
-    const formData = new FormData();
-    formData.append("image", file);
-    try {
-      await axiosInstance.put(`/sliders/${id}`, formData);
-      showNotify("Slider updated");
-      fetchData();
-    } catch (error) {
-      showNotify("Update failed", "error");
-    }
+    const fd = new FormData(); fd.append("image", file);
+    try { await axiosInstance.put(`/sliders/${id}`, fd); notify("Updated"); fetchData(); }
+    catch { notify("Update failed", "error"); }
   };
 
-  // --- DEPARTMENT HANDLERS ---
-  const handleDeptSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      const deptId = editItem?._id || selectedDeptForEdit?._id;
-      if (deptId) {
-        await axiosInstance.put(`/departments/${deptId}`, deptForm);
-        showNotify("Department updated!");
-      } else {
-        await axiosInstance.post("/departments", deptForm);
-        showNotify("Department added!");
-      }
-      setShowModal(false);
-      setEditItem(null);
-      setSelectedDeptForEdit(null);
-      resetDeptForm();
-      fetchData();
-    } catch (err) { showNotify("Save failed", "error"); }
+  const openModal = (type, item = null) => {
+    setModalType(type); setEditItem(item); setShowModal(true);
   };
+  const closeModal = () => { setShowModal(false); setEditItem(null); };
 
-  const deleteDepartment = async (id) => {
-    if (!window.confirm("Delete this department?")) return;
-    try {
-      await axiosInstance.delete(`/departments/${id}`);
-      showNotify("Deleted");
-      fetchData();
-    } catch (err) { showNotify("Delete failed", "error"); }
-  };
+  const navItems = [
+    { name: "Home Page",    icon: ImageIcon },
+    { name: "Academic",     icon: BookOpen },
+    { name: "Testimonials", icon: Users },
+    { name: "About Us",     icon: Info },
+    { name: "Admission",    icon: Layers },
+    { name: "Departments",  icon: Building2 },
+    { name: "Gallery",      icon: ImageIcon },
+    { name: "Settings",     icon: Settings },
+  ];
 
-  const resetDeptForm = () => {
-    setDeptForm({
-      name: "",
-      category: "Nursing Department",
-      description: "",
-      overview: "",
-      overview2: "",
-      faculty: [],
-      facilities: [],
-      activities: [],
-      icon: "🏥"
-    });
-    setDeptFacultyForm({ name: '', designation: '', qualification: '', specialization: '' });
-    setDeptFacilityInput("");
-    setDeptActivityInput("");
-  };
-
-  const openDeptEdit = (dept) => {
-    setEditItem(dept);
-    setDeptForm({
-      name: dept.name,
-      category: dept.category,
-      description: dept.description,
-      overview: dept.overview,
-      overview2: dept.overview2 || "",
-      faculty: dept.faculty || [],
-      facilities: dept.facilities || [],
-      activities: dept.activities || [],
-      icon: dept.icon || "🏥"
-    });
-    setModalType("department");
-    setShowModal(true);
-  };
-
-  const addDeptFaculty = () => {
-    if (!deptFacultyForm.name) return;
-    setDeptForm({ ...deptForm, faculty: [...deptForm.faculty, deptFacultyForm] });
-    setDeptFacultyForm({ name: '', designation: '', qualification: '', specialization: '' });
-  };
-
-  const addDeptFacility = () => {
-    if (!deptFacilityInput) return;
-    setDeptForm({ ...deptForm, facilities: [...deptForm.facilities, deptFacilityInput] });
-    setDeptFacilityInput("");
-  };
-
-  const addDeptActivity = () => {
-    if (!deptActivityInput) return;
-    setDeptForm({ ...deptForm, activities: [...deptForm.activities, deptActivityInput] });
-    setDeptActivityInput("");
-  };
-
-  // --- PROGRAM ACTIONS ---
-  const handleProgramSubmit = async (e) => {
-    e.preventDefault();
-    const formData = new FormData();
-    Object.keys(programForm).forEach(key => {
-      if (key === "courses") {
-        const coursesArray = programForm[key].split(",").map(c => c.trim()).filter(c => c);
-        formData.append(key, JSON.stringify(coursesArray));
-      } else if (key === "image" && programForm[key]) {
-        formData.append("image", programForm[key]);
-      } else {
-        formData.append(key, programForm[key]);
-      }
-    });
-
-    try {
-      if (editItem) {
-        await axiosInstance.put(`/programs/${editItem._id}`, formData);
-        showNotify("Program updated");
-      } else {
-        await axiosInstance.post("/programs", formData);
-        showNotify("Program created");
-      }
-      setShowModal(false);
-      setEditItem(null);
-      resetProgramForm();
-      fetchData();
-    } catch (error) {
-      showNotify("Operation failed", "error");
-    }
-  };
-
-  const deleteProgram = async (id) => {
-    if (!window.confirm("Delete this program?")) return;
-    try {
-      await axiosInstance.delete(`/programs/${id}`);
-      showNotify("Program removed");
-      fetchData();
-    } catch (error) {
-      showNotify("Delete failed", "error");
-    }
-  };
-
-  const resetProgramForm = () => {
-    setProgramForm({
-      title: "",
-      description: "",
-      duration: "",
-      category: "Undergraduate",
-      courses: "",
-      image: null
-    });
-  };
-
-  const openProgramEdit = (prog) => {
-    setEditItem(prog);
-    setProgramForm({
-      title: prog.title,
-      description: prog.description,
-      duration: prog.duration,
-      category: prog.category,
-      courses: prog.courses ? prog.courses.join(", ") : "",
-      image: null
-    });
-    setModalType("program");
-    setShowModal(true);
-  };
-
-  const saveAcademicContent = async () => {
-    try {
-      await axiosInstance.put("/content/academic", academicContent);
-      showNotify("Academic Section Content Updated");
-    } catch (error) {
-      showNotify("Update failed", "error");
-    }
-  };
-
-  // --- TESTIMONIAL ACTIONS ---
-  const handleTestimonialSubmit = async (e) => {
-    e.preventDefault();
-    const formData = new FormData();
-    Object.keys(testimonialForm).forEach(key => {
-      if (key === "image" && testimonialForm[key]) {
-        formData.append("image", testimonialForm[key]);
-      } else {
-        formData.append(key, testimonialForm[key]);
-      }
-    });
-
-    try {
-      if (editItem) {
-        await axiosInstance.put(`/testimonials/${editItem._id}`, formData);
-        showNotify("Testimonial updated");
-      } else {
-        await axiosInstance.post("/testimonials", formData);
-        showNotify("Testimonial created");
-      }
-      setShowModal(false);
-      setEditItem(null);
-      resetTestimonialForm();
-      fetchData();
-    } catch (error) {
-      showNotify("Operation failed", "error");
-    }
-  };
-
-  const deleteTestimonial = async (id) => {
-    if (!window.confirm("Delete this testimonial?")) return;
-    try {
-      await axiosInstance.delete(`/testimonials/${id}`);
-      showNotify("Testimonial removed");
-      fetchData();
-    } catch (error) {
-      showNotify("Delete failed", "error");
-    }
-  };
-
-  const resetTestimonialForm = () => {
-    setTestimonialForm({
-      name: "",
-      role: "",
-      content: "",
-      rating: 5,
-      image: null
-    });
-  };
-
-  const openTestimonialEdit = (testi) => {
-    setEditItem(testi);
-    setTestimonialForm({
-      name: testi.name,
-      role: testi.role,
-      content: testi.content,
-      rating: testi.rating,
-      image: null
-    });
-    setModalType("testimonial");
-    setShowModal(true);
-  };
-
-  // ─── ABOUT US HANDLERS ────────────────────────────────────────────────────────
-  const handleMilestoneSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      if (editItem) {
-        const res = await axiosInstance.put(`/about/milestones/${editItem._id}`, milestoneForm);
-        setMilestones(milestones.map(m => m._id === editItem._id ? res.data : m));
-        showNotify("Milestone updated!");
-      } else {
-        const res = await axiosInstance.post("/about/milestones", milestoneForm);
-        setMilestones([...milestones, res.data]);
-        showNotify("Milestone added!");
-      }
-      setShowModal(false);
-      setEditItem(null);
-      setMilestoneForm({ year: '', event: '', icon: '🎯', color: '#1e3a8a', description: '' });
-    } catch (err) { showNotify("Save failed", "error"); }
-  };
-
-  const deleteMilestone = async (id) => {
-    try {
-      await axiosInstance.delete(`/about/milestones/${id}`);
-      setMilestones(milestones.filter(m => m._id !== id));
-      showNotify("Milestone deleted");
-    } catch (err) { showNotify("Delete failed", "error"); }
-  };
-
-  // --- Vision & Mission HANDLERS ---
-  const handleVmSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      if (editItem) {
-        await axiosInstance.put(`/about/vision-mission/${editItem._id}`, vmForm);
-        showNotify("Updated!");
-      } else {
-        await axiosInstance.post("/about/vision-mission", vmForm);
-        showNotify("Added!");
-      }
-      setShowModal(false);
-      setEditItem(null);
-      setVmForm({ type: 'vision', content: '', order: 0 });
-      fetchData();
-    } catch (err) { showNotify("Save failed", "error"); }
-  };
-
-  const deleteVm = async (id) => {
-    if (!window.confirm("Delete this item?")) return;
-    try {
-      await axiosInstance.delete(`/about/vision-mission/${id}`);
-      showNotify("Deleted");
-      fetchData();
-    } catch (err) { showNotify("Delete failed", "error"); }
-  };
-
-  // --- Core Values HANDLERS ---
-  const handleCvSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      if (editItem) {
-        await axiosInstance.put(`/about/core-values/${editItem._id}`, cvForm);
-        showNotify("Updated!");
-      } else {
-        await axiosInstance.post("/about/core-values", cvForm);
-        showNotify("Added!");
-      }
-      setShowModal(false);
-      setEditItem(null);
-      setCvForm({ icon: '🌟', title: '', description: '', color: 'from-amber-500 to-orange-500', order: 0 });
-      fetchData();
-    } catch (err) { showNotify("Save failed", "error"); }
-  };
-
- 
-
-  // --- Admission HANDLERS ---
-  const handleCourseSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      if (editItem) {
-        await axiosInstance.put(`/courses/${editItem._id}`, courseForm);
-        showNotify("Course updated!");
-      } else {
-        await axiosInstance.post("/courses", courseForm);
-        showNotify("Course added!");
-      }
-      setShowModal(false);
-      setEditItem(null);
-      setCourseForm({ category: "Undergraduate Programs", name: "", duration: "", seats: "", eligibility: "", description: "", icon: "👨‍⚕️", highlights: "", fees: "", admission: "", websiteLink: "" });
-      fetchData();
-    } catch (err) { showNotify("Save failed", "error"); }
-  };
-
-  const deleteCourse = async (id) => {
-    if (!window.confirm("Delete this course?")) return;
-    try {
-      await axiosInstance.delete(`/courses/${id}`);
-      showNotify("Deleted");
-      fetchData();
-    } catch (err) { showNotify("Delete failed", "error"); }
-  };
-
-  const handleStepSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      if (editItem) {
-        await axiosInstance.put(`/admission-steps/${editItem._id}`, admissionStepForm);
-        showNotify("Step updated!");
-      } else {
-        await axiosInstance.post("/admission-steps", admissionStepForm);
-        showNotify("Step added!");
-      }
-      setShowModal(false);
-      setEditItem(null);
-      setAdmissionStepForm({ step: 1, title: "", description: "", details: "", icon: "Calendar" });
-      fetchData();
-    } catch (err) { showNotify("Save failed", "error"); }
-  };
-
-  const deleteStep = async (id) => {
-    if (!window.confirm("Delete this step?")) return;
-    try {
-      await axiosInstance.delete(`/admission-steps/${id}`);
-      showNotify("Deleted");
-      fetchData();
-    } catch (err) { showNotify("Delete failed", "error"); }
-  };
-
-  const handleRuleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      if (editItem) {
-        await axiosInstance.put(`/admission-rules/${editItem._id}`, admissionRuleForm);
-        showNotify("Rule updated!");
-      } else {
-        await axiosInstance.post("/admission-rules", admissionRuleForm);
-        showNotify("Rule added!");
-      }
-      setShowModal(false);
-      setEditItem(null);
-      setAdmissionRuleForm({ category: "UnderGraduated Programs", title: "", description: "", icon: "CheckCircle" });
-      fetchData();
-    } catch (err) { showNotify("Save failed", "error"); }
-  };
-
-  const deleteRule = async (id) => {
-    if (!window.confirm("Delete this rule?")) return;
-    try {
-      await axiosInstance.delete(`/admission-rules/${id}`);
-      showNotify("Deleted");
-      fetchData();
-    } catch (err) { showNotify("Delete failed", "error"); }
-  };
-
-  const handleBondSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      if (editItem) {
-        await axiosInstance.put(`/bonds/${editItem._id}`, bondForm);
-        showNotify("Bond updated!");
-      } else {
-        await axiosInstance.post("/bonds", bondForm);
-        showNotify("Bond added!");
-      }
-      setShowModal(false);
-      setEditItem(null);
-      setBondForm({ type: "student", title: "", content: "", order: 0 });
-      fetchData();
-    } catch (err) { showNotify("Save failed", "error"); }
-  };
-
-  const deleteBond = async (id) => {
-    if (!window.confirm("Delete this bond item?")) return;
-    try {
-      await axiosInstance.delete(`/bonds/${id}`);
-      showNotify("Deleted");
-      fetchData();
-    } catch (err) { showNotify("Delete failed", "error"); }
-  };
-
-  const handleGuidelineSubmit = async (e) => {
-    e.preventDefault();
-    const data = { 
-      ...guidelineForm, 
-      points: typeof guidelineForm.points === 'string' ? guidelineForm.points.split('\n').filter(p => p.trim()) : guidelineForm.points 
-    };
-    try {
-      if (editItem) {
-        await axiosInstance.put(`/guidelines/${editItem._id}`, data);
-        showNotify("Guideline updated!");
-      } else {
-        await axiosInstance.post("/guidelines", data);
-        showNotify("Guideline added!");
-      }
-      setShowModal(false);
-      setEditItem(null);
-      setGuidelineForm({ category: "General Guidelines", subCategory: "", points: "", order: 0 });
-      fetchData();
-    } catch (err) { showNotify("Save failed", "error"); }
-  };
-
-  const deleteGuideline = async (id) => {
-    if (!window.confirm("Delete this guideline?")) return;
-    try {
-      await axiosInstance.delete(`/guidelines/${id}`);
-      showNotify("Deleted");
-      fetchData();
-    } catch (err) { showNotify("Delete failed", "error"); }
-  };
-
-  const deleteCv = async (id) => {
-    if (!window.confirm("Delete this core value?")) return;
-    try {
-      await axiosInstance.delete(`/about/core-values/${id}`);
-      showNotify("Deleted");
-      fetchData();
-    } catch (err) { showNotify("Delete failed", "error"); }
-  };
-
-  const saveDeanMessage = async () => {
-    try {
-      const formData = new FormData();
-      formData.append('name', deanMessage.name || '');
-      formData.append('title', deanMessage.title || '');
-      formData.append('greeting', deanMessage.greeting || '');
-      formData.append('paragraphs', JSON.stringify(deanMessage.paragraphs || []));
-      formData.append('highlight', deanMessage.highlight || '');
-      formData.append('stats', JSON.stringify(deanMessage.stats || []));
-      if (deanPhotoFile) formData.append('photo', deanPhotoFile);
-      const res = await axiosInstance.put('/about/dean', formData);
-      setDeanMessage(res.data);
-      setDeanPhotoFile(null);
-      showNotify("Dean's message updated!");
-    } catch (err) { showNotify("Update failed", "error"); }
-  };
-
-  const saveCollegeLogo = async () => {
-    try {
-      const formData = new FormData();
-      formData.append('collegeName', collegeLogo.collegeName || '');
-      formData.append('tagline', collegeLogo.tagline || '');
-      if (logoFile) formData.append('logo', logoFile);
-      const res = await axiosInstance.put('/about/college-logo', formData);
-      setCollegeLogo(res.data);
-      setLogoFile(null);
-      showNotify("College logo updated!");
-    } catch (err) { showNotify("Update failed", "error"); }
-  };
-
-  const themeColors = {
-    primary: "#6B3F1D",
-    accent: "#E07B39",
-    bg: "#FFFFFF",
-    text: "#000000"
-  };
+  const modalMeta = {
+    program:      { title: editItem ? "Edit Program"    : "Add Program",    subtitle: "Academic program details" },
+    testimonial:  { title: editItem ? "Edit Testimonial": "Add Testimonial",subtitle: "Student review" },
+    milestone:    { title: editItem ? "Edit Milestone"  : "Add Milestone",  subtitle: "Timeline entry" },
+    visionMission:{ title: editItem ? "Edit Point"      : "Add Point",      subtitle: "Vision or Mission statement" },
+    coreValue:    { title: editItem ? "Edit Value"      : "Add Core Value", subtitle: "Institutional value" },
+    course:       { title: editItem ? "Edit Course"     : "Add Course",     subtitle: "Admission course" },
+    step:         { title: editItem ? "Edit Step"       : "Add Step",       subtitle: "Admission procedure step" },
+    rule:         { title: editItem ? "Edit Rule"       : "Add Rule",       subtitle: "Eligibility rule" },
+    bond:         { title: editItem ? "Edit Bond"       : "Add Bond Point", subtitle: "Student bond" },
+    guideline:    { title: editItem ? "Edit Guidelines" : "Add Guidelines", subtitle: "Student / parent guidance" },
+    department:   { title: editItem ? "Edit Dept"       : "Add Department", subtitle: "Create a new department" },
+    gallery:      { title: editItem ? "Edit Photo"      : "Add Photo",      subtitle: "Gallery image" },
+  }[modalType] || {};
 
   return (
-    <div className="flex h-screen bg-[#F8FAFC] font-sans relative overflow-hidden">
+    <div className="flex h-screen bg-gray-50 text-gray-900 font-sans overflow-hidden">
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-        * { font-family: 'Inter', sans-serif; }
-        
-        .sidebar-item {
-          transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        .sidebar-item.active {
-          background: #FFF;
-          color: #8B4513;
-          box-shadow: 0 4px 12px rgba(139, 69, 19, 0.08);
-        }
-        .glass-card {
-          background: rgba(255, 255, 255, 0.8);
-          backdrop-filter: blur(8px);
-          border: 1px solid rgba(226, 232, 240, 0.8);
-        }
-        .custom-scrollbar::-webkit-scrollbar {
-          width: 6px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: #E2E8F0;
-          border-radius: 10px;
-        }
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap');
+        * { font-family: 'DM Sans', sans-serif; box-sizing: border-box; }
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+        ::-webkit-scrollbar { width: 5px; height: 5px; }
+        ::-webkit-scrollbar-thumb { background: #D1C7BC; border-radius: 10px; }
       `}</style>
 
-      {/* Notification Toast */}
-      <AnimatePresence>
-        {notification && (
-          <motion.div
-            initial={{ opacity: 0, y: -20, x: "-50%" }}
-            animate={{ opacity: 1, y: 20, x: "-50%" }}
-            exit={{ opacity: 0, y: -20, x: "-50%" }}
-            className={`fixed top-0 left-1/2 z-[100] flex items-center gap-3 px-6 py-3 rounded-2xl shadow-2xl ${
-              notification.type === "error" ? "bg-red-50 text-red-600 border border-red-100" : "bg-white text-green-600 border border-green-100"
-            }`}
-          >
-            {notification.type === "error" ? <AlertCircle size={20} /> : <CheckCircle2 size={20} />}
-            <span className="font-semibold">{notification.message}</span>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Mobile Sidebar Overlay */}
-      <AnimatePresence>
-        {isSidebarOpen && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={() => setIsSidebarOpen(false)}
-            className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60] lg:hidden"
-          />
-        )}
-      </AnimatePresence>
-
-      {/* Sidebar */}
-      <aside className={`
-        fixed inset-y-0 left-0 w-72 bg-white border-r border-slate-200 flex flex-col p-6 shadow-xl z-[70] transition-transform duration-300 ease-in-out
-        lg:translate-x-0 lg:static lg:inset-0 lg:shadow-none
-        ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"}
-      `}>
-        <div className="flex items-center gap-3 mb-10 px-2">
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white shadow-lg shadow-orange-900/20" style={{ backgroundColor: themeColors.primary }}>
-            <LayoutDashboard size={24} />
-          </div>
-          <div>
-            <h1 className="text-xl font-bold tracking-tight" style={{ color: themeColors.text }}>Ginera Admin</h1>
-            <p className="text-xs font-medium uppercase tracking-widest" style={{ color: themeColors.accent }}>Management Console</p>
-          </div>
-        </div>
-
-        <nav className="flex-1 space-y-2 overflow-y-auto custom-scrollbar pr-2">
-          {[
-            { name: "Home Page", icon: ImageIcon },
-            { name: "Academic", icon: BookOpen },
-            { name: "Testimonials", icon: Users },
-            { name: "About Us", icon: Info },
-            { name: "Admission", icon: Layers },
-            { name: "Departments", icon: Building2 },
-            { name: "Gallery", icon: ImageIcon },
-            { name: "Settings", icon: Settings },
-          ].map((item) => (
-            <div key={item.name} className="space-y-1">
-              <button
-                onClick={() => {
-                  setActiveTab(item.name);
-                  if (item.name !== "Departments") setSelectedDeptForEdit(null);
-                }}
-                className={`sidebar-item w-full flex items-center gap-3 px-4 py-3.5 rounded-xl font-semibold transition-all ${
-                  activeTab === item.name 
-                    ? "shadow-md" 
-                    : "hover:bg-orange-50"
-                }`}
-                style={{ 
-                  backgroundColor: activeTab === item.name ? themeColors.primary : "transparent",
-                  color: activeTab === item.name ? "#FFFFFF" : themeColors.text
-                }}
-              >
-                <item.icon size={20} />
-                {item.name}
-                {activeTab === item.name && (
-                  <motion.div layoutId="active-pill" className="ml-auto">
-                    <ChevronRight size={16} />
-                  </motion.div>
-                )}
-              </button>
-              
-              {item.name === "Departments" && activeTab === "Departments" && departments.length > 0 && (
-                <div className="pl-10 space-y-1 py-1">
-                  {departments.map(dept => (
-                    <button
-                      key={dept._id}
-                      onClick={() => {
-                        setSelectedDeptForEdit(dept);
-                        setDeptForm(dept);
-                        setDeptActiveSubTab("Overview");
-                      }}
-                      className={`w-full text-left px-4 py-2 rounded-lg text-sm transition-all border-l-2 ${
-                        selectedDeptForEdit?._id === dept._id
-                          ? "border-amber-600 bg-amber-50 text-amber-800 font-bold"
-                          : "border-transparent text-slate-500 hover:bg-slate-50 hover:text-slate-800"
-                      }`}
-                    >
-                      {dept.name.split('Department of ')[1] || dept.name}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          ))}
-        </nav>
-
-        <button
-          onClick={onLogout}
-          className="mt-auto flex items-center gap-3 px-4 py-3.5 rounded-xl font-semibold text-red-500 hover:bg-red-50 transition-colors"
-        >
-          <LogOut size={20} />
-          Sign Out
-        </button>
-      </aside>
-
-      {/* Main Content */}
-      <main className="flex-1 min-w-0 overflow-hidden flex flex-col bg-[#F8FAFC]">
-        <header className="h-20 bg-white/90 backdrop-blur-md border-b border-slate-200 flex items-center justify-between px-4 lg:px-10 shrink-0 shadow-sm z-20">
-          <div className="flex items-center gap-4 truncate">
-            <button 
-              onClick={() => setIsSidebarOpen(true)}
-              className="p-2 hover:bg-slate-100 rounded-xl lg:hidden text-slate-600 shrink-0"
-            >
-              <Menu size={24} />
-            </button>
-            <div className="truncate">
-              <h2 className="text-lg lg:text-2xl font-bold truncate" style={{ color: themeColors.text }}>{activeTab}</h2>
-              <p className="text-xs lg:text-sm font-medium text-slate-500 truncate">Manage your website's {activeTab.toLowerCase()} content</p>
-            </div>
-          </div>
-        </header>
-
-        <div className="flex-1 overflow-y-auto p-4 lg:p-10 custom-scrollbar">
+      <Toast note={note}/>
+      <Sidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} activeTab={activeTab} setActiveTab={setActiveTab} selectedDept={selectedDept} setSelectedDept={setSelectedDept} navItems={navItems} onLogout={onLogout}/>
+      
+      <main className="flex-1 flex flex-col overflow-hidden">
+        <Header setSidebarOpen={setSidebarOpen} selectedDept={selectedDept} activeTab={activeTab}/>
+        
+        <div className="flex-1 overflow-y-auto p-4 lg:p-8 custom-scrollbar">
           <div className="max-w-7xl mx-auto">
-            {activeTab === "Home Page" && (
-              <div className="space-y-8">
-                <div className="flex flex-col md:flex-row items-center justify-between bg-white p-6 rounded-2xl shadow-sm border border-slate-200 gap-4">
-                  <div className="flex items-center gap-4 w-full md:w-auto">
-                    <select 
-                      className="flex-1 md:flex-none bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-semibold outline-none focus:ring-2 focus:ring-amber-500/20"
-                      value={selectedDeptForSlider}
-                      onChange={(e) => setSelectedDeptForSlider(e.target.value)}
-                    >
-                      <option value="null">Homepage Sliders</option>
-                      {departments.map(dept => (
-                        <option key={dept._id} value={dept._id}>{dept.name}</option>
-                      ))}
-                    </select>
-                    
-                    <label 
-                      className="text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 cursor-pointer transition-all shadow-md active:scale-95 hover:opacity-90"
-                      style={{ backgroundColor: themeColors.primary }}
-                    >
-                      <Upload size={20} /> <span className="hidden md:inline">Upload Images</span>
-                      <input type="file" multiple className="hidden" onChange={handleSliderUpload} />
-                    </label>
-                  </div>
-                </div>
-
-                {sliders.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-24 bg-white rounded-3xl border-2 border-dashed border-slate-200 shadow-sm">
-                    <ImageIcon size={64} className="text-slate-300 mb-6" />
-                    <h3 className="text-xl font-bold text-slate-800 mb-2">No Slider Images Found</h3>
-                    <p className="text-slate-500 mb-8 max-w-md text-center">Your homepage hero section currently has no images. Upload high-quality images to create a dynamic slider.</p>
-                    <label 
-                      className="text-white px-8 py-4 rounded-xl font-bold flex items-center gap-3 cursor-pointer transition-all shadow-lg active:scale-95 hover:opacity-90"
-                      style={{ backgroundColor: themeColors.primary }}
-                    >
-                      <Upload size={24} /> Click to Upload First Images
-                      <input type="file" multiple className="hidden" onChange={handleSliderUpload} />
-                    </label>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                    <AnimatePresence>
-                      {sliders.map((slider) => (
-                        <motion.div
-                          key={slider._id}
-                          layout
-                          initial={{ opacity: 0, scale: 0.9 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          exit={{ opacity: 0, scale: 0.9 }}
-                          className="group relative bg-white rounded-2xl overflow-hidden aspect-[16/10] shadow-sm hover:shadow-xl transition-all duration-300 border border-slate-200"
-                        >
-                          <img 
-                            src={slider.imageUrl.startsWith('http') ? slider.imageUrl : `http://localhost:8080${slider.imageUrl}`} 
-                            alt={slider.title}
-                            className="w-full h-full object-cover"
-                          />
-                          <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-4">
-                            <p className="text-white font-medium text-sm px-4 text-center">Update or Delete Image</p>
-                            <div className="flex gap-3">
-                              <label className="p-3 bg-white hover:bg-slate-100 rounded-xl text-slate-800 cursor-pointer transition-all hover:scale-110 active:scale-95 shadow-lg flex items-center gap-2">
-                                <Edit3 size={18} /> <span className="text-sm font-bold">Update</span>
-                                <input 
-                                  type="file" 
-                                  className="hidden" 
-                                  onChange={(e) => updateSliderImage(slider._id, e.target.files[0])} 
-                                />
-                              </label>
-                              <button 
-                                onClick={() => deleteSlider(slider._id)}
-                                className="p-3 bg-red-500 hover:bg-red-600 rounded-xl text-white transition-all hover:scale-110 active:scale-95 shadow-lg flex items-center gap-2"
-                              >
-                                <Trash2 size={18} />
-                              </button>
-                            </div>
-                          </div>
-                        </motion.div>
-                      ))}
-                    </AnimatePresence>
-                  </div>
-                )}
+            {loading && (
+              <div className="flex items-center justify-center py-20">
+                <div className="w-10 h-10 border-4 border-t-transparent rounded-full animate-spin" style={{ borderColor: C.accent, borderTopColor: "transparent" }}/>
               </div>
             )}
-
-            {activeTab === "Academic" && (
-              <div className="space-y-8">
-                <div className="flex items-center justify-between bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center text-orange-700" style={{ color: themeColors.accent }}>
-                      <BookOpen size={24} />
-                    </div>
-                    <div>
-                      <h3 className="text-xl font-bold text-slate-800">Academic Programs</h3>
-                      <p className="text-sm text-slate-500">Manage courses and degrees ({programs.length} active)</p>
-                    </div>
-                  </div>
-                  
-                  <button 
-                    onClick={() => { resetProgramForm(); setEditItem(null); setModalType("program"); setShowModal(true); }}
-                    className="text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 transition-all shadow-md hover:shadow-lg active:scale-95 hover:opacity-90"
-                    style={{ backgroundColor: themeColors.primary }}
-                  >
-                    <Plus size={20} /> Add New Program
-                  </button>
-                </div>
-
-                <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                  <h4 className="text-lg font-bold text-slate-800 mb-4">Edit Section Details</h4>
-                  <div className="space-y-4">
-                    <input
-                      type="text"
-                      className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:border-amber-700 transition-all"
-                      placeholder="Section Title"
-                      value={academicContent.title}
-                      onChange={(e) => setAcademicContent({...academicContent, title: e.target.value})}
-                    />
-                    <textarea
-                      className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:border-amber-700 transition-all h-24 resize-none"
-                      placeholder="Description Line 1"
-                      value={academicContent.description1}
-                      onChange={(e) => setAcademicContent({...academicContent, description1: e.target.value})}
-                    />
-                    <textarea
-                      className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:border-amber-700 transition-all h-20 resize-none"
-                      placeholder="Description Line 2"
-                      value={academicContent.description2}
-                      onChange={(e) => setAcademicContent({...academicContent, description2: e.target.value})}
-                    />
-                    <button 
-                      onClick={saveAcademicContent}
-                      className="px-6 py-3 rounded-xl text-white font-bold transition-all shadow-md active:scale-95"
-                      style={{ backgroundColor: themeColors.primary }}
-                    >
-                      Save Section Content
-                    </button>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 gap-4">
-                {programs.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-20 bg-white rounded-3xl border-2 border-dashed border-slate-200">
-                    <BookOpen size={48} className="text-slate-300 mb-4" />
-                    <p className="text-slate-500 font-medium text-lg">No academic programs added yet</p>
-                    <button 
-                      onClick={() => { resetProgramForm(); setEditItem(null); setModalType("program"); setShowModal(true); }}
-                      className="mt-4 font-bold hover:underline"
-                      style={{ color: themeColors.primary }}
-                    >
-                      Click here to add your first program
-                    </button>
-                  </div>
-                ) : (
-                  programs.map((prog) => (
-                    <motion.div
-                      key={prog._id}
-                      initial={{ opacity: 0, x: -10 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      className="bg-white p-6 rounded-2xl flex items-center gap-6 group hover:shadow-md transition-all border border-slate-100"
-                    >
-                      <div className="w-32 h-24 rounded-xl overflow-hidden shrink-0 border border-slate-200">
-                        <img 
-                          src={prog.imageUrl ? (prog.imageUrl.startsWith('http') ? prog.imageUrl : `http://localhost:8080${prog.imageUrl}`) : "/placeholder.png"} 
-                          className="w-full h-full object-cover" 
-                          alt=""
-                        />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span 
-                            className="px-2 py-0.5 text-[10px] font-bold uppercase rounded-md tracking-wider"
-                            style={{ backgroundColor: themeColors.accent + "20", color: themeColors.accent }}
-                          >
-                            {prog.category || "General"}
-                          </span>
-                          <span className="text-xs text-slate-400 font-medium">• {prog.duration}</span>
-                        </div>
-                        <h4 className="text-lg font-bold text-slate-800 truncate">{prog.title}</h4>
-                        <p className="text-sm text-slate-500 line-clamp-1">{prog.description}</p>
-                      </div>
-                      <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button 
-                          onClick={() => openProgramEdit(prog)}
-                          className="p-3 bg-slate-100 hover:bg-slate-200 rounded-xl text-slate-700 transition-all hover:scale-105 active:scale-95"
-                        >
-                          <Edit3 size={18} />
-                        </button>
-                        <button 
-                          onClick={() => deleteProgram(prog._id)}
-                          className="p-3 bg-red-50 hover:bg-red-100 rounded-xl text-red-500 transition-all hover:scale-105 active:scale-95"
-                        >
-                          <Trash2 size={18} />
-                        </button>
-                      </div>
-                    </motion.div>
-                  ))
-                )}
-                </div>
-              </div>
-            )}
-
-            {activeTab === "Testimonials" && (
-              <div className="space-y-8">
-                <div className="flex items-center justify-between bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center text-blue-700" style={{ color: themeColors.primary }}>
-                      <Users size={24} />
-                    </div>
-                    <div>
-                      <h3 className="text-xl font-bold text-slate-800">Student Testimonials</h3>
-                      <p className="text-sm text-slate-500">Manage student reviews ({testimonials.length} active)</p>
-                    </div>
-                  </div>
-                  
-                  <button 
-                    onClick={() => { resetTestimonialForm(); setEditItem(null); setModalType("testimonial"); setShowModal(true); }}
-                    className="text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 transition-all shadow-md hover:shadow-lg active:scale-95 hover:opacity-90"
-                    style={{ backgroundColor: themeColors.primary }}
-                  >
-                    <Plus size={20} /> Add Testimonial
-                  </button>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {testimonials.length === 0 ? (
-                  <div className="col-span-full flex flex-col items-center justify-center py-20 bg-white rounded-3xl border-2 border-dashed border-slate-200">
-                    <Users size={48} className="text-slate-300 mb-4" />
-                    <p className="text-slate-500 font-medium text-lg">No testimonials added yet</p>
-                    <button 
-                      onClick={() => { resetTestimonialForm(); setEditItem(null); setModalType("testimonial"); setShowModal(true); }}
-                      className="mt-4 font-bold hover:underline"
-                      style={{ color: themeColors.primary }}
-                    >
-                      Click here to add the first testimonial
-                    </button>
-                  </div>
-                ) : (
-                  testimonials.map((testi) => (
-                    <motion.div
-                      key={testi._id}
-                      initial={{ opacity: 0, scale: 0.95 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col hover:shadow-md transition-shadow relative group"
-                    >
-                      <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button 
-                          onClick={() => openTestimonialEdit(testi)}
-                          className="p-2 bg-slate-100 hover:bg-slate-200 rounded-lg text-slate-700 transition-colors"
-                        >
-                          <Edit3 size={16} />
-                        </button>
-                        <button 
-                          onClick={() => deleteTestimonial(testi._id)}
-                          className="p-2 bg-red-50 hover:bg-red-100 rounded-lg text-red-500 transition-colors"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
-                      
-                      <div className="flex items-center gap-4 mb-4">
-                        <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-slate-100 shrink-0">
-                          <img 
-                            src={testi.imageUrl ? (testi.imageUrl.startsWith('http') ? testi.imageUrl : `http://localhost:8080${testi.imageUrl}`) : "/placeholder.png"} 
-                            alt={testi.name}
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                        <div>
-                          <h4 className="font-bold text-slate-800">{testi.name}</h4>
-                          <p className="text-xs font-medium text-slate-500">{testi.role}</p>
-                          <div className="flex gap-1 mt-1">
-                            {[...Array(5)].map((_, i) => (
-                              <svg key={i} className={`w-3 h-3 ${i < testi.rating ? "text-amber-400" : "text-slate-200"}`} fill="currentColor" viewBox="0 0 20 20">
-                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                              </svg>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                      <p className="text-sm text-slate-600 italic line-clamp-4">"{testi.content}"</p>
-                    </motion.div>
-                  ))
-                )}
-                </div>
-              </div>
-            )}
-
-            {activeTab === "About Us" && (
-              <div className="space-y-8">
-                {/* Sub-Navigation for About Us */}
-                <div className="flex flex-wrap items-center gap-2 p-1.5 bg-slate-100 rounded-2xl w-fit">
-                  {["Branding", "Principal", "Timeline", "Vision & Mission", "Core Values"].map((sub) => (
-                    <button
-                      key={sub}
-                      onClick={() => setAboutActiveSubTab(sub)}
-                      className={`px-5 py-2.5 rounded-xl text-sm font-bold transition-all ${
-                        aboutActiveSubTab === sub
-                          ? "bg-white text-slate-800 shadow-sm"
-                          : "text-slate-500 hover:text-slate-700"
-                      }`}
-                    >
-                      {sub}
-                    </button>
-                  ))}
-                </div>
-
-                {/* College Logo */}
-                {aboutActiveSubTab === "Branding" && (
-                  <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                    <h4 className="text-lg font-bold text-slate-800 mb-4">College Logo & Branding</h4>
-                    <div className="flex items-center gap-6 mb-6">
-                      <div className="w-24 h-24 rounded-full border-4 border-amber-100 overflow-hidden bg-amber-50 flex items-center justify-center">
-                        {collegeLogo.logoUrl ? (
-                          <img src={collegeLogo.logoUrl.startsWith('http') ? collegeLogo.logoUrl : `http://localhost:8080${collegeLogo.logoUrl}`} alt="Logo" className="w-full h-full object-cover" />
-                        ) : <ImageIcon size={32} className="text-amber-300" />}
-                      </div>
-                      <div className="flex-1 space-y-3">
-                        <input type="text" className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none" placeholder="College Name" value={collegeLogo.collegeName || ''} onChange={e => setCollegeLogo({...collegeLogo, collegeName: e.target.value})} />
-                        <input type="text" className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none" placeholder="Tagline" value={collegeLogo.tagline || ''} onChange={e => setCollegeLogo({...collegeLogo, tagline: e.target.value})} />
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-4">
-                      <label className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 cursor-pointer hover:bg-slate-50 text-sm font-medium text-slate-600">
-                        <Upload size={16} /> {logoFile ? logoFile.name : "Upload New Logo"}
-                        <input type="file" className="hidden" accept="image/*" onChange={e => setLogoFile(e.target.files[0])} />
-                      </label>
-                      <button onClick={saveCollegeLogo} className="px-6 py-2.5 rounded-xl text-white font-bold text-sm transition-all shadow active:scale-95" style={{backgroundColor: themeColors.primary}}>Save Logo</button>
-                    </div>
-                  </motion.div>
-                )}
-
-                {/* Dean's Message */}
-                {aboutActiveSubTab === "Principal" && (
-                  <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                    <h4 className="text-lg font-bold text-slate-800 mb-4">Dean / Principal Message</h4>
-                    <div className="grid grid-cols-2 gap-4 mb-4">
-                      <input type="text" className="px-4 py-3 rounded-xl border border-slate-200 focus:outline-none" placeholder="Principal Name" value={deanMessage.name || ''} onChange={e => setDeanMessage({...deanMessage, name: e.target.value})} />
-                      <input type="text" className="px-4 py-3 rounded-xl border border-slate-200 focus:outline-none" placeholder="Title (e.g. Principal)" value={deanMessage.title || ''} onChange={e => setDeanMessage({...deanMessage, title: e.target.value})} />
-                    </div>
-                    <input type="text" className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none mb-4" placeholder="Greeting line" value={deanMessage.greeting || ''} onChange={e => setDeanMessage({...deanMessage, greeting: e.target.value})} />
-                    <label className="text-sm font-bold text-slate-600 block mb-2">Message Paragraphs (one per line)</label>
-                    <textarea className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none h-32 resize-none mb-4" placeholder="Each line = one paragraph" value={(deanMessage.paragraphs || []).join('\n')} onChange={e => setDeanMessage({...deanMessage, paragraphs: e.target.value.split('\n')})} />
-                    <textarea className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none h-16 resize-none mb-4" placeholder="Highlight quote at the bottom" value={deanMessage.highlight || ''} onChange={e => setDeanMessage({...deanMessage, highlight: e.target.value})} />
-                    <div className="flex items-center gap-4 mb-4">
-                      <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-slate-100">
-                        {deanMessage.photoUrl ? <img src={deanMessage.photoUrl.startsWith('http') ? deanMessage.photoUrl : `http://localhost:8080${deanMessage.photoUrl}`} alt="Principal" className="w-full h-full object-cover" /> : <div className="w-full h-full bg-slate-100 flex items-center justify-center"><Users size={24} className="text-slate-300" /></div>}
-                      </div>
-                      <label className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 cursor-pointer hover:bg-slate-50 text-sm font-medium text-slate-600">
-                        <Upload size={16} /> {deanPhotoFile ? deanPhotoFile.name : "Upload Principal Photo"}
-                        <input type="file" className="hidden" accept="image/*" onChange={e => setDeanPhotoFile(e.target.files[0])} />
-                      </label>
-                    </div>
-                    <button onClick={saveDeanMessage} className="px-6 py-3 rounded-xl text-white font-bold transition-all shadow active:scale-95" style={{backgroundColor: themeColors.primary}}>Save Dean's Message</button>
-                  </motion.div>
-                )}
-
-                {aboutActiveSubTab === "Timeline" && (
-                  <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                    <div className="flex items-center justify-between mb-6">
-                      <div>
-                        <h4 className="text-lg font-bold text-slate-800">Institutional Timeline</h4>
-                        <p className="text-sm text-slate-500">Manage {milestones.length} milestones</p>
-                      </div>
-                      <button onClick={() => { setEditItem(null); setMilestoneForm({ year: '', event: '', icon: '🎯', color: '#1e3a8a', description: '' }); setModalType('milestone'); setShowModal(true); }} className="flex items-center gap-2 px-4 py-2 bg-slate-800 text-white rounded-xl text-sm font-bold hover:bg-slate-900 transition-all shadow-md active:scale-95">
-                        <Plus size={16} /> Add Milestone
-                      </button>
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {milestones.map((m) => (
-                        <div key={m._id} className="p-4 bg-slate-50 rounded-2xl border border-slate-100 group relative">
-                          <div className="flex items-start gap-3">
-                            <div className="w-10 h-10 rounded-xl flex items-center justify-center text-lg shadow-sm bg-white" style={{ borderLeft: `4px solid ${m.color}` }}>{m.icon}</div>
-                            <div>
-                              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{m.year}</span>
-                              <h5 className="font-bold text-slate-800 mb-1 text-sm">{m.event}</h5>
-                              <p className="text-xs text-slate-500 line-clamp-2">{m.description}</p>
-                              <div className="absolute top-3 right-3 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <button onClick={() => { setEditItem(m); setMilestoneForm({ year: m.year, event: m.event, icon: m.icon, color: m.color, description: m.description }); setModalType('milestone'); setShowModal(true); }} className="p-1.5 bg-white rounded-lg border text-slate-600 hover:bg-slate-50"><Edit3 size={13} /></button>
-                                <button onClick={() => deleteMilestone(m._id)} className="p-1.5 bg-red-50 rounded-lg border border-red-100 text-red-500 hover:bg-red-100"><Trash2 size={13} /></button>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </motion.div>
-                )}
-
-                {aboutActiveSubTab === "Vision & Mission" && (
-                  <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                    <div className="flex items-center justify-between mb-6">
-                      <div>
-                        <h4 className="text-lg font-bold text-slate-800">Vision & Mission</h4>
-                        <p className="text-sm text-slate-500">Manage your college goals</p>
-                      </div>
-                      <button onClick={() => { setEditItem(null); setVmForm({ type: 'vision', content: '', order: 0 }); setModalType('visionMission'); setShowModal(true); }} className="flex items-center gap-2 px-4 py-2 bg-amber-600 text-white rounded-xl text-sm font-bold hover:bg-amber-700 transition-all shadow-md active:scale-95">
-                        <Plus size={16} /> Add Point
-                      </button>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-3">
-                        <h5 className="font-bold text-amber-700 text-sm flex items-center gap-2"><CheckCircle2 size={14} /> Vision</h5>
-                        {visionMission.filter(v => v.type === 'vision').map(v => (
-                          <div key={v._id} className="p-3 bg-white rounded-xl border border-slate-200 group relative">
-                            <p className="text-xs text-slate-600 pr-12">{v.content}</p>
-                            <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <button onClick={() => { setEditItem(v); setVmForm({ type: v.type, content: v.content, order: v.order }); setModalType('visionMission'); setShowModal(true); }} className="p-1 bg-slate-50 rounded border text-slate-400 hover:text-slate-600"><Edit3 size={12} /></button>
-                              <button onClick={() => deleteVm(v._id)} className="p-1 bg-red-50 rounded border border-red-100 text-red-400 hover:text-red-600"><Trash2 size={12} /></button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                      <div className="space-y-3">
-                        <h5 className="font-bold text-orange-700 text-sm flex items-center gap-2"><CheckCircle2 size={14} /> Mission</h5>
-                        {visionMission.filter(v => v.type === 'mission').map(v => (
-                          <div key={v._id} className="p-3 bg-white rounded-xl border border-slate-200 group relative">
-                            <p className="text-xs text-slate-600 pr-12">{v.content}</p>
-                            <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <button onClick={() => { setEditItem(v); setVmForm({ type: v.type, content: v.content, order: v.order }); setModalType('visionMission'); setShowModal(true); }} className="p-1 bg-slate-50 rounded border text-slate-400 hover:text-slate-600"><Edit3 size={12} /></button>
-                              <button onClick={() => deleteVm(v._id)} className="p-1 bg-red-50 rounded border border-red-100 text-red-400 hover:text-red-600"><Trash2 size={12} /></button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </motion.div>
-                )}
-
-                {aboutActiveSubTab === "Core Values" && (
-                  <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                    <div className="flex items-center justify-between mb-6">
-                      <div>
-                        <h4 className="text-lg font-bold text-slate-800">Core Values</h4>
-                        <p className="text-sm text-slate-500">The heart of your institution</p>
-                      </div>
-                      <button onClick={() => { setEditItem(null); setCvForm({ icon: '🌟', title: '', description: '', color: 'from-amber-500 to-orange-500', order: 0 }); setModalType('coreValue'); setShowModal(true); }} className="flex items-center gap-2 px-4 py-2 bg-slate-800 text-white rounded-xl text-sm font-bold hover:bg-slate-900 transition-all shadow-md active:scale-95">
-                        <Plus size={16} /> Add Value
-                      </button>
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                      {coreValues.map(cv => (
-                        <div key={cv._id} className="p-4 bg-white rounded-2xl border border-slate-200 group relative flex flex-col items-center text-center">
-                          <div className={`w-10 h-10 rounded-full bg-gradient-to-r ${cv.color} flex items-center justify-center text-white mb-2 shadow-sm`}>{cv.icon}</div>
-                          <h6 className="font-bold text-slate-800 text-xs mb-1">{cv.title}</h6>
-                          <p className="text-[10px] text-slate-500 line-clamp-2">{cv.description}</p>
-                          <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button onClick={() => { setEditItem(cv); setCvForm({ icon: cv.icon, title: cv.title, description: cv.description, color: cv.color, order: cv.order }); setModalType('coreValue'); setShowModal(true); }} className="p-1 bg-slate-50 rounded border text-slate-400 hover:text-slate-600"><Edit3 size={11} /></button>
-                            <button onClick={() => deleteCv(cv._id)} className="p-1 bg-red-50 rounded border border-red-100 text-red-400 hover:text-red-600"><Trash2 size={11} /></button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </motion.div>
-                )}
-              </div>
-            )}
-
-            {activeTab === "Admission" && (
-              <div className="space-y-8">
-                {/* Sub-Navigation for Admission */}
-                <div className="flex flex-wrap items-center gap-2 p-1.5 bg-slate-100 rounded-2xl w-fit">
-                  {["Courses", "Procedure", "Rules", "Student Bond", "Guidelines"].map((sub) => (
-                    <button
-                      key={sub}
-                      onClick={() => setAdmissionActiveSubTab(sub)}
-                      className={`px-5 py-2.5 rounded-xl text-sm font-bold transition-all ${
-                        admissionActiveSubTab === sub
-                          ? "bg-white text-slate-800 shadow-sm"
-                          : "text-slate-500 hover:text-slate-700"
-                      }`}
-                    >
-                      {sub}
-                    </button>
-                  ))}
-                </div>
-
-                {/* Courses Management */}
-                {admissionActiveSubTab === "Courses" && (
-                  <div className="space-y-6">
-                    <div className="flex items-center justify-between bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                      <div>
-                        <h4 className="text-lg font-bold text-slate-800">Admission Courses</h4>
-                        <p className="text-sm text-slate-500">Manage all courses offered ({courses.length} active)</p>
-                      </div>
-                      <button 
-                        onClick={() => { setEditItem(null); setCourseForm({ category: "Undergraduate Programs", name: "", duration: "", seats: "", eligibility: "", description: "", icon: "👨‍⚕️", highlights: "", fees: "", admission: "", websiteLink: "" }); setModalType("course"); setShowModal(true); }}
-                        className="px-6 py-3 rounded-xl text-white font-bold transition-all shadow active:scale-95 flex items-center gap-2"
-                        style={{backgroundColor: themeColors.primary}}
-                      >
-                        <Plus size={20} /> Add New Course
-                      </button>
-                    </div>
-                    <div className="grid grid-cols-1 gap-4">
-                      {courses.map(course => (
-                        <div key={course._id} className="bg-white p-5 rounded-2xl border border-slate-200 flex items-center gap-4 group">
-                          <div className="w-12 h-12 rounded-xl bg-orange-100 flex items-center justify-center text-2xl shadow-sm">{course.icon}</div>
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-1">
-                              <span className="px-2 py-0.5 text-[10px] font-bold uppercase rounded-md tracking-wider bg-orange-100 text-orange-700">{course.category}</span>
-                              <span className="text-xs text-slate-400 font-medium">• {course.duration}</span>
-                            </div>
-                            <h5 className="font-bold text-slate-800">{course.name}</h5>
-                            <p className="text-xs text-slate-500 line-clamp-1">{course.description}</p>
-                          </div>
-                          <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button onClick={() => { setEditItem(course); setCourseForm(course); setModalType("course"); setShowModal(true); }} className="p-2 text-slate-500 hover:text-slate-800 transition-colors"><Edit3 size={18} /></button>
-                            <button onClick={() => deleteCourse(course._id)} className="p-2 text-red-500 hover:text-red-700 transition-colors"><Trash2 size={18} /></button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Procedure Management */}
-                {admissionActiveSubTab === "Procedure" && (
-                  <div className="space-y-6">
-                    <div className="flex items-center justify-between bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                      <div>
-                        <h4 className="text-lg font-bold text-slate-800">Admission Procedure</h4>
-                        <p className="text-sm text-slate-500">Manage step-by-step procedure ({admissionSteps.length} steps)</p>
-                      </div>
-                      <button 
-                        onClick={() => { setEditItem(null); setAdmissionStepForm({ step: admissionSteps.length + 1, title: "", description: "", details: "", icon: "Calendar" }); setModalType("step"); setShowModal(true); }}
-                        className="px-6 py-3 rounded-xl text-white font-bold transition-all shadow active:scale-95 flex items-center gap-2"
-                        style={{backgroundColor: themeColors.primary}}
-                      >
-                        <Plus size={20} /> Add New Step
-                      </button>
-                    </div>
-                    <div className="grid grid-cols-1 gap-4">
-                      {admissionSteps.sort((a,b) => a.step - b.step).map(step => (
-                        <div key={step._id} className="bg-white p-5 rounded-2xl border border-slate-200 flex items-center gap-4 group">
-                          <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center font-bold text-slate-600">{step.step}</div>
-                          <div className="flex-1">
-                            <h5 className="font-bold text-slate-800">{step.title}</h5>
-                            <p className="text-xs text-slate-500 line-clamp-1">{step.description}</p>
-                          </div>
-                          <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button onClick={() => { setEditItem(step); setAdmissionStepForm(step); setModalType("step"); setShowModal(true); }} className="p-2 text-slate-500 hover:text-slate-800 transition-colors"><Edit3 size={18} /></button>
-                            <button onClick={() => deleteStep(step._id)} className="p-2 text-red-500 hover:text-red-700 transition-colors"><Trash2 size={18} /></button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Rules Management */}
-                {admissionActiveSubTab === "Rules" && (
-                  <div className="space-y-6">
-                    <div className="flex items-center justify-between bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                      <div>
-                        <h4 className="text-lg font-bold text-slate-800">Admission Rules</h4>
-                        <p className="text-sm text-slate-500">Manage eligibility and rules ({admissionRules.length} items)</p>
-                      </div>
-                      <button 
-                        onClick={() => { setEditItem(null); setAdmissionRuleForm({ category: "UnderGraduated Programs", title: "", description: "", icon: "CheckCircle" }); setModalType("rule"); setShowModal(true); }}
-                        className="px-6 py-3 rounded-xl text-white font-bold transition-all shadow active:scale-95 flex items-center gap-2"
-                        style={{backgroundColor: themeColors.primary}}
-                      >
-                        <Plus size={20} /> Add New Rule
-                      </button>
-                    </div>
-                    <div className="grid grid-cols-1 gap-4">
-                      {admissionRules.map(rule => (
-                        <div key={rule._id} className="bg-white p-5 rounded-2xl border border-slate-200 flex items-center gap-4 group">
-                          <div className="w-12 h-12 rounded-xl bg-slate-50 flex items-center justify-center text-xl shadow-sm">📍</div>
-                          <div className="flex-1">
-                            <span className="px-2 py-0.5 text-[10px] font-bold uppercase rounded-md tracking-wider bg-slate-100 text-slate-600 mb-1 inline-block">{rule.category}</span>
-                            <h5 className="font-bold text-slate-800">{rule.title}</h5>
-                            <p className="text-xs text-slate-500 line-clamp-1">{rule.description}</p>
-                          </div>
-                          <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button onClick={() => { setEditItem(rule); setAdmissionRuleForm(rule); setModalType("rule"); setShowModal(true); }} className="p-2 text-slate-500 hover:text-slate-800 transition-colors"><Edit3 size={18} /></button>
-                            <button onClick={() => deleteRule(rule._id)} className="p-2 text-red-500 hover:text-red-700 transition-colors"><Trash2 size={18} /></button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Student Bond Management */}
-                {admissionActiveSubTab === "Student Bond" && (
-                  <div className="space-y-6">
-                    <div className="flex items-center justify-between bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                      <div>
-                        <h4 className="text-lg font-bold text-slate-800">Student Bond Details</h4>
-                        <p className="text-sm text-slate-500">Manage agreement points for student bonds</p>
-                      </div>
-                      <button 
-                        onClick={() => { setEditItem(null); setBondForm({ type: "student", title: "", content: "", order: 0 }); setModalType("bond"); setShowModal(true); }}
-                        className="px-6 py-3 rounded-xl text-white font-bold transition-all shadow active:scale-95 flex items-center gap-2"
-                        style={{backgroundColor: themeColors.primary}}
-                      >
-                        <Plus size={20} /> Add Bond Point
-                      </button>
-                    </div>
-                    <div className="grid grid-cols-1 gap-4">
-                      {bonds.filter(b => b.type === 'student').map(bond => (
-                        <div key={bond._id} className="bg-white p-5 rounded-2xl border border-slate-200 flex items-center gap-4 group">
-                          <div className="w-12 h-12 rounded-xl bg-orange-100 flex items-center justify-center text-amber-700 shadow-sm"><FileText size={24} /></div>
-                          <div className="flex-1">
-                            <h5 className="font-bold text-slate-800">{bond.title}</h5>
-                            <p className="text-xs text-slate-500 line-clamp-1">{bond.content}</p>
-                          </div>
-                          <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button onClick={() => { setEditItem(bond); setBondForm({ type: bond.type, title: bond.title, content: bond.content, order: bond.order }); setModalType("bond"); setShowModal(true); }} className="p-2 text-slate-500 hover:text-slate-800 transition-colors"><Edit3 size={18} /></button>
-                            <button onClick={() => deleteBond(bond._id)} className="p-2 text-red-500 hover:text-red-700 transition-colors"><Trash2 size={18} /></button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-
-
-                {/* Guidelines Management */}
-                {admissionActiveSubTab === "Guidelines" && (
-                  <div className="space-y-6">
-                    <div className="flex items-center justify-between bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                      <div>
-                        <h4 className="text-lg font-bold text-slate-800">Student & Parent Guidelines</h4>
-                        <p className="text-sm text-slate-500">Manage instructions and code of conduct ({guidelines.length} categories)</p>
-                      </div>
-                      <button 
-                        onClick={() => { setEditItem(null); setGuidelineForm({ category: "General Guidelines", subCategory: "", points: "", order: 0 }); setModalType("guideline"); setShowModal(true); }}
-                        className="px-6 py-3 rounded-xl text-white font-bold transition-all shadow active:scale-95 flex items-center gap-2"
-                        style={{backgroundColor: themeColors.primary}}
-                      >
-                        <Plus size={20} /> Add Guidelines
-                      </button>
-                    </div>
-                    <div className="grid grid-cols-1 gap-6">
-                      {["General Guidelines", "Code of Conduct", "Academic Requirements", "For Parents/Guardians", "Contact Information"].map(cat => {
-                        const catGuidelines = guidelines.filter(g => g.category === cat);
-                        if (catGuidelines.length === 0) return null;
-                        return (
-                          <div key={cat} className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
-                            <div className="px-6 py-4 bg-slate-50 border-b border-slate-200">
-                              <h5 className="font-bold text-slate-800">{cat}</h5>
-                            </div>
-                            <div className="divide-y divide-slate-100">
-                              {catGuidelines.map(g => (
-                                <div key={g._id} className="p-6 flex items-start gap-4 group hover:bg-slate-50/50 transition-colors">
-                                  <div className="w-10 h-10 rounded-xl bg-orange-100 flex items-center justify-center text-amber-700 flex-shrink-0"><FileText size={20} /></div>
-                                  <div className="flex-1">
-                                    <h6 className="font-bold text-slate-800 mb-1">{g.subCategory || "General Information"}</h6>
-                                    <ul className="space-y-1">
-                                      {g.points.map((p, i) => (
-                                        <li key={i} className="text-xs text-slate-500 flex items-start gap-2">
-                                          <span className="mt-1 w-1 h-1 rounded-full bg-orange-400 flex-shrink-0" />
-                                          {p}
-                                        </li>
-                                      ))}
-                                    </ul>
-                                  </div>
-                                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <button onClick={() => { setEditItem(g); setGuidelineForm({ ...g, points: g.points.join('\n') }); setModalType("guideline"); setShowModal(true); }} className="p-2 text-slate-500 hover:text-slate-800 transition-colors"><Edit3 size={18} /></button>
-                                    <button onClick={() => deleteGuideline(g._id)} className="p-2 text-red-500 hover:text-red-700 transition-colors"><Trash2 size={18} /></button>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {activeTab === "Departments" && !selectedDeptForEdit && (
-              <div className="space-y-8">
-                <div className="flex flex-col md:flex-row items-center justify-between bg-white p-6 rounded-2xl shadow-sm border border-slate-200 gap-4">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center text-amber-700 shadow-sm">
-                      <Building2 size={24} />
-                    </div>
-                    <div>
-                      <h3 className="text-xl font-bold text-slate-800">Academic Departments</h3>
-                      <p className="text-sm text-slate-500">Manage {departments.length} departments</p>
-                    </div>
-                  </div>
-                  <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
-                    {departments.length === 0 && (
-                      <button 
-                        onClick={async () => {
-                          if (window.confirm("This will populate the database with the 6 initial departments. Continue?")) {
-                            try {
-                              await axiosInstance.post("/departments/seed");
-                              showNotify("Initial departments seeded!");
-                              fetchData();
-                            } catch (err) { showNotify("Seed failed", "error"); }
-                          }
-                        }}
-                        className="px-6 py-3 rounded-xl border-2 border-amber-600 text-amber-700 font-bold transition-all hover:bg-amber-50 active:scale-95 text-sm"
-                      >
-                        Seed Initial Data
-                      </button>
-                    )}
-                    <button 
-                      onClick={() => { setEditItem(null); resetDeptForm(); setModalType("department"); setShowModal(true); }}
-                      className="px-6 py-3 rounded-xl text-white font-bold transition-all shadow-lg active:scale-95 flex items-center justify-center gap-2 hover:opacity-90 text-sm"
-                      style={{ backgroundColor: themeColors.primary }}
-                    >
-                      <Plus size={20} /> Add New
-                    </button>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6">
-                  {departments.map((dept) => (
-                    <motion.div
-                      key={dept._id}
-                      whileHover={{ y: -5 }}
-                      onClick={() => { setSelectedDeptForEdit(dept); setDeptForm(dept); setDeptActiveSubTab("Overview"); }}
-                      className="bg-white p-6 rounded-[32px] border border-slate-200 shadow-sm hover:shadow-xl transition-all cursor-pointer group"
-                    >
-                      <div className="flex items-center gap-4 mb-6">
-                        <div className="w-14 h-14 bg-slate-50 rounded-2xl flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">
-                          {dept.icon || "🏥"}
-                        </div>
-                        <div>
-                          <h4 className="font-bold text-slate-800 line-clamp-1">{dept.name}</h4>
-                          <p className="text-xs font-bold text-amber-600 uppercase tracking-wider">{dept.category}</p>
-                        </div>
-                      </div>
-                      
-                      <div className="space-y-3 mb-6">
-                        <div className="flex items-center justify-between text-sm text-slate-500">
-                          <span className="flex items-center gap-2"><Users size={16} /> Faculty</span>
-                          <span className="font-bold text-slate-700">{dept.faculty?.length || 0}</span>
-                        </div>
-                        <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
-                          <div className="h-full bg-amber-500 rounded-full" style={{ width: `${Math.min((dept.faculty?.length || 0) * 10, 100)}%` }} />
-                        </div>
-                      </div>
-
-                      <div className="flex items-center justify-between pt-4 border-t border-slate-100">
-                        <div className="flex gap-2">
-                          <div className="px-3 py-1 bg-slate-50 rounded-lg text-[10px] font-bold text-slate-500 uppercase tracking-tight">
-                            {dept.facilities?.length || 0} Facilities
-                          </div>
-                        </div>
-                        <ArrowRight size={18} className="text-slate-300 group-hover:text-amber-600 group-hover:translate-x-1 transition-all" />
-                      </div>
-                    </motion.div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {activeTab === "Departments" && selectedDeptForEdit && (
-              <div className="space-y-6">
-                {/* Header for Specific Department */}
-                <div className="flex flex-col md:flex-row items-center justify-between bg-white p-6 rounded-2xl shadow-sm border border-slate-200 gap-4">
-                  <div className="flex items-center gap-4 w-full">
-                    <button 
-                      onClick={() => setSelectedDeptForEdit(null)}
-                      className="p-2 hover:bg-slate-100 rounded-full transition-colors shrink-0"
-                    >
-                      <ArrowRight size={24} className="rotate-180" />
-                    </button>
-                    <div>
-                      <h3 className="text-lg lg:text-xl font-bold text-slate-800 line-clamp-1">{selectedDeptForEdit.name}</h3>
-                      <p className="text-xs text-slate-500">{selectedDeptForEdit.category} Management</p>
-                    </div>
-                  </div>
-                  <button 
-                    onClick={handleDeptSubmit}
-                    className="w-full md:w-auto px-6 py-2.5 rounded-xl text-white font-bold transition-all shadow active:scale-95 flex items-center justify-center gap-2"
-                    style={{backgroundColor: themeColors.primary}}
-                  >
-                    <Save size={18} /> <span className="text-sm">Save Changes</span>
-                  </button>
-                </div>
-
-                {/* Sub-navigation for Department - Scrollable on mobile */}
-                <div className="flex gap-2 p-1 bg-slate-100/50 rounded-xl w-full border border-slate-200 overflow-x-auto custom-scrollbar whitespace-nowrap scroll-smooth">
-                  {["Overview", "Faculty", "Facilities", "Activities", "Sliders"].map((tab) => (
-                    <button
-                      key={tab}
-                      onClick={() => setDeptActiveSubTab(tab)}
-                      className={`px-4 lg:px-6 py-2.5 rounded-lg text-xs lg:text-sm font-bold transition-all ${
-                        deptActiveSubTab === tab 
-                          ? "bg-white text-slate-800 shadow-sm" 
-                          : "text-slate-500 hover:text-slate-700 hover:bg-white/50"
-                      }`}
-                    >
-                      {tab}
-                    </button>
-                  ))}
-                </div>
-
-                {/* Sub-tab Content */}
-                <div className="bg-white p-4 lg:p-8 rounded-2xl border border-slate-200 shadow-sm min-h-[400px]">
-                  {deptActiveSubTab === "Overview" && (
-                    <div className="space-y-6 w-full max-w-5xl">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8">
-                        <div className="space-y-2">
-                          <label className="text-sm font-bold text-slate-700">Department Name</label>
-                          <input type="text" className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-amber-500/20 text-sm transition-all" value={deptForm.name} onChange={e => setDeptForm({...deptForm, name: e.target.value})} />
-                        </div>
-                        <div className="space-y-2">
-                          <label className="text-sm font-bold text-slate-700">Category</label>
-                          <input type="text" className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-amber-500/20 text-sm transition-all" value={deptForm.category} onChange={e => setDeptForm({...deptForm, category: e.target.value})} />
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8">
-                        <div className="space-y-2">
-                          <label className="text-sm font-bold text-slate-700">Icon (emoji)</label>
-                          <input type="text" className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-amber-500/20 text-sm transition-all" value={deptForm.icon} onChange={e => setDeptForm({...deptForm, icon: e.target.value})} />
-                        </div>
-                        <div className="space-y-2">
-                          <label className="text-sm font-bold text-slate-700">Short Description</label>
-                          <input type="text" className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-amber-500/20 text-sm transition-all" value={deptForm.description} onChange={e => setDeptForm({...deptForm, description: e.target.value})} />
-                        </div>
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-sm font-bold text-slate-700">Long Overview (Paragraph 1)</label>
-                        <textarea className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none h-32 focus:ring-2 focus:ring-amber-500/20" value={deptForm.overview} onChange={e => setDeptForm({...deptForm, overview: e.target.value})} />
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-sm font-bold text-slate-700">Long Overview (Paragraph 2 - Optional)</label>
-                        <textarea className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none h-32 focus:ring-2 focus:ring-amber-500/20" value={deptForm.overview2} onChange={e => setDeptForm({...deptForm, overview2: e.target.value})} />
-                      </div>
+            {!loading && (
+              <AnimatePresence mode="wait">
+                <motion.div key={activeTab + (selectedDept?._id || "")} initial={{ opacity:0, y:12 }} animate={{ opacity:1, y:0 }} exit={{ opacity:0, y:-12 }} transition={{ duration:0.25 }}>
+                  {activeTab === "Home Page" && <HomeTab selectedDeptForSlider={selectedDeptForSlider} setSelectedDeptForSlider={setSelectedDeptForSlider} departments={departments} sliders={sliders} handleSliderUpload={handleSliderUpload} updateSliderImage={updateSliderImage} del={del}/>}
+                  {activeTab === "Academic" && <AcademicTab programs={programs} academicContent={academicContent} setAcademicContent={setAcademicContent} axiosInstance={axiosInstance} notify={notify} openModal={openModal} setProgramForm={setProgramForm} del={del}/>}
+                  {activeTab === "Testimonials" && <TestimonialsTab testimonials={testimonials} testimonialForm={testimonialForm} setTestimonialForm={setTestimonialForm} openModal={openModal} del={del}/>}
+                  {activeTab === "About Us" && <AboutTab aboutSub={aboutSub} setAboutSub={setAboutSub} collegeLogo={collegeLogo} setCollegeLogo={setCollegeLogo} logoFile={logoFile} setLogoFile={setLogoFile} deanMessage={deanMessage} setDeanMessage={setDeanMessage} deanPhotoFile={deanPhotoFile} setDeanPhotoFile={setDeanPhotoFile} milestones={milestones} milestoneForm={milestoneForm} setMilestoneForm={setMilestoneForm} openModal={openModal} setMilestones={setMilestones} visionMission={visionMission} setVmForm={setVmForm} coreValues={coreValues} setCvForm={setCvForm} axiosInstance={axiosInstance} notify={notify} del={del}/>}
+                  {activeTab === "Admission" && <AdmissionTab admSub={admSub} setAdmSub={setAdmSub} courses={courses} openModal={openModal} setCourseForm={setCourseForm} del={del} admissionSteps={admissionSteps} setStepForm={setStepForm} admissionRules={admissionRules} setRuleForm={setRuleForm} bonds={bonds} setBondForm={setBondForm} guidelines={guidelines} setGuidelineForm={setGuidelineForm}/>}
+                  {activeTab === "Departments" && <DepartmentsTab selectedDept={selectedDept} setSelectedDept={setSelectedDept} departments={departments} deptForm={deptForm} setDeptForm={setDeptForm} deptSub={deptSub} setDeptSub={setDeptSub} deptFacultyForm={deptFacultyForm} setDeptFacultyForm={setDeptFacultyForm} deptFacilityInput={deptFacilityInput} setDeptFacilityInput={setDeptFacilityInput} deptActivityInput={deptActivityInput} setDeptActivityInput={setDeptActivityInput} sliders={sliders} axiosInstance={axiosInstance} fetchData={fetchData} notify={notify} openModal={openModal} del={del} handleSliderUpload={handleSliderUpload}/>}
+                  {activeTab === "Gallery" && <GalleryTab galleryImages={galleryImages} galleryForm={galleryForm} setGalleryForm={setGalleryForm} openModal={openModal} del={del} />}
+                  {activeTab === "Settings" && (
+                    <div className="flex flex-col items-center justify-center py-32 text-center" style={{ color: C.muted }}>
+                      <Settings size={48} className="mb-4 opacity-30"/>
+                      <p className="font-semibold">Settings Console — feature coming soon</p>
                     </div>
                   )}
-
-                  {deptActiveSubTab === "Faculty" && (
-                    <div className="space-y-6">
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 p-4 bg-slate-50 rounded-2xl border border-dashed border-slate-300">
-                        <input type="text" placeholder="Name" className="px-4 py-2 rounded-lg border border-slate-200 outline-none text-sm" value={deptFacultyForm.name} onChange={e => setDeptFacultyForm({...deptFacultyForm, name: e.target.value})} />
-                        <input type="text" placeholder="Designation" className="px-4 py-2 rounded-lg border border-slate-200 outline-none text-sm" value={deptFacultyForm.designation} onChange={e => setDeptFacultyForm({...deptFacultyForm, designation: e.target.value})} />
-                        <input type="text" placeholder="Qualification" className="px-4 py-2 rounded-lg border border-slate-200 outline-none text-sm" value={deptFacultyForm.qualification} onChange={e => setDeptFacultyForm({...deptFacultyForm, qualification: e.target.value})} />
-                        <button onClick={addDeptFaculty} className="px-4 py-2 bg-slate-800 text-white rounded-lg font-bold hover:bg-slate-700 transition-colors text-sm">Add Member</button>
-                      </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {deptForm.faculty.map((f, i) => (
-                          <div key={i} className="flex items-center justify-between p-4 border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors">
-                            <div>
-                              <h5 className="font-bold text-slate-800">{f.name}</h5>
-                              <p className="text-xs text-amber-600 font-semibold">{f.designation}</p>
-                              <p className="text-xs text-slate-500">{f.qualification}</p>
-                            </div>
-                            <button 
-                              onClick={() => setDeptForm({...deptForm, faculty: deptForm.faculty.filter((_, idx) => idx !== i)})}
-                              className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                            >
-                              <Trash2 size={18} />
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {deptActiveSubTab === "Facilities" && (
-                    <div className="space-y-6 max-w-3xl">
-                      <div className="flex gap-2">
-                        <input 
-                          type="text" 
-                          placeholder="Add new facility point..." 
-                          className="flex-1 px-4 py-3 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-amber-500/20" 
-                          value={deptFacilityInput} 
-                          onChange={e => setDeptFacilityInput(e.target.value)}
-                          onKeyPress={(e) => e.key === 'Enter' && addDeptFacility()}
-                        />
-                        <button onClick={addDeptFacility} className="px-6 bg-slate-800 text-white rounded-xl font-bold"><Plus size={20} /></button>
-                      </div>
-                      <div className="space-y-3">
-                        {deptForm.facilities.map((f, i) => (
-                          <div key={i} className="flex items-center justify-between p-4 bg-slate-50 rounded-xl group border border-transparent hover:border-slate-200 transition-all">
-                            <div className="flex items-center gap-3">
-                              <div className="w-2 h-2 rounded-full bg-amber-500" />
-                              <p className="text-slate-700 text-sm">{f}</p>
-                            </div>
-                            <button 
-                              onClick={() => setDeptForm({...deptForm, facilities: deptForm.facilities.filter((_, idx) => idx !== i)})}
-                              className="text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
-                            >
-                              <Trash2 size={18} />
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {deptActiveSubTab === "Activities" && (
-                    <div className="space-y-6 max-w-3xl">
-                      <div className="flex gap-2">
-                        <input 
-                          type="text" 
-                          placeholder="Add new activity point..." 
-                          className="flex-1 px-4 py-3 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-amber-500/20" 
-                          value={deptActivityInput} 
-                          onChange={e => setDeptActivityInput(e.target.value)}
-                          onKeyPress={(e) => e.key === 'Enter' && addDeptActivity()}
-                        />
-                        <button onClick={addDeptActivity} className="px-6 bg-slate-800 text-white rounded-xl font-bold"><Plus size={20} /></button>
-                      </div>
-                      <div className="space-y-3">
-                        {deptForm.activities.map((a, i) => (
-                          <div key={i} className="flex items-center justify-between p-4 bg-slate-50 rounded-xl group border border-transparent hover:border-slate-200 transition-all">
-                            <div className="flex items-center gap-3">
-                              <Zap size={16} className="text-amber-500" />
-                              <p className="text-slate-700 text-sm">{a}</p>
-                            </div>
-                            <button 
-                              onClick={() => setDeptForm({...deptForm, activities: deptForm.activities.filter((_, idx) => idx !== i)})}
-                              className="text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
-                            >
-                              <Trash2 size={18} />
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {deptActiveSubTab === "Sliders" && (
-                    <div className="space-y-8">
-                      <div className="flex items-center justify-between p-6 bg-amber-50/50 rounded-2xl border border-dashed border-amber-200">
-                        <div className="flex items-center gap-4">
-                          <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center shadow-sm">
-                            <ImageIcon className="text-amber-600" />
-                          </div>
-                          <div>
-                            <h4 className="font-bold text-slate-800">Department Hero Sliders</h4>
-                            <p className="text-sm text-slate-500">Upload high-resolution images for this department's hero section</p>
-                          </div>
-                        </div>
-                        <div className="flex gap-3">
-                          <input 
-                            type="file" 
-                            id="dept-slider-upload" 
-                            className="hidden" 
-                            onChange={(e) => {
-                              if (e.target.files[0]) handleSliderUpload(e.target.files[0], selectedDeptForEdit._id);
-                            }} 
-                          />
-                          <button 
-                            onClick={() => document.getElementById('dept-slider-upload').click()}
-                            className="px-6 py-3 bg-slate-800 text-white rounded-xl font-bold flex items-center gap-2 hover:bg-slate-700 transition-all"
-                          >
-                            <Upload size={18} /> Upload Image
-                          </button>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                        {sliders.filter(s => s.department?._id === selectedDeptForEdit._id).map((slider) => (
-                          <div key={slider._id} className="group relative aspect-video bg-slate-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all">
-                            <img src={slider.imageUrl.startsWith('http') ? slider.imageUrl : `http://localhost:8080${slider.imageUrl}`} alt={slider.title} className="w-full h-full object-cover" />
-                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
-                              <button onClick={() => deleteSlider(slider._id)} className="p-3 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors shadow-lg"><Trash2 size={20} /></button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {activeTab !== "Home Page" && activeTab !== "Academic" && activeTab !== "Testimonials" && activeTab !== "About Us" && activeTab !== "Admission" && activeTab !== "Departments" && (
-              <div className="flex flex-col items-center justify-center py-32 text-slate-400">
-                <Settings size={64} strokeWidth={1} className="animate-spin-slow mb-4" />
-                <p className="text-lg font-medium tracking-tight">{activeTab} section is under development</p>
-              </div>
+                </motion.div>
+              </AnimatePresence>
             )}
           </div>
         </div>
       </main>
 
-      {/* Modal Overlay */}
-      <AnimatePresence>
-        {showModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setShowModal(false)}
-              className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
-            />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="relative w-full max-w-2xl bg-white rounded-[32px] shadow-2xl overflow-hidden"
-            >
-              <div className="p-8 border-b border-slate-100 flex items-center justify-between bg-[#F8FAFC]">
-                <div>
-                  <h3 className="text-2xl font-bold text-slate-800">{editItem ? "Edit" : "Add"} {modalType === "program" ? "Program" : modalType === "testimonial" ? "Testimonial" : "Item"}</h3>
-                  <p className="text-sm text-slate-500 mt-1">Fill in the details to update your website</p>
-                </div>
-                <button 
-                  onClick={() => setShowModal(false)}
-                  className="p-2.5 bg-white border border-slate-200 rounded-full text-slate-400 hover:text-slate-600 transition-colors"
-                >
-                  <X size={20} />
-                </button>
-              </div>
-
-              {modalType === "program" ? (
-              <form onSubmit={handleProgramSubmit} className="p-8 space-y-6 max-h-[70vh] overflow-y-auto custom-scrollbar">
-                <div className="grid grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <label className="text-sm font-bold text-slate-700">Program Title</label>
-                    <input
-                      type="text"
-                      className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-[#8B4513] focus:ring-4 focus:ring-amber-900/5 outline-none transition-all"
-                      placeholder="e.g. B.Sc. Nursing"
-                      value={programForm.title}
-                      onChange={(e) => setProgramForm({ ...programForm, title: e.target.value })}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-bold text-slate-700">Category</label>
-                    <select
-                      className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none transition-all"
-                      style={{ '--tw-ring-color': '#E07B3930' }}
-                      value={programForm.category}
-                      onChange={(e) => setProgramForm({ ...programForm, category: e.target.value })}
-                      required
-                    >
-                      <option value="Undergraduate">Undergraduate</option>
-                      <option value="Postgraduate">Postgraduate</option>
-                      <option value="Diploma">Diploma</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-bold text-slate-700">Description</label>
-                  <textarea
-                    className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-[#8B4513] focus:ring-4 focus:ring-amber-900/5 outline-none transition-all h-24 resize-none"
-                    placeholder="Briefly describe the program..."
-                    value={programForm.description}
-                    onChange={(e) => setProgramForm({ ...programForm, description: e.target.value })}
-                    required
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <label className="text-sm font-bold text-slate-700">Duration</label>
-                    <input
-                      type="text"
-                      className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-[#8B4513] focus:ring-4 focus:ring-amber-900/5 outline-none transition-all"
-                      placeholder="e.g. 4 Years"
-                      value={programForm.duration}
-                      onChange={(e) => setProgramForm({ ...programForm, duration: e.target.value })}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-bold text-slate-700">Program Image</label>
-                    <label className="flex items-center gap-3 px-4 py-2.5 rounded-xl border border-slate-200 cursor-pointer hover:bg-slate-50 transition-colors">
-                      <ImageIcon size={18} className="text-slate-400" />
-                      <span className="text-sm text-slate-500 font-medium truncate">
-                        {programForm.image ? programForm.image.name : "Select cover image"}
-                      </span>
-                      <input 
-                        type="file" 
-                        className="hidden" 
-                        onChange={(e) => setProgramForm({ ...programForm, image: e.target.files[0] })} 
-                        required={!editItem}
-                      />
-                    </label>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-bold text-slate-700">Courses (Comma separated)</label>
-                  <textarea
-                    className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-[#8B4513] focus:ring-4 focus:ring-amber-900/5 outline-none transition-all h-24 resize-none"
-                    placeholder="B.Sc. Nursing, Post-Basic B.Sc., etc."
-                    value={programForm.courses}
-                    onChange={(e) => setProgramForm({ ...programForm, courses: e.target.value })}
-                  />
-                </div>
-
-                <div className="flex gap-4 pt-4">
-                  <button
-                    type="button"
-                    onClick={() => setShowModal(false)}
-                    className="flex-1 px-6 py-4 rounded-2xl border border-slate-200 font-bold text-slate-600 hover:bg-slate-50 transition-colors"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="flex-[2] px-6 py-4 rounded-2xl text-white font-bold flex items-center justify-center gap-2 transition-all shadow-xl active:scale-95 hover:opacity-90"
-                    style={{ backgroundColor: themeColors.primary }}
-                  >
-                    <Save size={20} />
-                    {editItem ? "Save Changes" : "Create Program"}
-                  </button>
-                </div>
-              </form>
-              ) : modalType === "testimonial" ? (
-                <form onSubmit={handleTestimonialSubmit} className="p-8 space-y-6 max-h-[70vh] overflow-y-auto custom-scrollbar">
-                <div className="grid grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <label className="text-sm font-bold text-slate-700">Student Name</label>
-                    <input
-                      type="text"
-                      className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-[#8B4513] focus:ring-4 focus:ring-amber-900/5 outline-none transition-all"
-                      placeholder="e.g. John Doe"
-                      value={testimonialForm.name}
-                      onChange={(e) => setTestimonialForm({ ...testimonialForm, name: e.target.value })}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-bold text-slate-700">Role/Batch</label>
-                    <input
-                      type="text"
-                      className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-[#8B4513] focus:ring-4 focus:ring-amber-900/5 outline-none transition-all"
-                      placeholder="e.g. B.Sc. Nursing 2023"
-                      value={testimonialForm.role}
-                      onChange={(e) => setTestimonialForm({ ...testimonialForm, role: e.target.value })}
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-bold text-slate-700">Testimonial Content</label>
-                  <textarea
-                    className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-[#8B4513] focus:ring-4 focus:ring-amber-900/5 outline-none transition-all h-24 resize-none"
-                    placeholder="What did they say?"
-                    value={testimonialForm.content}
-                    onChange={(e) => setTestimonialForm({ ...testimonialForm, content: e.target.value })}
-                    required
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <label className="text-sm font-bold text-slate-700">Rating (1-5)</label>
-                    <input
-                      type="number"
-                      min="1" max="5"
-                      className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-[#8B4513] focus:ring-4 focus:ring-amber-900/5 outline-none transition-all"
-                      value={testimonialForm.rating}
-                      onChange={(e) => setTestimonialForm({ ...testimonialForm, rating: parseInt(e.target.value) })}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-bold text-slate-700">Student Photo</label>
-                    <label className="flex items-center gap-3 px-4 py-2.5 rounded-xl border border-slate-200 cursor-pointer hover:bg-slate-50 transition-colors">
-                      <ImageIcon size={18} className="text-slate-400" />
-                      <span className="text-sm text-slate-500 font-medium truncate">
-                        {testimonialForm.image ? testimonialForm.image.name : "Select photo"}
-                      </span>
-                      <input 
-                        type="file" 
-                        className="hidden" 
-                        onChange={(e) => setTestimonialForm({ ...testimonialForm, image: e.target.files[0] })} 
-                        required={!editItem}
-                      />
-                    </label>
-                  </div>
-                </div>
-
-                <div className="flex gap-4 pt-4">
-                  <button
-                    type="button"
-                    onClick={() => setShowModal(false)}
-                    className="flex-1 px-6 py-4 rounded-2xl border border-slate-200 font-bold text-slate-600 hover:bg-slate-50 transition-colors"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="flex-[2] px-6 py-4 rounded-2xl text-white font-bold flex items-center justify-center gap-2 transition-all shadow-xl active:scale-95 hover:opacity-90"
-                    style={{ backgroundColor: themeColors.primary }}
-                  >
-                    <Save size={20} />
-                    {editItem ? "Save Changes" : "Create Testimonial"}
-                  </button>
-                </div>
-              </form>
-              ) : modalType === "milestone" ? (
-                <form onSubmit={handleMilestoneSubmit} className="p-8 space-y-5 max-h-[70vh] overflow-y-auto custom-scrollbar">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <label className="text-sm font-bold text-slate-700">Year</label>
-                      <input type="text" className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none" placeholder="e.g. 1963" value={milestoneForm.year} onChange={e => setMilestoneForm({...milestoneForm, year: e.target.value})} required />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-bold text-slate-700">Icon (emoji)</label>
-                      <input type="text" className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none" placeholder="🎯" value={milestoneForm.icon} onChange={e => setMilestoneForm({...milestoneForm, icon: e.target.value})} />
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-bold text-slate-700">Event / Achievement Title</label>
-                    <input type="text" className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none" placeholder="e.g. College established" value={milestoneForm.event} onChange={e => setMilestoneForm({...milestoneForm, event: e.target.value})} required />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-bold text-slate-700">Accent Color</label>
-                    <div className="flex items-center gap-3">
-                      <input type="color" className="w-12 h-12 rounded-xl border cursor-pointer" value={milestoneForm.color} onChange={e => setMilestoneForm({...milestoneForm, color: e.target.value})} />
-                      <input type="text" className="flex-1 px-4 py-3 rounded-xl border border-slate-200 focus:outline-none" value={milestoneForm.color} onChange={e => setMilestoneForm({...milestoneForm, color: e.target.value})} />
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-bold text-slate-700">Description</label>
-                    <textarea className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none h-28 resize-none" placeholder="Describe this milestone..." value={milestoneForm.description} onChange={e => setMilestoneForm({...milestoneForm, description: e.target.value})} required />
-                  </div>
-                  <div className="flex gap-4 pt-2">
-                    <button type="button" onClick={() => setShowModal(false)} className="flex-1 px-6 py-4 rounded-2xl border border-slate-200 font-bold text-slate-600 hover:bg-slate-50">Cancel</button>
-                    <button type="submit" className="flex-[2] px-6 py-4 rounded-2xl text-white font-bold flex items-center justify-center gap-2 shadow-xl active:scale-95" style={{backgroundColor: themeColors.primary}}><Save size={20} />{editItem ? 'Save Changes' : 'Add Milestone'}</button>
-                  </div>
-                </form>
-              ) : modalType === "visionMission" ? (
-                <form onSubmit={handleVmSubmit} className="p-8 space-y-5">
-                  <div className="space-y-2">
-                    <label className="text-sm font-bold text-slate-700">Type</label>
-                    <select className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-amber-500/20" value={vmForm.type} onChange={e => setVmForm({...vmForm, type: e.target.value})}>
-                      <option value="vision">Vision Point</option>
-                      <option value="mission">Mission Point</option>
-                    </select>
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-bold text-slate-700">Content</label>
-                    <textarea className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none h-32 resize-none" placeholder="Enter the vision or mission statement..." value={vmForm.content} onChange={e => setVmForm({...vmForm, content: e.target.value})} required />
-                  </div>
-                  <div className="flex gap-4 pt-4">
-                    <button type="button" onClick={() => setShowModal(false)} className="flex-1 px-6 py-4 rounded-2xl border border-slate-200 font-bold text-slate-600 hover:bg-slate-50">Cancel</button>
-                    <button type="submit" className="flex-[2] px-6 py-4 rounded-2xl text-white font-bold bg-amber-600 shadow-xl">{editItem ? 'Update' : 'Add'}</button>
-                  </div>
-                </form>
-              ) : modalType === "coreValue" ? (
-                <form onSubmit={handleCvSubmit} className="p-8 space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <label className="text-sm font-bold text-slate-700">Title</label>
-                      <input type="text" className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none" placeholder="e.g. Integrity" value={cvForm.title} onChange={e => setCvForm({...cvForm, title: e.target.value})} required />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-bold text-slate-700">Icon (emoji)</label>
-                      <input type="text" className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none" placeholder="🌟" value={cvForm.icon} onChange={e => setCvForm({...cvForm, icon: e.target.value})} />
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-bold text-slate-700">Description</label>
-                    <textarea className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none h-24 resize-none" placeholder="Value description..." value={cvForm.description} onChange={e => setCvForm({...cvForm, description: e.target.value})} required />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-bold text-slate-700">Gradient Color (Tailwind classes)</label>
-                    <input type="text" className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none" placeholder="from-amber-500 to-orange-500" value={cvForm.color} onChange={e => setCvForm({...cvForm, color: e.target.value})} />
-                  </div>
-                  <div className="flex gap-4 pt-4">
-                    <button type="button" onClick={() => setShowModal(false)} className="flex-1 px-6 py-4 rounded-2xl border border-slate-200 font-bold text-slate-600 hover:bg-slate-50">Cancel</button>
-                    <button type="submit" className="flex-[2] px-6 py-4 rounded-2xl text-white font-bold bg-slate-800 shadow-xl">{editItem ? 'Update' : 'Add'}</button>
-                  </div>
-                </form>
-              ) : modalType === "course" ? (
-                <form onSubmit={handleCourseSubmit} className="p-8 space-y-6 max-h-[70vh] overflow-y-auto custom-scrollbar">
-                  <div className="grid grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                      <label className="text-sm font-bold text-slate-700">Course Name</label>
-                      <input type="text" className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none" value={courseForm.name} onChange={e => setCourseForm({...courseForm, name: e.target.value})} required />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-bold text-slate-700">Category</label>
-                      <select className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none" value={courseForm.category} onChange={e => setCourseForm({...courseForm, category: e.target.value})}>
-                        <option>Undergraduate Programs</option>
-                        <option>Postgraduate Programs</option>
-                        <option>Diploma Programs</option>
-                      </select>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-3 gap-6">
-                    <div className="space-y-2">
-                      <label className="text-sm font-bold text-slate-700">Duration</label>
-                      <input type="text" className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none" value={courseForm.duration} onChange={e => setCourseForm({...courseForm, duration: e.target.value})} />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-bold text-slate-700">Seats</label>
-                      <input type="text" className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none" value={courseForm.seats} onChange={e => setCourseForm({...courseForm, seats: e.target.value})} />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-bold text-slate-700">Icon (Emoji)</label>
-                      <input type="text" className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none" value={courseForm.icon} onChange={e => setCourseForm({...courseForm, icon: e.target.value})} />
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-bold text-slate-700">Eligibility</label>
-                    <textarea className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none h-20" value={courseForm.eligibility} onChange={e => setCourseForm({...courseForm, eligibility: e.target.value})} />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-bold text-slate-700">Highlights (comma separated)</label>
-                    <textarea className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none h-20" value={courseForm.highlights} onChange={e => setCourseForm({...courseForm, highlights: e.target.value})} />
-                  </div>
-                  <div className="flex gap-4">
-                    <button type="button" onClick={() => setShowModal(false)} className="flex-1 px-6 py-4 rounded-2xl border border-slate-200 font-bold text-slate-600 hover:bg-slate-50 transition-colors">Cancel</button>
-                    <button type="submit" className="flex-[2] px-6 py-4 rounded-2xl text-white font-bold transition-all shadow-xl active:scale-95 hover:opacity-90" style={{ backgroundColor: themeColors.primary }}>Save Course</button>
-                  </div>
-                </form>
-              ) : modalType === "step" ? (
-                <form onSubmit={handleStepSubmit} className="p-8 space-y-6">
-                  <div className="grid grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                      <label className="text-sm font-bold text-slate-700">Step Number</label>
-                      <input type="number" className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none" value={admissionStepForm.step} onChange={e => setAdmissionStepForm({...admissionStepForm, step: parseInt(e.target.value)})} required />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-bold text-slate-700">Icon Name (Lucide)</label>
-                      <select className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none" value={admissionStepForm.icon} onChange={e => setAdmissionStepForm({...admissionStepForm, icon: e.target.value})}>
-                        <option>Calendar</option>
-                        <option>Users</option>
-                        <option>CheckCircle</option>
-                        <option>GraduationCap</option>
-                        <option>FileText</option>
-                        <option>Download</option>
-                      </select>
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-bold text-slate-700">Title</label>
-                    <input type="text" className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none" value={admissionStepForm.title} onChange={e => setAdmissionStepForm({...admissionStepForm, title: e.target.value})} required />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-bold text-slate-700">Description</label>
-                    <textarea className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none h-24" value={admissionStepForm.description} onChange={e => setAdmissionStepForm({...admissionStepForm, description: e.target.value})} required />
-                  </div>
-                  <div className="flex gap-4">
-                    <button type="button" onClick={() => setShowModal(false)} className="flex-1 px-6 py-4 rounded-2xl border border-slate-200 font-bold text-slate-600 hover:bg-slate-50 transition-colors">Cancel</button>
-                    <button type="submit" className="flex-[2] px-6 py-4 rounded-2xl text-white font-bold transition-all shadow-xl active:scale-95 hover:opacity-90" style={{ backgroundColor: themeColors.primary }}>Save Step</button>
-                  </div>
-                </form>
-              ) : modalType === "rule" ? (
-                <form onSubmit={handleRuleSubmit} className="p-8 space-y-6">
-                  <div className="grid grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                      <label className="text-sm font-bold text-slate-700">Category</label>
-                      <select className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none" value={admissionRuleForm.category} onChange={e => setAdmissionRuleForm({...admissionRuleForm, category: e.target.value})}>
-                        <option>UnderGraduated Programs</option>
-                        <option>PostGraduated Programs</option>
-                        <option>General Rules</option>
-                      </select>
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-bold text-slate-700">Icon Name</label>
-                      <select className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none" value={admissionRuleForm.icon} onChange={e => setAdmissionRuleForm({...admissionRuleForm, icon: e.target.value})}>
-                        <option>CheckCircle</option>
-                        <option>Calendar</option>
-                        <option>Stethoscope</option>
-                        <option>GraduationCap</option>
-                        <option>Info</option>
-                      </select>
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-bold text-slate-700">Title</label>
-                    <input type="text" className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none" value={admissionRuleForm.title} onChange={e => setAdmissionRuleForm({...admissionRuleForm, title: e.target.value})} required />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-bold text-slate-700">Description (Use . to separate points)</label>
-                    <textarea className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none h-32" value={admissionRuleForm.description} onChange={e => setAdmissionRuleForm({...admissionRuleForm, description: e.target.value})} required />
-                  </div>
-                  <div className="flex gap-4">
-                    <button type="button" onClick={() => setShowModal(false)} className="flex-1 px-6 py-4 rounded-2xl border border-slate-200 font-bold text-slate-600 hover:bg-slate-50 transition-colors">Cancel</button>
-                    <button type="submit" className="flex-[2] px-6 py-4 rounded-2xl text-white font-bold transition-all shadow-xl active:scale-95 hover:opacity-90" style={{ backgroundColor: themeColors.primary }}>Save Rule</button>
-                  </div>
-                </form>
-              ) : modalType === "bond" ? (
-                <form onSubmit={handleBondSubmit} className="p-8 space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <label className="text-sm font-bold text-slate-700">Bond Type</label>
-                      <select className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none" value={bondForm.type} onChange={e => setBondForm({...bondForm, type: e.target.value})}>
-                        <option value="student">Student Bond</option>
-                      </select>
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-bold text-slate-700">Title / Label</label>
-                      <input type="text" className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none" placeholder="e.g. Bond Amount" value={bondForm.title} onChange={e => setBondForm({...bondForm, title: e.target.value})} required />
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-bold text-slate-700">Content / Value</label>
-                    <textarea className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none h-32 resize-none" placeholder="Enter bond condition details..." value={bondForm.content} onChange={e => setBondForm({...bondForm, content: e.target.value})} required />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-bold text-slate-700">Display Order</label>
-                    <input type="number" className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none" value={bondForm.order} onChange={e => setBondForm({...bondForm, order: parseInt(e.target.value)})} />
-                  </div>
-                  <div className="flex gap-4 pt-4">
-                    <button type="button" onClick={() => setShowModal(false)} className="flex-1 px-6 py-4 rounded-2xl border border-slate-200 font-bold text-slate-600 hover:bg-slate-50 transition-colors">Cancel</button>
-                    <button type="submit" className="flex-[2] px-6 py-4 rounded-2xl text-white font-bold transition-all shadow-xl active:scale-95 hover:opacity-90" style={{ backgroundColor: themeColors.primary }}>{editItem ? 'Update Bond' : 'Add Bond Point'}</button>
-                  </div>
-                </form>
-              ) : modalType === "guideline" ? (
-                <form onSubmit={handleGuidelineSubmit} className="p-8 space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <label className="text-sm font-bold text-slate-700">Category</label>
-                      <select className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none" value={guidelineForm.category} onChange={e => setGuidelineForm({...guidelineForm, category: e.target.value})}>
-                        <option value="General Guidelines">General Guidelines</option>
-                        <option value="Code of Conduct">Code of Conduct</option>
-                        <option value="Academic Requirements">Academic Requirements</option>
-                        <option value="For Parents/Guardians">For Parents/Guardians</option>
-                        <option value="Contact Information">Contact Information</option>
-                      </select>
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-bold text-slate-700">Sub-Category / Title</label>
-                      <input type="text" className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none" placeholder="e.g. Attendance Policy" value={guidelineForm.subCategory} onChange={e => setGuidelineForm({...guidelineForm, subCategory: e.target.value})} required />
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-bold text-slate-700">Points (One per line)</label>
-                    <textarea className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none h-48 resize-none" placeholder="Enter guideline points..." value={guidelineForm.points} onChange={e => setGuidelineForm({...guidelineForm, points: e.target.value})} required />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-bold text-slate-700">Display Order</label>
-                    <input type="number" className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none" value={guidelineForm.order} onChange={e => setGuidelineForm({...guidelineForm, order: parseInt(e.target.value)})} />
-                  </div>
-                  <div className="flex gap-4 pt-4">
-                    <button type="button" onClick={() => setShowModal(false)} className="flex-1 px-6 py-4 rounded-2xl border border-slate-200 font-bold text-slate-600 hover:bg-slate-50 transition-colors">Cancel</button>
-                    <button type="submit" className="flex-[2] px-6 py-4 rounded-2xl text-white font-bold transition-all shadow-xl active:scale-95 hover:opacity-90" style={{ backgroundColor: themeColors.primary }}>{editItem ? 'Update Guidelines' : 'Add Guidelines'}</button>
-                  </div>
-                </form>
-              ) : modalType === "department" ? (
-                <form onSubmit={handleDeptSubmit} className="p-8 space-y-6 max-h-[85vh] overflow-y-auto custom-scrollbar">
-                  <div className="grid grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                      <label className="text-sm font-bold text-slate-700">Department Name</label>
-                      <input type="text" className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none" value={deptForm.name} onChange={e => setDeptForm({...deptForm, name: e.target.value})} required />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-bold text-slate-700">Category</label>
-                      <input type="text" className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none" value={deptForm.category} onChange={e => setDeptForm({...deptForm, category: e.target.value})} required />
-                    </div>
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                      <label className="text-sm font-bold text-slate-700">Icon (emoji)</label>
-                      <input type="text" className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none" value={deptForm.icon} onChange={e => setDeptForm({...deptForm, icon: e.target.value})} />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-bold text-slate-700">Short Description</label>
-                      <input type="text" className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none" value={deptForm.description} onChange={e => setDeptForm({...deptForm, description: e.target.value})} required />
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <label className="text-sm font-bold text-slate-700">Overview Paragraph 1</label>
-                    <textarea className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none h-24" value={deptForm.overview} onChange={e => setDeptForm({...deptForm, overview: e.target.value})} required />
-                  </div>
-
-                  <div className="space-y-2">
-                    <label className="text-sm font-bold text-slate-700">Overview Paragraph 2 (Optional)</label>
-                    <textarea className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none h-24" value={deptForm.overview2} onChange={e => setDeptForm({...deptForm, overview2: e.target.value})} />
-                  </div>
-
-                  <div className="space-y-4 border-t border-slate-100 pt-6">
-                    <h4 className="font-bold text-slate-800 flex items-center gap-2"><Users size={18} /> Faculty Members</h4>
-                    <div className="grid grid-cols-2 gap-4 bg-slate-50 p-4 rounded-2xl">
-                      <input type="text" placeholder="Name" className="px-4 py-2 rounded-lg border border-slate-200" value={deptFacultyForm.name} onChange={e => setDeptFacultyForm({...deptFacultyForm, name: e.target.value})} />
-                      <input type="text" placeholder="Designation" className="px-4 py-2 rounded-lg border border-slate-200" value={deptFacultyForm.designation} onChange={e => setDeptFacultyForm({...deptFacultyForm, designation: e.target.value})} />
-                      <input type="text" placeholder="Qualification" className="px-4 py-2 rounded-lg border border-slate-200" value={deptFacultyForm.qualification} onChange={e => setDeptFacultyForm({...deptFacultyForm, qualification: e.target.value})} />
-                      <button type="button" onClick={addDeptFaculty} className="bg-slate-800 text-white rounded-lg font-bold">Add Faculty</button>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      {deptForm.faculty.map((f, i) => (
-                        <div key={i} className="bg-white px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-medium flex items-center gap-2 shadow-sm">
-                          {f.name} ({f.designation})
-                          <button type="button" onClick={() => setDeptForm({...deptForm, faculty: deptForm.faculty.filter((_, idx) => idx !== i)})} className="text-red-500 hover:scale-110 transition-transform"><X size={14} /></button>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-6 border-t border-slate-100 pt-6">
-                    <div className="space-y-4">
-                      <h4 className="font-bold text-slate-800 flex items-center gap-2"><Building2 size={18} /> Facilities</h4>
-                      <div className="flex gap-2">
-                        <input type="text" placeholder="New facility..." className="flex-1 px-4 py-2 rounded-lg border border-slate-200" value={deptFacilityInput} onChange={e => setDeptFacilityInput(e.target.value)} />
-                        <button type="button" onClick={addDeptFacility} className="p-2 bg-slate-800 text-white rounded-lg"><Plus size={20} /></button>
-                      </div>
-                      <div className="space-y-2">
-                        {deptForm.facilities.map((f, i) => (
-                          <div key={i} className="bg-white p-2 rounded-lg border border-slate-200 text-xs flex items-center justify-between group">
-                            <span className="line-clamp-1">{f}</span>
-                            <button type="button" onClick={() => setDeptForm({...deptForm, facilities: deptForm.facilities.filter((_, idx) => idx !== i)})} className="text-red-500 opacity-0 group-hover:opacity-100"><Trash2 size={14} /></button>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                    <div className="space-y-4">
-                      <h4 className="font-bold text-slate-800 flex items-center gap-2"><Zap size={18} /> Activities</h4>
-                      <div className="flex gap-2">
-                        <input type="text" placeholder="New activity..." className="flex-1 px-4 py-2 rounded-lg border border-slate-200" value={deptActivityInput} onChange={e => setDeptActivityInput(e.target.value)} />
-                        <button type="button" onClick={addDeptActivity} className="p-2 bg-slate-800 text-white rounded-lg"><Plus size={20} /></button>
-                      </div>
-                      <div className="space-y-2">
-                        {deptForm.activities.map((a, i) => (
-                          <div key={i} className="bg-white p-2 rounded-lg border border-slate-200 text-xs flex items-center justify-between group">
-                            <span className="line-clamp-1">{a}</span>
-                            <button type="button" onClick={() => setDeptForm({...deptForm, activities: deptForm.activities.filter((_, idx) => idx !== i)})} className="text-red-500 opacity-0 group-hover:opacity-100"><Trash2 size={14} /></button>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex gap-4 pt-6 border-t border-slate-100">
-                    <button type="button" onClick={() => setShowModal(false)} className="flex-1 px-6 py-4 rounded-2xl border border-slate-200 font-bold text-slate-600 hover:bg-slate-50 transition-colors">Cancel</button>
-                    <button type="submit" className="flex-[2] px-6 py-4 rounded-2xl text-white font-bold transition-all shadow-xl active:scale-95 hover:opacity-90" style={{ backgroundColor: themeColors.primary }}>{editItem ? 'Update Department' : 'Create Department'}</button>
-                  </div>
-                </form>
-              ) : null}
-
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+      <Modal show={showModal} onClose={closeModal} title={modalMeta.title} subtitle={modalMeta.subtitle}>
+        {modalType === "program" && <ProgramForm editItem={editItem} programForm={programForm} setProgramForm={setProgramForm} closeModal={closeModal} fetchData={fetchData} notify={notify}/>}
+        {modalType === "testimonial" && <TestimonialForm editItem={editItem} testimonialForm={testimonialForm} setTestimonialForm={setTestimonialForm} closeModal={closeModal} fetchData={fetchData} notify={notify}/>}
+        {modalType === "milestone" && <MilestoneForm editItem={editItem} milestoneForm={milestoneForm} setMilestoneForm={setMilestoneForm} closeModal={closeModal} fetchData={fetchData} notify={notify}/>}
+        {modalType === "visionMission" && <VisionMissionForm editItem={editItem} vmForm={vmForm} setVmForm={setVmForm} closeModal={closeModal} fetchData={fetchData} notify={notify}/>}
+        {modalType === "coreValue" && <CoreValueForm editItem={editItem} cvForm={cvForm} setCvForm={setCvForm} closeModal={closeModal} fetchData={fetchData} notify={notify}/>}
+        {modalType === "course" && <CourseForm editItem={editItem} courseForm={courseForm} setCourseForm={setCourseForm} closeModal={closeModal} fetchData={fetchData} notify={notify}/>}
+        {modalType === "step" && <StepForm editItem={editItem} stepForm={stepForm} setStepForm={setStepForm} closeModal={closeModal} fetchData={fetchData} notify={notify}/>}
+        {modalType === "rule" && <RuleForm editItem={editItem} ruleForm={ruleForm} setRuleForm={setRuleForm} closeModal={closeModal} fetchData={fetchData} notify={notify}/>}
+        {modalType === "bond" && <BondForm editItem={editItem} bondForm={bondForm} setBondForm={setBondForm} closeModal={closeModal} fetchData={fetchData} notify={notify}/>}
+        {modalType === "guideline" && <GuidelineForm editItem={editItem} guidelineForm={guidelineForm} setGuidelineForm={setGuidelineForm} closeModal={closeModal} fetchData={fetchData} notify={notify}/>}
+        {modalType === "department" && <DeptForm editItem={editItem} deptForm={deptForm} setDeptForm={setDeptForm} closeModal={closeModal} fetchData={fetchData} notify={notify}/>}
+        {modalType === "gallery" && <GalleryForm editItem={editItem} formState={galleryForm} setFormState={setGalleryForm} closeModal={closeModal} fetchData={fetchData} notify={notify} axiosInstance={axiosInstance}/>}
+      </Modal>
     </div>
   );
 };

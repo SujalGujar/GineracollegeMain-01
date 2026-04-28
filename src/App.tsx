@@ -20,8 +20,12 @@ import { LoginPage } from './components/LoginPage';
 
 export default function App() {
   const [currentPage, setCurrentPage] = useState(() => {
-    if (window.location.pathname === '/admin' || window.location.hash === '#/admin') {
+    const hash = window.location.hash;
+    if (window.location.pathname === '/admin' || hash === '#/admin') {
       return 'admin';
+    }
+    if (hash && hash.startsWith('#/')) {
+      return hash.substring(2);
     }
     return 'home';
   });
@@ -31,20 +35,28 @@ export default function App() {
   });
 
   useEffect(() => {
-    // Check if URL ends with /admin
-    if (window.location.pathname === '/admin' || window.location.hash === '#/admin') {
-      setCurrentPage('admin');
-    }
+    const handleHashChange = () => {
+      const hash = window.location.hash;
+      if (window.location.pathname === '/admin' || hash === '#/admin') {
+        setCurrentPage('admin');
+      } else if (hash && hash.startsWith('#/')) {
+        setCurrentPage(hash.substring(2));
+      } else {
+        setCurrentPage('home');
+      }
+    };
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
   }, []);
 
   const handleNavigation = (page) => {
     setCurrentPage(page);
     window.scrollTo(0, 0);
-    // Update URL to match state
-    if (page === 'admin') {
-      window.history.pushState(null, '', '/admin');
+    // Update URL hash to match state for safe reloading
+    if (page === 'home') {
+      window.history.pushState(null, '', window.location.pathname);
     } else {
-      window.history.pushState(null, '', '/');
+      window.history.pushState(null, '', '#/' + page);
     }
   };
 
@@ -82,18 +94,18 @@ export default function App() {
         return <Instructions />;
       
       // Nursing Department pages
-      case 'department-department-of-fundamentals-of-nursing':
-        return <GenericDepartment deptName="Department of Fundamentals Of Nursing" category="Nursing Department" />;
-      case 'department-department-of-medical-surgical-nursing':
-        return <GenericDepartment deptName="Department of Medical Surgical Nursing" category="Nursing Department" />;
-      case 'department-department-of-obstetric-and-gynaecological-nursing':
-        return <GenericDepartment deptName="Department of Obstetric and Gynaecological Nursing" category="Nursing Department" />;
-      case 'department-department-of-child-health-nursing':
-        return <GenericDepartment deptName="Department of Child Health Nursing" category="Nursing Department" />;
-      case 'department-department-of-community-health-nursing':
-        return <GenericDepartment deptName="Department of Community Health Nursing" category="Nursing Department" />;
-      case 'department-department-of-mental-health-nursing':
-        return <GenericDepartment deptName="Department of Mental Health Nursing" category="Nursing Department" />;
+      case 'department-fundamentals':
+        return <GenericDepartment slug="fundamentals" category="Nursing Department" />;
+      case 'department-medical-surgical':
+        return <GenericDepartment slug="medical-surgical" category="Nursing Department" />;
+      case 'department-obstetric':
+        return <GenericDepartment slug="obstetric" category="Nursing Department" />;
+      case 'department-child-health':
+        return <GenericDepartment slug="child-health" category="Nursing Department" />;
+      case 'department-community':
+        return <GenericDepartment slug="community" category="Nursing Department" />;
+      case 'department-mental-health':
+        return <GenericDepartment slug="mental-health" category="Nursing Department" />;
       
       // Photo Gallery pages
       case 'college-photos':
@@ -127,11 +139,12 @@ export default function App() {
       <div className="min-h-screen bg-background flex flex-col">
         {currentPage !== 'admin' && <Header currentPage={currentPage} onNavigate={handleNavigation} />}
         <main className="flex-1">
-          {currentPage !== 'admin' && currentPage !== 'home' && (
+          {currentPage.startsWith('department-') && (
             <HeroSection 
-              departmentName={currentPage.startsWith('department-') ? currentPage.replace('department-', '') : null} 
+              departmentName={currentPage.replace('department-', '')} 
             />
           )}
+
           {renderCurrentPage()}
         </main>
       
@@ -178,12 +191,12 @@ export default function App() {
             <div>
               <h4 className="font-semibold mb-4 text-lg">Nursing Departments</h4>
               <div className="space-y-3">
-                <button onClick={() => handleNavigation('department-department-of-fundamentals-of-nursing')} className="block text-gray-300 hover:text-white hover:translate-x-1 transition-all text-sm">Fundamentals of Nursing</button>
-                <button onClick={() => handleNavigation('department-department-of-medical-surgical-nursing')} className="block text-gray-300 hover:text-white hover:translate-x-1 transition-all text-sm">Medical Surgical Nursing</button>
-                <button onClick={() => handleNavigation('department-department-of-obstetric-and-gynaecological-nursing')} className="block text-gray-300 hover:text-white hover:translate-x-1 transition-all text-sm">Obstetric & Gynaecological Nursing</button>
-                <button onClick={() => handleNavigation('department-department-of-child-health-nursing')} className="block text-gray-300 hover:text-white hover:translate-x-1 transition-all text-sm">Child Health Nursing</button>
-                <button onClick={() => handleNavigation('department-department-of-community-health-nursing')} className="block text-gray-300 hover:text-white hover:translate-x-1 transition-all text-sm">Community Health Nursing</button>
-                <button onClick={() => handleNavigation('department-department-of-mental-health-nursing')} className="block text-gray-300 hover:text-white hover:translate-x-1 transition-all text-sm">Mental Health Nursing</button>
+                <button onClick={() => handleNavigation('department-fundamentals')} className="block text-gray-300 hover:text-white hover:translate-x-1 transition-all text-sm">Fundamentals of Nursing</button>
+                <button onClick={() => handleNavigation('department-medical-surgical')} className="block text-gray-300 hover:text-white hover:translate-x-1 transition-all text-sm">Medical Surgical Nursing</button>
+                <button onClick={() => handleNavigation('department-obstetric')} className="block text-gray-300 hover:text-white hover:translate-x-1 transition-all text-sm">Obstetric & Gynaecological Nursing</button>
+                <button onClick={() => handleNavigation('department-child-health')} className="block text-gray-300 hover:text-white hover:translate-x-1 transition-all text-sm">Child Health Nursing</button>
+                <button onClick={() => handleNavigation('department-community')} className="block text-gray-300 hover:text-white hover:translate-x-1 transition-all text-sm">Community Health Nursing</button>
+                <button onClick={() => handleNavigation('department-mental-health')} className="block text-gray-300 hover:text-white hover:translate-x-1 transition-all text-sm">Mental Health Nursing</button>
               </div>
             </div>
             <div>
