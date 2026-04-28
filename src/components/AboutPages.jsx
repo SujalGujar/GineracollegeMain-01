@@ -44,7 +44,7 @@ export function AboutLogo() {
   const missionPoints = visionMission.filter(v => v.type === 'mission').map(v => v.content);
 
   const displayLogo = collegeBranding?.logoUrl
-    ? (collegeBranding.logoUrl.startsWith('http') ? collegeBranding.logoUrl : `http://localhost:8080${collegeBranding.logoUrl}`)
+    ? (collegeBranding.logoUrl.startsWith('http') ? collegeBranding.logoUrl : `${window.location.hostname === 'localhost' ? `${window.location.hostname === 'localhost' ? 'http://localhost:8080' : 'https://gineracollegemain-01.onrender.com'}` + '' : 'https://gineracollegemain-01.onrender.com'}${collegeBranding.logoUrl}`)
     : logo;
 
   const items = visionPoints.length ? visionPoints : [
@@ -437,7 +437,7 @@ export function DeanMessage() {
     { number: "35+", label: "Research Papers/Year", color: "#7c3aed" }
   ];
   const deanPhoto = dean?.photoUrl
-    ? (dean.photoUrl.startsWith('http') ? dean.photoUrl : `http://localhost:8080${dean.photoUrl}`)
+    ? (dean.photoUrl.startsWith('http') ? dean.photoUrl : `${window.location.hostname === 'localhost' ? `${window.location.hostname === 'localhost' ? 'http://localhost:8080' : 'https://gineracollegemain-01.onrender.com'}` + '' : 'https://gineracollegemain-01.onrender.com'}${dean.photoUrl}`)
     : principleImage;
 
   const containerVariants = {

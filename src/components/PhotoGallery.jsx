@@ -67,7 +67,7 @@ export function CollegePhotos() {
             >
               <div className="aspect-video overflow-hidden">
                 <ImageWithFallback
-                  src={image.imageUrl.startsWith('http') ? image.imageUrl : `http://localhost:8080${image.imageUrl}`}
+                  src={image.imageUrl.startsWith('http') ? image.imageUrl : `${window.location.hostname === 'localhost' ? `${window.location.hostname === 'localhost' ? 'http://localhost:8080' : 'https://gineracollegemain-01.onrender.com'}` + '' : 'https://gineracollegemain-01.onrender.com'}${image.imageUrl}`}
                   alt={image.title}
                   className="w-full h-full object-cover transition-transform duration-300 ease-in-out hover:scale-105"
                 />
@@ -100,7 +100,7 @@ export function CollegePhotos() {
               <div className="aspect-video overflow-hidden bg-gray-100 flex items-center justify-center relative group">
                 {image.imageUrl ? (
                   <img
-                    src={image.imageUrl.startsWith('http') ? image.imageUrl : `http://localhost:8080${image.imageUrl}`}
+                    src={image.imageUrl.startsWith('http') ? image.imageUrl : `${window.location.hostname === 'localhost' ? `${window.location.hostname === 'localhost' ? 'http://localhost:8080' : 'https://gineracollegemain-01.onrender.com'}` + '' : 'https://gineracollegemain-01.onrender.com'}${image.imageUrl}`}
                     alt={image.title}
                     className="absolute inset-0 w-full h-full object-cover transition-transform duration-300 ease-in-out group-hover:scale-105"
                   />
@@ -201,7 +201,7 @@ export function HospitalPhotos() {
         >
           <div className="aspect-video overflow-hidden rounded-t-lg">
             <ImageWithFallback
-              src={hospitalImages[0].imageUrl.startsWith('http') ? hospitalImages[0].imageUrl : `http://localhost:8080${hospitalImages[0].imageUrl}`}
+              src={hospitalImages[0].imageUrl.startsWith('http') ? hospitalImages[0].imageUrl : `${window.location.hostname === 'localhost' ? `${window.location.hostname === 'localhost' ? 'http://localhost:8080' : 'https://gineracollegemain-01.onrender.com'}` + '' : 'https://gineracollegemain-01.onrender.com'}${hospitalImages[0].imageUrl}`}
               alt={hospitalImages[0].title}
               className="w-full h-full object-cover transition-transform duration-300 ease-in-out hover:scale-105"
             />
@@ -241,7 +241,7 @@ export function HospitalPhotos() {
             >
               <div className="aspect-video overflow-hidden">
                 <ImageWithFallback
-                  src={image.imageUrl.startsWith('http') ? image.imageUrl : `http://localhost:8080${image.imageUrl}`}
+                  src={image.imageUrl.startsWith('http') ? image.imageUrl : `${window.location.hostname === 'localhost' ? `${window.location.hostname === 'localhost' ? 'http://localhost:8080' : 'https://gineracollegemain-01.onrender.com'}` + '' : 'https://gineracollegemain-01.onrender.com'}${image.imageUrl}`}
                   alt={image.title}
                   className="w-full h-full object-cover transition-transform duration-300 ease-in-out hover:scale-105"
                 />
@@ -275,7 +275,7 @@ export function HospitalPhotos() {
               <div className="w-full aspect-video bg-gray-100 flex items-center justify-center overflow-hidden">
                 {facility.imageUrl ? (
                   <img
-                    src={facility.imageUrl.startsWith('http') ? facility.imageUrl : `http://localhost:8080${facility.imageUrl}`}
+                    src={facility.imageUrl.startsWith('http') ? facility.imageUrl : `${window.location.hostname === 'localhost' ? `${window.location.hostname === 'localhost' ? 'http://localhost:8080' : 'https://gineracollegemain-01.onrender.com'}` + '' : 'https://gineracollegemain-01.onrender.com'}${facility.imageUrl}`}
                     alt={facility.title}
                     className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
                   />
@@ -395,7 +395,7 @@ export function EventsPhotos() {
         >
           <div className="aspect-video overflow-hidden rounded-t-lg">
             <ImageWithFallback
-              src={eventImages[0].imageUrl.startsWith('http') ? eventImages[0].imageUrl : `http://localhost:8080${eventImages[0].imageUrl}`}
+              src={eventImages[0].imageUrl.startsWith('http') ? eventImages[0].imageUrl : `${window.location.hostname === 'localhost' ? `${window.location.hostname === 'localhost' ? 'http://localhost:8080' : 'https://gineracollegemain-01.onrender.com'}` + '' : 'https://gineracollegemain-01.onrender.com'}${eventImages[0].imageUrl}`}
               alt={eventImages[0].title}
               className="w-full h-full object-cover transition-transform duration-300 ease-in-out hover:scale-105"
             />
@@ -432,7 +432,7 @@ export function EventsPhotos() {
             >
               <div className="aspect-video overflow-hidden">
                 <ImageWithFallback
-                  src={image.imageUrl.startsWith('http') ? image.imageUrl : `http://localhost:8080${image.imageUrl}`}
+                  src={image.imageUrl.startsWith('http') ? image.imageUrl : `${window.location.hostname === 'localhost' ? `${window.location.hostname === 'localhost' ? 'http://localhost:8080' : 'https://gineracollegemain-01.onrender.com'}` + '' : 'https://gineracollegemain-01.onrender.com'}${image.imageUrl}`}
                   alt={image.title}
                   className="w-full h-full object-cover transition-transform duration-300 ease-in-out hover:scale-105"
                 />
@@ -471,7 +471,7 @@ export function EventsPhotos() {
                       <div className="aspect-video bg-gray-100 rounded-lg mb-3 flex items-center justify-center overflow-hidden">
                         {event.imageUrl ? (
                           <img
-                            src={event.imageUrl.startsWith('http') ? event.imageUrl : `http://localhost:8080${event.imageUrl}`}
+                            src={event.imageUrl.startsWith('http') ? event.imageUrl : `${window.location.hostname === 'localhost' ? `${window.location.hostname === 'localhost' ? 'http://localhost:8080' : 'https://gineracollegemain-01.onrender.com'}` + '' : 'https://gineracollegemain-01.onrender.com'}${event.imageUrl}`}
                             alt={event.name}
                             className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
                           />

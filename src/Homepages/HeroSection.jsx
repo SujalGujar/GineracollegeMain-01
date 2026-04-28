@@ -50,7 +50,7 @@ const HeroSection = ({ departmentName }) => {
         const response = await axiosInstance.get(url);
         if (response.data && response.data.length > 0) {
           const backendSlides = response.data.map(item => ({
-            image: item.imageUrl.startsWith('http') ? item.imageUrl : `http://localhost:8080${item.imageUrl}`,
+            image: item.imageUrl.startsWith('http') ? item.imageUrl : `${window.location.hostname === 'localhost' ? `${window.location.hostname === 'localhost' ? 'http://localhost:8080' : 'https://gineracollegemain-01.onrender.com'}` + '' : 'https://gineracollegemain-01.onrender.com'}${item.imageUrl}`,
             alt: item.title || "Ginera College Slider"
           }));
           setSlides(backendSlides);

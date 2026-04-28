@@ -28,7 +28,7 @@ const C = {
 const imgUrl = (url) =>
   !url ? "/placeholder.png"
        : url.startsWith("http") ? url
-       : `http://localhost:8080${url}`;
+       : `${window.location.hostname === 'localhost' ? `${window.location.hostname === 'localhost' ? 'http://localhost:8080' : 'https://gineracollegemain-01.onrender.com'}` + '' : 'https://gineracollegemain-01.onrender.com'}${url}`;
 
 const Pill = ({ children, color = C.accent }) => (
   <span style={{ background: color + "20", color }}

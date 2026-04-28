@@ -25,7 +25,7 @@ export default function ImageSlider({ images, interval = 3000 }) {
   const getImgUrl = (url) => {
     if (!url) return "/placeholder.png";
     if (url.startsWith("http")) return url;
-    return `http://localhost:8080${url}`;
+    return `${window.location.hostname === 'localhost' ? `${window.location.hostname === 'localhost' ? 'http://localhost:8080' : 'https://gineracollegemain-01.onrender.com'}` + '' : 'https://gineracollegemain-01.onrender.com'}${url}`;
   };
 
   const src = current.imageUrl || current.src || current.image;

@@ -488,7 +488,7 @@ import { AnimatePresence } from "framer-motion";
 const imgUrl = (url) =>
   !url ? "/placeholder.png"
        : url.startsWith("http") ? url
-       : `http://localhost:8080${url}`;
+       : `${window.location.hostname === 'localhost' ? `${window.location.hostname === 'localhost' ? 'http://localhost:8080' : 'https://gineracollegemain-01.onrender.com'}` + '' : 'https://gineracollegemain-01.onrender.com'}${url}`;
 
 const ImageSlider = ({ images }) => {
   const [index, setIndex] = useState(0);

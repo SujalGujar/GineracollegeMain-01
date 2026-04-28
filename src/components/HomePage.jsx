@@ -1258,7 +1258,7 @@ const HomePage=({ onNavigate }) => {
                 const getImgUrl = (url) => {
                   if (!url) return "/placeholder.png";
                   if (url.startsWith("http")) return url;
-                  return `http://localhost:8080${url}`;
+                  return `${window.location.hostname === 'localhost' ? `${window.location.hostname === 'localhost' ? 'http://localhost:8080' : 'https://gineracollegemain-01.onrender.com'}` + '' : 'https://gineracollegemain-01.onrender.com'}${url}`;
                 };
                 const imageUrl = getImgUrl(prog.imageUrl || prog.image);
                 
@@ -1439,7 +1439,7 @@ const HomePage=({ onNavigate }) => {
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1.4fr" }}>
                     <div style={{ position: "relative", minHeight: 320, overflow: "hidden" }}>
                       <img
-                        src={current.imageUrl ? (current.imageUrl.startsWith('http') ? current.imageUrl : `http://localhost:8080${current.imageUrl}`) : current.image}
+                        src={current.imageUrl ? (current.imageUrl.startsWith('http') ? current.imageUrl : `${window.location.hostname === 'localhost' ? `${window.location.hostname === 'localhost' ? 'http://localhost:8080' : 'https://gineracollegemain-01.onrender.com'}` + '' : 'https://gineracollegemain-01.onrender.com'}${current.imageUrl}`) : current.image}
                         alt={current.name}
                         style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
                       />
