@@ -477,10 +477,27 @@
 // Update the GenericDepartment component to use the deptName prop
 // DepartmentPages.jsx - Complete GenericDepartment with all data
 
-import React from "react";
+import React, { useState, useEffect } from "react";
+import { motion } from "framer-motion";
+import axiosInstance from "../api/axiosInstance";
+import { Users, BookOpen, Microscope, GraduationCap } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Badge } from "./ui/badge";
-import { Users, BookOpen, Microscope, GraduationCap } from "lucide-react";
+
+const fadeInUp = {
+  hidden: { opacity: 0, y: 30 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut" } }
+};
+
+const staggerContainer = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1
+    }
+  }
+};
 
 function DepartmentPage({ department }) {
   return (
@@ -891,15 +908,48 @@ const allDepartments = {
 
 // Export GenericDepartment component that uses the department data
 export function GenericDepartment({ deptName, category }) {
-  // Get the department data based on deptName, or fallback to first department if not found
-  const department = allDepartments[deptName] || allDepartments["Department of Fundamentals Of Nursing"];
-  
+  const [department, setDepartment] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchDepartment = async () => {
+      setLoading(true);
+      try {
+        const response = await axiosInstance.get(`/departments/${deptName}`);
+        if (response.data) {
+          setDepartment(response.data);
+        } else {
+          // Fallback to static data if not in DB
+          setDepartment(allDepartments[deptName] || allDepartments["Department of Fundamentals Of Nursing"]);
+        }
+      } catch (error) {
+        console.error("Error fetching department:", error);
+        // Fallback to static data on error
+        setDepartment(allDepartments[deptName] || allDepartments["Department of Fundamentals Of Nursing"]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchDepartment();
+  }, [deptName]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-white">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-amber-600"></div>
+      </div>
+    );
+  }
+
+  if (!department) return null;
+
   // Override the category if provided
+  const finalDept = { ...department };
   if (category) {
-    department.category = category;
+    finalDept.category = category;
   }
   
-  return <DepartmentPage department={department} />;
+  return <DepartmentPage department={finalDept} />;
 }
 
 // Also export individual department components for backward compatibility

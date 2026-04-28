@@ -4,8 +4,9 @@ import { Sheet, SheetContent, SheetTrigger } from "./ui/sheet.jsx";
 import { Menu, User, ChevronDown } from "lucide-react";
 import gineraLogo2 from "../images/ginera-logo2.png";
 import gineraLogo from "../images/ginera-logo.png";
+import axiosInstance from "../api/axiosInstance";
 
-const departmentItems = [
+let departmentItems = [
   {
     title: "Nursing Departments",
     items: [
@@ -42,7 +43,7 @@ const NAV_ITEMS = [
       { label: "Courses Offered", page: "courses" },
       { label: "Admission Procedure", page: "admission-procedure" },
       { label: "Admission Rules", page: "admission-rules" },
-      { label: "Service Bond", page: "bond" },
+      { label: "Student Bond Agreement", page: "student-bond" },
       { label: "Student Guidelines", page: "instructions" },
     ],
   },
@@ -83,7 +84,7 @@ const PAGE_SECTION_MAP = {
   "courses": "admissions",
   "admission-procedure": "admissions",
   "admission-rules": "admissions",
-  "bond": "admissions",
+  "student-bond": "admissions",
   "instructions": "admissions",
 
   "college-photos": "gallery",
@@ -96,6 +97,41 @@ export function Header({ currentPage, onNavigate }) {
   const [openDropdown, setOpenDropdown] = React.useState(null);
   const [mobileOpenSections, setMobileOpenSections] = React.useState({});
   const dropdownRef = React.useRef(null);
+  const [dynamicNavItems, setDynamicNavItems] = React.useState(NAV_ITEMS);
+
+  React.useEffect(() => {
+    const fetchDepartments = async () => {
+      try {
+        const response = await axiosInstance.get("/departments");
+        if (response.data && response.data.length > 0) {
+          const deptNames = response.data.map(d => d.name);
+          // Create the dynamic subpages for departments
+          const deptSubpages = response.data.map(dept => ({
+            label: dept.name,
+            page: `department-${dept.name.toLowerCase()
+              .replace(/\s+/g, "-")
+              .replace(/[()&]/g, "")
+              .replace(/,/g, "")}`
+          }));
+
+          // Re-generate NAV_ITEMS with dynamic departments
+          const newNavItems = NAV_ITEMS.map(item => {
+            if (item.key === 'departments') {
+              return { ...item, subpages: deptSubpages };
+            }
+            return item;
+          });
+          setDynamicNavItems(newNavItems);
+        } else {
+          setDynamicNavItems(NAV_ITEMS);
+        }
+      } catch (error) {
+        console.error("Error fetching departments for header:", error);
+        setDynamicNavItems(NAV_ITEMS);
+      }
+    };
+    fetchDepartments();
+  }, []);
 
   // Close dropdown on outside click
   React.useEffect(() => {
@@ -137,6 +173,9 @@ export function Header({ currentPage, onNavigate }) {
       <header className="bg-white border-b border-border shadow-sm sticky top-0 z-50">
         <div className="container mx-auto px-4">
           <div className="flex h-20 items-center justify-between">
+            {/* Nav Items List for usage */}
+            {/* We'll use dynamicNavItems.length > 0 ? dynamicNavItems : dynamicNavItems */}
+
 
             {/* Logo */}
             <div className="flex items-center space-x-3">
@@ -158,7 +197,7 @@ export function Header({ currentPage, onNavigate }) {
             {/* Desktop Navigation */}
             <div className="hidden lg:flex items-center space-x-1" ref={dropdownRef}>
               <nav className="flex items-center space-x-1">
-                {NAV_ITEMS.map((item) => {
+                {dynamicNavItems.map((item) => {
                   const hasSubpages = item.subpages.length > 0;
                   const isOpen = openDropdown === item.key;
                   const isActive =
@@ -287,7 +326,7 @@ export function Header({ currentPage, onNavigate }) {
                     </div>
 
                     {/* Mobile Nav Items */}
-                    {NAV_ITEMS.map((item) => {
+                    {dynamicNavItems.map((item) => {
                       const hasSubpages = item.subpages.length > 0;
                       const isMobileOpen = mobileOpenSections[item.key];
                       const isActive =

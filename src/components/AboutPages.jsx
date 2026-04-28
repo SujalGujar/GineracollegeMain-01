@@ -59,7 +59,7 @@ export function AboutLogo() {
   ];
 
   return (
-    <div className="relative min-h-screen bg-gradient-to-br from-amber-50 to-orange-50 pt-[120px] pb-24 overflow-hidden">
+    <div className="relative min-h-screen bg-gradient-to-br from-amber-50 to-orange-50 pt-16 pb-24 overflow-hidden">
       {/* 🔸 Background Image */}
       <img
         src={backgroundImage4}
@@ -1341,7 +1341,7 @@ export function VisionMission() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-amber-50 to-orange-50 py-16 relative">
+    <div className="min-h-screen bg-gradient-to-br from-amber-50 to-orange-50 py-12 relative">
       {/* Background Image */}
       <img
         src={backgroundImage4}

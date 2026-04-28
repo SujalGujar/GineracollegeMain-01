@@ -21,8 +21,9 @@ import backgroundImage4 from "../images/backgroundImage(4).png";
 import ViewAllProgramsButton from "../components/Buttons/ViewAllProgramsButton";
 // import DownloadProspectusButton from "./DownloadProspectusButton";
 import AnimatedLearnMoreButton from "./Buttons/AnimatedLearnMoreButton";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ExternalLink } from "lucide-react";
+import axiosInstance from "../api/axiosInstance";
 
 
 // Animation variants
@@ -95,286 +96,93 @@ const staggerContainer = {
   },
 };
 
+// Sub-component for Feature cards to avoid Hook violations in loops
+const FeatureCard = ({ item, index }) => {
+  const [expanded, setExpanded] = useState(false);
+  const shortDescription = item.description.length > 100
+    ? `${item.description.substring(0, 100)}...`
+    : item.description;
+  const isTruncated = item.description.length > 100;
+
+  return (
+    <motion.div
+      key={index}
+      className="text-center p-8 bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg border border-orange-200"
+      whileHover={{ translateY: -6, scale: 1.01 }}
+    >
+      <div className={`w-16 h-16 bg-gradient-to-r ${item.color} rounded-2xl flex items-center justify-center text-white mx-auto mb-6`}>
+        {item.icon}
+      </div>
+
+      <h4 className="font-bold text-xl mb-3" style={{ color: "#78350f" }}>
+        {item.title}
+      </h4>
+
+      {/* description area */}
+      <div className="text-gray-700 leading-relaxed text-left">
+        <p className="mb-3">
+          {expanded ? item.description : shortDescription}
+        </p>
+
+        {isTruncated && (
+          <button
+            type="button"
+            onClick={() => setExpanded((s) => !s)}
+            aria-expanded={expanded}
+            className="text-sm font-semibold text-orange-700 hover:text-orange-900 transition-colors focus:outline-none"
+          >
+            {expanded ? "Read less" : "Read more"}
+          </button>
+        )}
+      </div>
+    </motion.div>
+  );
+};
+
 export function CoursesOffered() {
   const [expandedIds, setExpandedIds] = useState([]);
-  const courses = [
-    {
-      type: "Undergraduate Programs",
-      type2: 'Diploma Programs',
-      icon: "🎓",
-      color: "from-orange-500 to-yellow-500",
-      bgColor: "bg-orange-50",
-      programs: [
-        {
-          id: 1,
-          name: "Bachelor of Science - Nursing",
-          duration: "4 years (6 Months Exclusive Internship)",
-          seats: 60,
-          eligibility: "12th with Physics, Chemistry, Biology ",
-          description: "Comprehensive Nursing degree program with extensive clinical training",
-          icon: "👨‍⚕️",
-          highlights: [
-            "8 Semesters Theory Blocks",
-            "Clinical Rotations",
-            "Community Rotations",
-            "Internship Program",
-          ],
-          fees: "₹145",
-          websiteLink: 'https://www.medadmgujarat.org/',
-          admission: "Through PCB Marks Central Admission Committee for Physiotherapy, BSC Nursing, Prosthetics and Orthotics ,Occupational Therapy, Optometry ,Naturopathy, Audiology and Speech Therapy, GNM And ANM Admission Government of Gujarat, Gandhinagar",
-        },
-        {
-          id: 2,
-          name: "Diploma in General Nursing and Midwifery",
-          duration: "3 years",
-          seats: 100,
-          eligibility: "12th Pass With English",
-          icon: "🌟",
-          highlights: [
-            " Theory Blocks",
-            "Clinical Rotations",
-            "Community Rotations",
-            "Internship Program",
-          ],
-          fees: " ₹2050 ",
-          websiteLink: 'https://www.medadmgujarat.org/',
-          admission: "Through Central Admission Committee for Physiotherapy, BSC Nursing, Prosthetics and Orthotics ,Occupational Therapy, Optometry ,Naturopathy, Audiology and Speech Therapy, GNM And ANM Admission Government of Gujarat, Gandhinagar",
-        },
-      ],
-    },
-    {
-      type: "Postgraduate Programs",
-      icon: "📚",
-      color: "from-amber-600 to-orange-500",
-      bgColor: "bg-amber-50",
-      programs: [
-        {
-          id: 3,
-          name: "M.Sc.-(Medical Surgical Nursing)",
-          duration: "2 years",
-          seats: 5,
-          eligibility: "B.Sc. Nursing + University Entrance Exam",
-          description: "Specialization in  Critical care Nursing, Oncology Nursing, Nephro-Urological Nursing, Cardiovascular and Thoracic Nursing, Neurosciences Nursing, Orthopedic Nursing, Gastroenterology Nursing",
-          icon: "❤️",
-          highlights: [
-            " Theory Blocks",
-            "Clinical Rotations",
-            "Community Rotations",
-            "Internship Program",
-          ],
-          fees: "₹60,000",
-          admission: "Through University Entrance Exam",
-        },
-        {
-          id: 4,
-          name: "M.Sc.-(OBSTETRIC AND GYNAECOLOGICAL NURSING)",
-          duration: "2 years",
-          seats: 5,
-          eligibility: "B.Sc. Nursing + University Entrance Exam",
-          description: "Specialization in OBSTETRIC AND GYNAECOLOGICAL NURSING",
-          icon: "❤️",
-          highlights: [
-            " Theory Blocks",
-            "Clinical Rotations",
-            "Community Rotations",
-            "Internship Program",
-          ],
-          fees: "₹60,000",
-          admission: "Through University Entrance Exam",
-        },
-        {
-          id: 5,
-          name: "M.Sc.-(PEDIATRIC (CHILD HEALTH) NURSING)",
-          duration: "2 years",
-          seats: 5,
-          eligibility: "B.Sc. Nursing + University Entrance Exam",
-          description: "Specialization in PEDIATRIC (CHILD HEALTH) NURSING",
-          icon: "❤️",
-          highlights: [
-            " Theory Blocks",
-            "Clinical Rotations",
-            "Community Rotations",
-            "Internship Program",
-          ],
-          fees: "₹60,000",
-          admission: "Through University Entrance Exam",
-        },
-        {
-          id: 6,
-          name: "M.Sc.-(PSYCHIATRIC (MENTAL HEALTH) NURSING)",
-          duration: "2 years",
-          seats: 5,
-          eligibility: "B.Sc. Nursing + University Entrance Exam",
-          description: "Specialization in PSYCHIATRIC (MENTAL HEALTH) NURSING",
-          icon: "❤️",
-          highlights: [
-            " Theory Blocks",
-            "Clinical Rotations",
-            "Community Rotations",
-            "Internship Program",
-          ],
-          fees: "₹60,000",
-          admission: "Through University Entrance Exam",
-        },
-        {
-          id: 7,
-          name: "M.Sc.-(COMMUNITY HEALTH NURSING)",
-          duration: "2 years",
-          seats: 5,
-          eligibility: "B.Sc. Nursing + University Entrance Exam",
-          description: "Specialization in COMMUNITY HEALTH NURSING",
-          icon: "❤️",
-          highlights: [
-            " Theory Blocks",
-            "Clinical Rotations",
-            "Community Rotations",
-            "Internship Program",
-          ],
-          fees: "₹60,000",
-          admission: "Through University Entrance Exam",
-        },
-        {
-          id: 8,
-          name: "M.Sc.-(Nurse Practitioners in critical care nursing (Residency Program))",
-          duration: "2 years",
-          seats: 10,
-          eligibility: "B.Sc. Nursing + University Entrance Exam",
-          description: "Specialization in Nurse Practitioners in critical care nursing (Residency Program)",
-          icon: "❤️",
-          highlights: [
-            " Theory Blocks",
-            "Clinical Rotations",
-            "Community Rotations",
-            "Internship Program",
-          ],
-          fees: "₹60,000",
-          admission: "Through University Entrance Exam",
-        },
-      ],
-    },
-    {
-      type: "Specialisation Diploma Programs",
-      icon: "📚",
-      color: "from-amber-600 to-orange-500",
-      bgColor: "bg-amber-50",
-      programs: [
-        {
-          id: 9,
-          name: "Post Basic Diploma  Specialty Nursing - Residency Program",
-          duration: "1 years",
-          seats: "20 Each Specialty Nursing - Residency Program",
-          eligibility: "B.Sc. Nursing or Diploma In General Nursing and Midwifery",
-        //   description: 
-        
-        // "Post Basic Diploma in Burn & Reconstructive Surgery Specialty Nursing - Residency Program (1 Years)
-        // Post Basic Diploma in Orthopaedic & Rehabilitation Specialty Nursing - Residency Program (1 Years)
-        // Post Basic Diploma in Neonatal Specialty Nursing - Residency Program (1 Years)
-        
-        // Post Basic Diploma in Oncology Specialty Nursing Residency Program (1 Year)
-        // POST BASIC DIPLOMA IN CRITICAL CARE SPECIALTY NURSING - RESIDENCY PROGRAM) (1 Year)
+  const [courses, setCourses] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-        // ,POST BASIC DIPLOMA IN EMERGENCY AND DISASTER SPECIALTY NURSING – RESIDENCY PROGRAM) (1 Years),POST BASIC DIPLOMA IN CARDIOTHORACIC SPECIALTY NURSING – RESIDENCY PROGRAM (1 Years),POST BASIC DIPLOMA IN NURSE PRACTITIONERS IN MIDWIFERY ( 1 YEAR 6 MONTHS)",
-        
-      
-          icon: "❤️",
-          highlights: [
-            " Theory Blocks",
-            "Clinical Rotations",
-            "Community Rotations",
-            "Residency Program",
-          ],
-          
-          fees: "₹15000 + 15000 ",
-          admission: "Through Direct Admission upon Merit of Eligiblity Study by admission committee",
-        },
-        // {
-        //   id: 10,
-        //   name: "M.Sc.-(OBSTETRIC AND GYNAECOLOGICAL NURSING)",
-        //   duration: "2 years",
-        //   seats: 5,
-        //   eligibility: "B.Sc. Nursing + University Entrance Exam",
-        //   description: "Specialization in OBSTETRIC AND GYNAECOLOGICAL NURSING",
-        //   icon: "❤️",
-        //   highlights: [
-        //     " Theory Blocks",
-        //     "Clinical Rotations",
-        //     "Community Rotations",
-        //     "Internship Program",
-        //   ],
-        //   fees: "₹60,000",
+  useEffect(() => {
+    const fetchCourses = async () => {
+      try {
+        const response = await axiosInstance.get("/courses");
+        const grouped = response.data.reduce((acc, course) => {
+          const cat = acc.find(c => c.type === course.category);
+          if (cat) {
+            cat.programs.push(course);
+          } else {
+            acc.push({ type: course.category, programs: [course] });
+          }
+          return acc;
+        }, []);
+        setCourses(grouped);
+      } catch (err) {
+        console.error("Error fetching courses:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchCourses();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-amber-50">
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+          className="w-12 h-12 border-4 border-orange-500 border-t-transparent rounded-full"
+        />
+      </div>
+    );
+  }
+
         //   admission: "Through University Entrance Exam",
         // },
-        // {
-        //   id: 11,
-        //   name: "M.Sc.-(PEDIATRIC (CHILD HEALTH) NURSING)",
-        //   duration: "2 years",
-        //   seats: 5,
-        //   eligibility: "B.Sc. Nursing + University Entrance Exam",
-        //   description: "Specialization in PEDIATRIC (CHILD HEALTH) NURSING",
-        //   icon: "❤️",
-        //   highlights: [
-        //     " Theory Blocks",
-        //     "Clinical Rotations",
-        //     "Community Rotations",
-        //     "Internship Program",
-        //   ],
-        //   fees: "₹60,000",
-        //   admission: "Through University Entrance Exam",
-        // },
-        // {
-        //   id: 12,
-        //   name: "M.Sc.-(PSYCHIATRIC (MENTAL HEALTH) NURSING)",
-        //   duration: "2 years",
-        //   seats: 5,
-        //   eligibility: "B.Sc. Nursing + University Entrance Exam",
-        //   description: "Specialization in PSYCHIATRIC (MENTAL HEALTH) NURSING",
-        //   icon: "❤️",
-        //   highlights: [
-        //     " Theory Blocks",
-        //     "Clinical Rotations",
-        //     "Community Rotations",
-        //     "Internship Program",
-        //   ],
-        //   fees: "₹60,000",
-        //   admission: "Through University Entrance Exam",
-        // },
-        // {
-        //   id: 13,
-        //   name: "M.Sc.-(COMMUNITY HEALTH NURSING)",
-        //   duration: "2 years",
-        //   seats: 5,
-        //   eligibility: "B.Sc. Nursing + University Entrance Exam",
-        //   description: "Specialization in COMMUNITY HEALTH NURSING",
-        //   icon: "❤️",
-        //   highlights: [
-        //     " Theory Blocks",
-        //     "Clinical Rotations",
-        //     "Community Rotations",
-        //     "Internship Program",
-        //   ],
-        //   fees: "₹60,000",
-        //   admission: "Through University Entrance Exam",
-        // },
-        // {
-        //   id: 14,
-        //   name: "M.Sc.-(Nurse Practitioners in critical care nursing (Residency Program))",
-        //   duration: "2 years",
-        //   seats: 10,
-        //   eligibility: "B.Sc. Nursing + University Entrance Exam",
-        //   description: "Specialization in Nurse Practitioners in critical care nursing (Residency Program)",
-        //   icon: "❤️",
-        //   highlights: [
-        //     " Theory Blocks",
-        //     "Clinical Rotations",
-        //     "Community Rotations",
-        //     "Internship Program",
-        //   ],
-        //   fees: "₹60,000",
-        //   admission: "Through University Entrance Exam",
-        // },
-      ],
-    },
-  ];
+    
+   
 
   const toggleExpand = (id) => {
     setExpandedIds((prev) =>
@@ -735,47 +543,9 @@ export function CoursesOffered() {
               description: "Access to modern laboratories and research facilities with funding opportunities and mentorship for innovative healthcare research projects.",
               color: "from-amber-500 to-orange-500",
             },
-          ].map((item, index) => {
-            const shortDescription = item.description.length > 100
-              ? `${item.description.substring(0, 100)}...`
-              : item.description;
-            const isTruncated = item.description.length > 100;
-            const [expanded, setExpanded] = useState(false);
-
-            return (
-              <motion.div
-                key={index}
-                className="text-center p-8 bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg border border-orange-200"
-                whileHover={{ translateY: -6, scale: 1.01 }}
-              >
-                <div className={`w-16 h-16 bg-gradient-to-r ${item.color} rounded-2xl flex items-center justify-center text-white mx-auto mb-6`}>
-                  {item.icon}
-                </div>
-
-                <h4 className="font-bold text-xl mb-3" style={{ color: "#78350f" }}>
-                  {item.title}
-                </h4>
-
-                {/* description area */}
-                <div className="text-gray-700 leading-relaxed text-left">
-                  <p className="mb-3">
-                    {expanded ? item.description : shortDescription}
-                  </p>
-
-                  {isTruncated && (
-                    <button
-                      type="button"
-                      onClick={() => setExpanded((s) => !s)}
-                      aria-expanded={expanded}
-                      className="text-sm font-semibold text-orange-700 hover:text-orange-900 transition-colors focus:outline-none"
-                    >
-                      {expanded ? "Read less" : "Read more"}
-                    </button>
-                  )}
-                </div>
-              </motion.div>
-            );
-          })}
+          ].map((item, index) => (
+            <FeatureCard key={index} item={item} index={index} />
+          ))}
         </motion.div>
       </div>
     </motion.div>
@@ -784,76 +554,51 @@ export function CoursesOffered() {
 // example variants
 
 export function AdmissionProcedure() {
-  const steps = [
-    // {
-    //   step: 1,
-    //   title: "NEET Examination",
-    //   description:
-    //     "Appear for NEET-UG (for MBBS) or NEET-PG (for postgraduate courses)",
-    //   details: "Conducted by National Testing Agency (NTA) annually",
-    //   icon: <FileText className="w-6 h-6" />,
-    // },
-    {
-      step: 1,
-      title: "Result Declaration",
-      description: "12th results are declared ",
-      details: "Check your score and rank on the official website",
-      icon: <Calendar className="w-6 h-6" />,
-    },
-    {
-      step: 2,
-      title: "Counseling Registration",
-      description: "Register for Gujarat state counseling process",
-      details: "Online registration with document verification",
-      icon: <Users className="w-6 h-6" />,
-    },
-    {
-      step: 3,
-      title: "Choice Filling",
-      description: "Fill your preferred colleges and courses",
-      details: "Rank colleges based on your preference and eligibility",
-      icon: <CheckCircle className="w-6 h-6" />,
-    },
-    {
-      step: 4,
-      title: "Seat Allotment",
-      description: "Seats are allotted based on merit and availability",
-      details: "Multiple rounds of counseling are conducted",
-      icon: <GraduationCap className="w-6 h-6" />,
-    },
-    {
-      step: 5,
-      title: "Document Verification",
-      description: "Verify documents at the allotted college",
-      details: "Original documents required for verification",
-      icon: <FileText className="w-6 h-6" />,
-    },
-    {
-      step: 6,
-      title: "Fee Payment",
-      description: "Pay admission fees to confirm your seat",
-      details: "Fee payment within specified timeline is mandatory",
-      icon: <Download className="w-6 h-6" />,
-    },
-    {
-      step: 7,
-      title: "Admission Confirmation",
-      description: "Complete admission formalities and receive confirmation",
-      details: "Submit all required documents and forms",
-      icon: <CheckCircle className="w-6 h-6" />,
-    },
-     {
-      step: 8,
-      title: "Admission Committee Website",
-      description:
-        "ADMISSION THROUGH - Admission Committee for Physiotherapy, BSC Nursing, Prosthetics and Orthotics, Occupational Therapy, Optometry, Naturopathy, Audiology and Speech Therapy, GNM And ANM Admission Government of Gujarat, Gandhinagar",
-      detailsUrl: "https://www.medadmgujarat.org/ga/home.aspx",
-      icon: <FileText className="w-6 h-6" />,
-      readMoreRequired: true
-    },
-  ];
+  const [steps, setSteps] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const getIcon = (iconName) => {
+    switch (iconName) {
+      case "Calendar": return <Calendar className="w-6 h-6" />;
+      case "Users": return <Users className="w-6 h-6" />;
+      case "CheckCircle": return <CheckCircle className="w-6 h-6" />;
+      case "GraduationCap": return <GraduationCap className="w-6 h-6" />;
+      case "FileText": return <FileText className="w-6 h-6" />;
+      case "Download": return <Download className="w-6 h-6" />;
+      case "Info": return <Info className="w-6 h-6" />;
+      default: return <FileText className="w-6 h-6" />;
+    }
+  };
+
+  useEffect(() => {
+    const fetchSteps = async () => {
+      try {
+        const response = await axiosInstance.get("/admission-steps");
+        setSteps(response.data);
+      } catch (err) {
+        console.error("Error fetching admission steps:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchSteps();
+  }, []);
 
   const [expandedProcedureSteps, setExpandedProcedureSteps] = useState([]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-amber-50">
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+          className="w-12 h-12 border-4 border-orange-500 border-t-transparent rounded-full"
+        />
+      </div>
+    );
+  }
+
+ 
 
   const toggleProcedureStep = (stepId) => {
     setExpandedProcedureSteps((prev) =>
@@ -2372,1061 +2117,440 @@ Government of Gujarat ,Gandhinagar</motion.p>
     </div>
   );
 }
-export function Bond() {
-  // Animation variants
+const BondPage = ({ type, pageTitle, pageSubtitle }) => {
+  const [bonds, setBonds] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchBonds = async () => {
+      try {
+        const response = await axiosInstance.get(`/bonds?type=${type}`);
+        setBonds(response.data);
+      } catch (err) {
+        console.error("Error fetching bonds:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchBonds();
+  }, [type]);
+
   const staggerContainer = {
     hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.3,
-        delayChildren: 0.2,
-      },
-    },
-  };
-
-  const cardVariants = {
-    hidden: {
-      opacity: 0,
-      y: 50,
-      scale: 0.95,
-    },
-    visible: {
-      opacity: 1,
-      y: 0,
-      scale: 1,
-      transition: {
-        type: "spring",
-        stiffness: 100,
-        damping: 15,
-        duration: 0.8,
-      },
-    },
-    hover: {
-      y: -5,
-      scale: 1.02,
-      boxShadow: "0 25px 50px -12px rgba(245, 158, 11, 0.25)",
-      transition: {
-        type: "spring",
-        stiffness: 400,
-        damping: 25,
-      },
-    },
-  };
-
-  const itemVariants = {
-    hidden: {
-      opacity: 0,
-      x: -30,
-    },
-    visible: {
-      opacity: 1,
-      x: 0,
-      transition: {
-        type: "spring",
-        stiffness: 100,
-        damping: 12,
-        duration: 0.6,
-      },
-    },
-    hover: {
-      x: 10,
-      scale: 1.02,
-      backgroundColor: "rgba(245, 158, 11, 0.05)",
-      transition: { duration: 0.3 },
-    },
-  };
-
-  const iconVariants = {
-    hidden: {
-      scale: 0,
-      rotate: -180,
-    },
-    visible: {
-      scale: 1,
-      rotate: 0,
-      transition: {
-        type: "spring",
-        stiffness: 200,
-        duration: 0.8,
-      },
-    },
-    hover: {
-      scale: 1.2,
-      rotate: 360,
-      transition: { duration: 0.4 },
-    },
-  };
-
-  const badgeVariants = {
-    hidden: {
-      opacity: 0,
-      scale: 0.8,
-    },
-    visible: {
-      opacity: 1,
-      scale: 1,
-      transition: {
-        type: "spring",
-        stiffness: 200,
-        delay: 0.3,
-      },
-    },
-    hover: {
-      scale: 1.05,
-      backgroundColor: "rgba(245, 158, 11, 0.2)",
-      transition: { duration: 0.2 },
-    },
-  };
-
-  const pulseAnimation = {
-    scale: [1, 1.05, 1],
-    transition: {
-      duration: 2,
-      repeat: Infinity,
-      repeatType: "reverse",
-    },
-  };
-
-  const alertVariants = {
-    hidden: {
-      opacity: 0,
-      scale: 0.9,
-      y: 20,
-    },
-    visible: {
-      opacity: 1,
-      scale: 1,
-      y: 0,
-      transition: {
-        type: "spring",
-        stiffness: 150,
-        damping: 15,
-        duration: 0.7,
-      },
-    },
-    hover: {
-      scale: 1.01,
-      transition: { duration: 0.3 },
-    },
-  };
-
-  return (
-    <div
-      // style={{ marginTop: "20px" }}
-      className="min-h-screen bg-gradient-to-br from-amber-50 to-orange-50 py-16 relative"
-    >
-      {/* Background Image */}
-      <img
-        src={backgroundImage4}
-        alt="Student Bond Background"
-        className="absolute inset-0 w-full h-full object-cover z-0 opacity-20"
-      />
-
-      <div className="container mx-auto px-4 relative z-10">
-        {/* Enhanced Header Section */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, type: "spring" }}
-          className="text-center mb-16"
-        >
-          <motion.h1
-            className="text-5xl font-bold text-gray-900 mb-6 bg-gradient-to-r from-amber-900 to-orange-900 bg-clip-text text-transparent"
-            animate={pulseAnimation}
-          >
-            Student Bond Agreement
-          </motion.h1>
-
-          <motion.div
-            initial={{ width: 0 }}
-            animate={{ width: 200 }}
-            transition={{ delay: 0.8, duration: 1 }}
-            className="h-1 bg-gradient-to-r from-amber-500 to-orange-500 mx-auto rounded-full mb-6"
-          />
-
-          <motion.p
-            className="text-xl text-gray-700 max-w-3xl mx-auto"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.5, duration: 0.8 }}
-          >
-            Understanding the bond requirements for MBBS program admission
-          </motion.p>
-        </motion.div>
-
-        {/* Cards Container */}
-        <motion.div
-          variants={staggerContainer}
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, amount: 0.3 }}
-          className="max-w-6xl mx-auto space-y-8"
-        >
-          {/* Bond Details & Conditions Grid */}
-          <div className="grid lg:grid-cols-2 gap-8">
-            {/* Bond Details Card */}
-            <motion.div variants={cardVariants} whileHover="hover">
-              <Card className="border-0 shadow-xl bg-white/90 backdrop-blur-sm h-full overflow-hidden group border border-orange-200">
-                <CardHeader className="pb-4 bg-gradient-to-r from-amber-50 to-orange-50 relative overflow-hidden">
-                  <motion.div
-                    className="absolute inset-0 bg-gradient-to-r from-amber-500/10 to-orange-500/10"
-                    animate={{
-                      x: [-100, 100],
-                      opacity: [0, 0.3, 0],
-                    }}
-                    transition={{
-                      duration: 3,
-                      repeat: Infinity,
-                      repeatType: "reverse",
-                    }}
-                  />
-                  <CardTitle
-                    className="flex items-center gap-3 text-2xl relative z-10"
-                    style={{ color: "#78350f" }}
-                  >
-                    <motion.div variants={iconVariants} whileHover="hover">
-                      <FileText className="w-8 h-8 text-amber-600" />
-                    </motion.div>
-                    <motion.span
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.3 }}
-                    >
-                      Bond Details
-                    </motion.span>
-                  </CardTitle>
-                </CardHeader>
-
-                <CardContent className="space-y-6 pt-6">
-                  {[
-                    {
-                      icon: <Calendar className="w-6 h-6" />,
-                      title: "Service Period",
-                      content:
-                        "Students must serve in Gujarat State for 2 years after completion of MBBS degree and internship",
-                      color: "text-amber-600",
-                      bgColor: "from-amber-500 to-orange-500",
-                    },
-                    {
-                      icon: <Users className="w-6 h-6" />,
-                      title: "Bond Amount",
-                      content:
-                        "₹10,00,000 (Ten Lakh Rupees) through bank guarantee or fixed deposit",
-                      color: "text-orange-600",
-                      bgColor: "from-orange-500 to-amber-500",
-                    },
-                    {
-                      icon: <GraduationCap className="w-6 h-6" />,
-                      title: "Service Locations",
-                      content:
-                        "Government hospitals, PHCs, CHCs, or rural hospitals as assigned by state government",
-                      color: "text-yellow-600",
-                      bgColor: "from-yellow-500 to-orange-500",
-                    },
-                  ].map((item, index) => (
-                    <motion.div
-                      key={index}
-                      className="flex items-start gap-4 p-4 bg-orange-50/50 rounded-xl group/item cursor-pointer border border-orange-200"
-                      variants={itemVariants}
-                      whileHover="hover"
-                      transition={{ delay: index * 0.1 }}
-                    >
-                      <motion.div
-                        className={`w-12 h-12 rounded-lg bg-white flex items-center justify-center ${item.color} shadow-lg group-hover/item:shadow-xl border border-orange-200`}
-                        whileHover={{
-                          scale: 1.1,
-                          rotate: 360,
-                        }}
-                        transition={{ duration: 0.4 }}
-                      >
-                        {item.icon}
-                      </motion.div>
-                      <div className="flex-1">
-                        <motion.h4
-                          className="font-semibold text-lg mb-2 text-gray-800 group-hover/item:text-amber-900"
-                          whileHover={{ x: 5 }}
-                        >
-                          {item.title}
-                        </motion.h4>
-                        <motion.p
-                          className="text-gray-700 group-hover/item:text-gray-900"
-                          whileHover={{ x: 3 }}
-                        >
-                          {item.content}
-                        </motion.p>
-                      </div>
-
-                      {/* Animated indicator */}
-                      <motion.div
-                        className={`w-1 h-8 bg-gradient-to-b ${item.bgColor} rounded-full opacity-0 group-hover/item:opacity-100`}
-                        animate={{
-                          scaleY: [0.5, 1, 0.5],
-                        }}
-                        transition={{
-                          duration: 1.5,
-                          repeat: Infinity,
-                          delay: index * 0.3,
-                        }}
-                      />
-                    </motion.div>
-                  ))}
-                </CardContent>
-
-                {/* Animated Footer */}
-                <motion.div
-                  className="h-1 bg-gradient-to-r from-amber-500 to-orange-500"
-                  initial={{ scaleX: 0 }}
-                  animate={{ scaleX: 1 }}
-                  transition={{ delay: 0.8, duration: 0.8 }}
-                />
-              </Card>
-            </motion.div>
-
-            {/* Bond Conditions Card */}
-            <motion.div variants={cardVariants} whileHover="hover">
-              <Card className="border-0 shadow-xl bg-white/90 backdrop-blur-sm h-full overflow-hidden group border border-amber-200">
-                <CardHeader className="pb-4 bg-gradient-to-r from-orange-50 to-yellow-50 relative overflow-hidden">
-                  <motion.div
-                    className="absolute inset-0 bg-gradient-to-r from-orange-500/10 to-yellow-500/10"
-                    animate={{
-                      x: [100, -100],
-                      opacity: [0, 0.3, 0],
-                    }}
-                    transition={{
-                      duration: 3,
-                      repeat: Infinity,
-                      repeatType: "reverse",
-                    }}
-                  />
-                  <CardTitle
-                    className="flex items-center gap-3 text-2xl relative z-10"
-                    style={{ color: "#78350f" }}
-                  >
-                    <motion.div variants={iconVariants} whileHover="hover">
-                      <Info className="w-8 h-8 text-orange-600" />
-                    </motion.div>
-                    <motion.span
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.3 }}
-                    >
-                      Bond Conditions
-                    </motion.span>
-                  </CardTitle>
-                </CardHeader>
-
-                <CardContent className="space-y-6 pt-6">
-                  <motion.div
-                    variants={{
-                      hidden: { opacity: 0 },
-                      visible: {
-                        opacity: 1,
-                        transition: {
-                          staggerChildren: 0.1,
-                          delayChildren: 0.4,
-                        },
-                      },
-                    }}
-                  >
-                    <div className="space-y-4">
-                      <div>
-                        <h4 className="font-semibold text-lg mb-3 text-gray-800">
-                          Mandatory Service
-                        </h4>
-                        <motion.ul
-                          className="text-gray-700 space-y-2"
-                          variants={{
-                            hidden: { opacity: 0 },
-                            visible: {
-                              opacity: 1,
-                              transition: {
-                                staggerChildren: 0.05,
-                                delayChildren: 0.5,
-                              },
-                            },
-                          }}
-                        >
-                          {[
-                            "Minimum 2 years in assigned government facility",
-                            "Service period starts after internship completion",
-                            "Cannot leave without proper relieving order",
-                            "Unauthorized absence may lead to penalty",
-                          ].map((item, index) => (
-                            <motion.li
-                              key={index}
-                              className="flex items-center gap-2 p-2 rounded-lg hover:bg-orange-50 transition-all duration-300 group/list-item cursor-pointer border border-orange-100"
-                              variants={itemVariants}
-                              whileHover="hover"
-                            >
-                              <motion.div
-                                whileHover={{ scale: 1.3, x: 3 }}
-                                transition={{ duration: 0.3 }}
-                              >
-                                <ArrowRight className="w-4 h-4 text-amber-600" />
-                              </motion.div>
-                              <motion.span
-                                className="group-hover/list-item:text-amber-900 transition-colors duration-300"
-                                whileHover={{ x: 3 }}
-                              >
-                                {item}
-                              </motion.span>
-                            </motion.li>
-                          ))}
-                        </motion.ul>
-                      </div>
-
-                      <div>
-                        <h4 className="font-semibold text-lg mb-3 text-gray-800">
-                          Penalty for Bond Breach
-                        </h4>
-                        <motion.ul
-                          className="text-gray-700 space-y-2"
-                          variants={{
-                            hidden: { opacity: 0 },
-                            visible: {
-                              opacity: 1,
-                              transition: {
-                                staggerChildren: 0.05,
-                                delayChildren: 0.7,
-                              },
-                            },
-                          }}
-                        >
-                          {[
-                            "Full bond amount (₹10,00,000) to be paid",
-                            "Interest as applicable from breach date",
-                            "Legal action as per bond agreement terms",
-                          ].map((item, index) => (
-                            <motion.li
-                              key={index}
-                              className="flex items-center gap-2 p-2 rounded-lg hover:bg-red-50 transition-all duration-300 group/list-item cursor-pointer border border-red-100"
-                              variants={itemVariants}
-                              whileHover="hover"
-                            >
-                              <motion.div
-                                whileHover={{ scale: 1.3, x: 3 }}
-                                transition={{ duration: 0.3 }}
-                              >
-                                <ArrowRight className="w-4 h-4 text-red-500" />
-                              </motion.div>
-                              <motion.span
-                                className="group-hover/list-item:text-red-900 transition-colors duration-300"
-                                whileHover={{ x: 3 }}
-                              >
-                                {item}
-                              </motion.span>
-
-                              {/* Warning indicator */}
-                              <motion.div
-                                className="w-2 h-2 bg-red-400 rounded-full opacity-0 group-hover/list-item:opacity-100 ml-auto"
-                                animate={{
-                                  scale: [1, 1.5, 1],
-                                  opacity: [0.5, 1, 0.5],
-                                }}
-                                transition={{
-                                  duration: 1.5,
-                                  repeat: Infinity,
-                                  delay: index * 0.2,
-                                }}
-                              />
-                            </motion.li>
-                          ))}
-                        </motion.ul>
-                      </div>
-                    </div>
-                  </motion.div>
-                </CardContent>
-
-                <motion.div
-                  className="h-1 bg-gradient-to-r from-orange-500 to-amber-500"
-                  initial={{ scaleX: 0 }}
-                  animate={{ scaleX: 1 }}
-                  transition={{ delay: 1, duration: 0.8 }}
-                />
-              </Card>
-            </motion.div>
-          </div>
-
-          {/* Bond Execution Process Card */}
-          <motion.div variants={cardVariants} whileHover="hover">
-            <Card className="border-0 shadow-xl bg-white/90 backdrop-blur-sm overflow-hidden group border border-amber-200">
-              <CardHeader className="pb-4 bg-gradient-to-r from-yellow-50 to-amber-50 relative overflow-hidden">
-                <motion.div
-                  className="absolute inset-0 bg-gradient-to-r from-yellow-500/10 to-amber-500/10"
-                  animate={{
-                    x: [-100, 100],
-                    opacity: [0, 0.3, 0],
-                  }}
-                  transition={{
-                    duration: 3,
-                    repeat: Infinity,
-                    repeatType: "reverse",
-                  }}
-                />
-                <CardTitle
-                  className="flex items-center gap-3 text-2xl relative z-10"
-                  style={{ color: "#78350f" }}
-                >
-                  <motion.div variants={iconVariants} whileHover="hover">
-                    <Download className="w-8 h-8 text-amber-600" />
-                  </motion.div>
-                  <motion.span
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.3 }}
-                  >
-                    Bond Execution Process
-                  </motion.span>
-                </CardTitle>
-              </CardHeader>
-
-              <CardContent className="pt-6">
-                <div className="grid md:grid-cols-2 gap-8">
-                  <motion.div
-                    variants={{
-                      hidden: { opacity: 0 },
-                      visible: {
-                        opacity: 1,
-                        transition: {
-                          staggerChildren: 0.1,
-                          delayChildren: 0.4,
-                        },
-                      },
-                    }}
-                  >
-                    <h4 className="font-semibold text-lg mb-4 text-gray-800">
-                      Required Documents
-                    </h4>
-                    <div className="space-y-3">
-                      {[
-                        "Bond agreement on stamp paper",
-                        "Bank guarantee from scheduled bank",
-                        "Fixed deposit receipt (alternative)",
-                        "Guarantor details and documents",
-                        "Student and parent signatures",
-                      ].map((doc, index) => (
-                        <motion.div
-                          key={index}
-                          className="flex items-center gap-3 p-3 bg-amber-50 rounded-lg border border-amber-200 hover:bg-yellow-50 transition-all duration-300 group/doc cursor-pointer"
-                          variants={itemVariants}
-                          whileHover="hover"
-                        >
-                          <motion.div
-                            whileHover={{ scale: 1.3, rotate: 360 }}
-                            transition={{ duration: 0.4 }}
-                          >
-                            <CheckCircle className="w-4 h-4 text-amber-600" />
-                          </motion.div>
-                          <motion.span
-                            className="text-gray-700 group-hover/doc:text-amber-900 transition-colors duration-300"
-                            whileHover={{ x: 3 }}
-                          >
-                            {doc}
-                          </motion.span>
-                        </motion.div>
-                      ))}
-                    </div>
-                  </motion.div>
-
-                  <motion.div
-                    variants={{
-                      hidden: { opacity: 0 },
-                      visible: {
-                        opacity: 1,
-                        transition: {
-                          staggerChildren: 0.1,
-                          delayChildren: 0.5,
-                        },
-                      },
-                    }}
-                  >
-                    <h4 className="font-semibold text-lg mb-4 text-gray-800">
-                      Submission Timeline
-                    </h4>
-                    <div className="space-y-3">
-                      {[
-                        "At the time of admission",
-                        "Before commencement of classes",
-                        "Mandatory for seat confirmation",
-                        "Cannot be deferred or postponed",
-                      ].map((timeline, index) => (
-                        <motion.div
-                          key={index}
-                          className="flex items-center gap-3 p-3 bg-orange-50 rounded-lg border border-orange-200 hover:bg-amber-50 transition-all duration-300 group/timeline cursor-pointer"
-                          variants={itemVariants}
-                          whileHover="hover"
-                        >
-                          <motion.div
-                            whileHover={{ scale: 1.3, rotate: 360 }}
-                            transition={{ duration: 0.4 }}
-                          >
-                            <Calendar className="w-4 h-4 text-orange-600" />
-                          </motion.div>
-                          <motion.span
-                            className="text-gray-700 group-hover/timeline:text-orange-900 transition-colors duration-300"
-                            whileHover={{ x: 3 }}
-                          >
-                            {timeline}
-                          </motion.span>
-
-                          {/* Urgent indicator for last item */}
-                          {index === 3 && (
-                            <motion.div
-                              className="w-2 h-2 bg-red-500 rounded-full ml-auto"
-                              animate={{
-                                scale: [1, 1.5, 1],
-                                opacity: [1, 0.5, 1],
-                              }}
-                              transition={{
-                                duration: 1,
-                                repeat: Infinity,
-                              }}
-                            />
-                          )}
-                        </motion.div>
-                      ))}
-                    </div>
-                  </motion.div>
-                </div>
-              </CardContent>
-
-              <motion.div
-                className="h-1 bg-gradient-to-r from-yellow-500 to-amber-500"
-                initial={{ scaleX: 0 }}
-                animate={{ scaleX: 1 }}
-                transition={{ delay: 1.2, duration: 0.8 }}
-              />
-            </Card>
-          </motion.div>
-
-          {/* Bond Release Card */}
-          <motion.div variants={cardVariants} whileHover="hover">
-            <Card className="border-0 shadow-xl bg-white/90 backdrop-blur-sm overflow-hidden group border border-green-200">
-              <CardHeader className="pb-4 bg-gradient-to-r from-green-50 to-emerald-50 relative overflow-hidden">
-                <motion.div
-                  className="absolute inset-0 bg-gradient-to-r from-green-500/10 to-emerald-500/10"
-                  animate={{
-                    x: [100, -100],
-                    opacity: [0, 0.3, 0],
-                  }}
-                  transition={{
-                    duration: 3,
-                    repeat: Infinity,
-                    repeatType: "reverse",
-                  }}
-                />
-                <CardTitle
-                  className="flex items-center gap-3 text-2xl relative z-10"
-                  style={{ color: "#78350f" }}
-                >
-                  <motion.div variants={iconVariants} whileHover="hover">
-                    <CheckCircle className="w-8 h-8 text-green-500" />
-                  </motion.div>
-                  <motion.span
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.3 }}
-                  >
-                    Bond Release
-                  </motion.span>
-                </CardTitle>
-              </CardHeader>
-
-              <CardContent className="pt-6">
-                <motion.p
-                  className="text-gray-700 text-lg leading-relaxed p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border border-green-200"
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.5, duration: 0.6 }}
-                  whileHover={{
-                    scale: 1.02,
-                    backgroundColor: "rgba(16, 185, 129, 0.1)",
-                    transition: { duration: 0.3 },
-                  }}
-                >
-                  The bond amount will be released after successful completion
-                  of the mandatory service period or as per the terms and
-                  conditions mentioned in the bond agreement. Students must
-                  apply for bond release with proper documentation of service
-                  completion.
-                </motion.p>
-
-                {/* Success indicator */}
-                <motion.div
-                  className="flex justify-center mt-6"
-                  initial={{ opacity: 0, scale: 0 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: 0.8, duration: 0.5 }}
-                >
-                  <motion.div
-                    className="w-16 h-16 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center text-white text-2xl"
-                    animate={{
-                      scale: [1, 1.1, 1],
-                      rotate: [0, 5, -5, 0],
-                    }}
-                    transition={{
-                      duration: 3,
-                      repeat: Infinity,
-                    }}
-                  >
-                    ✓
-                  </motion.div>
-                </motion.div>
-              </CardContent>
-
-              <motion.div
-                className="h-1 bg-gradient-to-r from-green-500 to-emerald-500"
-                initial={{ scaleX: 0 }}
-                animate={{ scaleX: 1 }}
-                transition={{ delay: 1.4, duration: 0.8 }}
-              />
-            </Card>
-          </motion.div>
-        </motion.div>
-      </div>
-    </div>
-  );
-}
-
-export function Instructions() {
-  const staggerContainer = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: { staggerChildren: 0.2, delayChildren: 0.2 },
-    },
+    visible: { opacity: 1, transition: { staggerChildren: 0.3, delayChildren: 0.2 } },
   };
 
   const cardVariants = {
     hidden: { opacity: 0, y: 50, scale: 0.95 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      scale: 1,
-      transition: {
-        type: "spring",
-        stiffness: 100,
-        damping: 15,
-        duration: 0.8,
-      },
-    },
-    hover: {
-      scale: 1.03,
-      boxShadow: "0 20px 40px rgba(245, 158, 11, 0.2)",
-      transition: { type: "spring", stiffness: 300, damping: 20 },
-    },
+    visible: { opacity: 1, y: 0, scale: 1, transition: { type: "spring", stiffness: 100, damping: 15, duration: 0.8 } },
+    hover: { y: -5, scale: 1.02, boxShadow: "0 25px 50px -12px rgba(245, 158, 11, 0.25)", transition: { type: "spring", stiffness: 400, damping: 25 } },
   };
 
-  return (
-    <div
-      // style={{ marginTop: "20px" }}
-      className="min-h-screen bg-gradient-to-br from-amber-50 to-orange-50 py-16 relative"
-    >
-      {/* Background Image */}
-      <img
-        src={backgroundImage4}
-        alt="Instructions Background"
-        className="absolute inset-0 w-full h-full object-cover z-0 opacity-20"
-      />
+  const itemVariants = {
+    hidden: { opacity: 0, x: -30 },
+    visible: { opacity: 1, x: 0, transition: { type: "spring", stiffness: 100, damping: 12, duration: 0.6 } },
+    hover: { x: 10, scale: 1.02, backgroundColor: "rgba(245, 158, 11, 0.05)", transition: { duration: 0.3 } },
+  };
 
+  const iconVariants = {
+    hidden: { scale: 0, rotate: -180 },
+    visible: { scale: 1, rotate: 0, transition: { type: "spring", stiffness: 200, duration: 0.8 } },
+    hover: { scale: 1.2, rotate: 360, transition: { duration: 0.4 } },
+  };
+
+  if (loading) return (
+    <div className="min-h-screen flex items-center justify-center bg-amber-50">
+      <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }} className="w-12 h-12 border-4 border-amber-600 border-t-transparent rounded-full" />
+    </div>
+  );
+
+  // Specific data for beautiful cards
+  const bondDetails = bonds.find(b => b.title === "Bond Details");
+  const bondConditions = bonds.find(b => b.title === "Bond Conditions");
+  const bondExecution = bonds.find(b => b.title === "Bond Execution Process");
+  const bondRelease = bonds.find(b => b.title === "Bond Release");
+  
+  // Other bonds added by admin
+  const otherBonds = bonds.filter(b => !["Bond Details", "Bond Conditions", "Bond Execution Process", "Bond Release"].includes(b.title));
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-amber-50 to-orange-50 py-16 relative">
+      <img src={backgroundImage4} alt="Background" className="absolute inset-0 w-full h-full object-cover z-0 opacity-20" />
       <div className="container mx-auto px-4 relative z-10">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="text-center mb-16"
-        >
-          <h1 className="text-5xl font-bold text-gray-900 mb-6">
-            Instructions for Students and Parents
-          </h1>
-          <p className="text-xl text-gray-700 max-w-3xl mx-auto">
-            Essential guidelines and code of conduct for a successful academic
-            journey
-          </p>
+        <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-16">
+          <h1 className="text-5xl font-bold text-gray-900 mb-6 bg-gradient-to-r from-amber-900 to-orange-900 bg-clip-text text-transparent">{pageTitle}</h1>
+          <p className="text-xl text-gray-700 max-w-3xl mx-auto">{pageSubtitle}</p>
         </motion.div>
 
-        {/* Cards */}
-        <motion.div
-          variants={staggerContainer}
-          initial="hidden"
-          animate="visible"
-          className="max-w-6xl mx-auto space-y-8"
-        >
+        <motion.div variants={staggerContainer} initial="hidden" animate="visible" className="max-w-6xl mx-auto space-y-8">
           <div className="grid lg:grid-cols-2 gap-8">
-            {/* General Guidelines Card */}
-            <motion.div variants={cardVariants} whileHover="hover">
-              <Card className="border-0 shadow-xl h-full bg-white/90 backdrop-blur-sm border border-orange-200">
-                <CardHeader className="pb-4">
-                  <CardTitle
-                    className="flex items-center gap-3 text-2xl"
-                    style={{ color: "#78350f" }}
-                  >
-                    <GraduationCap className="w-8 h-8 text-amber-600" />
-                    General Guidelines
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <div>
-                    <h4 className="font-semibold text-lg mb-3 flex items-center gap-2 text-gray-800">
-                      <BookOpen className="w-5 h-5 text-amber-600" />
-                      Academic Conduct
-                    </h4>
-                    <ul className="space-y-2 ml-3">
-                      {[
-                        "Maintain minimum 90% attendance in all subjects and 100% Attendance in Clinic",
-                        "Regular participation in clinical postings",
-                        "Punctuality in classes and examinations",
-                        "Respect for faculty, staff, and fellow students",
-                        "Academic integrity and honesty",
-                      ].map((item, index) => (
-                        <li
-                          key={index}
-                          className="flex items-start gap-2 text-gray-700"
-                        >
-                          <CheckCircle className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" />
-                          <span>{item}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                  <div>
-                    <h4 className="font-semibold text-lg mb-3 flex items-center gap-2 text-gray-800">
-                      <Users className="w-5 h-5 text-amber-600" />
-                      Professional Behavior
-                    </h4>
-                    <ul className="space-y-2 ml-3">
-                      {[
-                        "Professional dress code in college and hospital",
-                        "Courteous behavior with patients and families",
-                        "Confidentiality of patient information",
-                        "No discrimination based on caste or religion",
-                      ].map((item, index) => (
-                        <li
-                          key={index}
-                          className="flex items-start gap-2 text-gray-700"
-                        >
-                          <CheckCircle className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" />
-                          <span>{item}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
+            {/* 1. Bond Details Card - Beautiful UI */}
+            {bondDetails && (
+              <motion.div variants={cardVariants} whileHover="hover">
+                <Card className="border-0 shadow-xl bg-white/90 backdrop-blur-sm h-full overflow-hidden border border-orange-200">
+                  <CardHeader className="pb-4 bg-gradient-to-r from-amber-50 to-orange-50">
+                    <CardTitle className="flex items-center gap-3 text-2xl text-amber-900">
+                      <motion.div variants={iconVariants}><FileText className="w-8 h-8 text-amber-600" /></motion.div>
+                      {bondDetails.title}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-6 pt-6">
+                    {bondDetails.content.split('\n').map((line, idx) => {
+                      const [t, ...c] = line.split(':');
+                      const icons = [<Calendar className="w-6 h-6" />, <Users className="w-6 h-6" />, <GraduationCap className="w-6 h-6" />];
+                      const colors = ["text-amber-600", "text-orange-600", "text-yellow-600"];
+                      const bgColors = ["from-amber-500 to-orange-500", "from-orange-500 to-amber-500", "from-yellow-500 to-orange-500"];
+                      return (
+                        <motion.div key={idx} className="flex items-start gap-4 p-4 bg-orange-50/50 rounded-xl group/item cursor-pointer border border-orange-200" variants={itemVariants} whileHover="hover">
+                          <motion.div className={`w-12 h-12 rounded-lg bg-white flex items-center justify-center shadow-lg border border-orange-200 ${colors[idx] || 'text-amber-600'}`}>
+                            {icons[idx] || <CheckCircle className="w-6 h-6" />}
+                          </motion.div>
+                          <div className="flex-1">
+                            <h4 className="font-semibold text-lg mb-2 text-gray-800">{t.trim()}</h4>
+                            <p className="text-gray-700">{c.join(':').trim()}</p>
+                          </div>
+                          <motion.div className={`w-1 h-8 bg-gradient-to-b ${bgColors[idx] || 'from-amber-500 to-orange-500'} rounded-full opacity-0 group-hover/item:opacity-100`} animate={{ scaleY: [0.5, 1, 0.5] }} transition={{ duration: 1.5, repeat: Infinity, delay: idx * 0.3 }} />
+                        </motion.div>
+                      );
+                    })}
+                  </CardContent>
+                </Card>
+              </motion.div>
+            )}
 
-            {/* Code of Conduct Card */}
-            <motion.div variants={cardVariants} whileHover="hover">
-              <Card className="border-0 shadow-xl h-full bg-white/90 backdrop-blur-sm border border-orange-200">
-                <CardHeader className="pb-4">
-                  <CardTitle
-                    className="flex items-center gap-3 text-2xl"
-                    style={{ color: "#78350f" }}
-                  >
-                    <FileText className="w-8 h-8 text-amber-600" />
-                    Code of Conduct
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <Alert className="bg-orange-50 border-orange-300 text-orange-800 p-3 rounded-lg">
-                    <Info className="h-5 w-5 text-orange-600 mr-2" />
-                    <AlertDescription>
-                      <strong>Zero Tolerance Policy:</strong> Strict
-                      anti-ragging policy. Any form of ragging is punishable and
-                      may lead to expulsion.
-                    </AlertDescription>
-                  </Alert>
-                  <div>
-                    <h4 className="font-semibold text-lg mb-3 text-gray-800">
-                      Prohibited Activities
-                    </h4>
-                    <ul className="space-y-2 ml-3">
-                      {[
-                        "Ragging of any form (physical, mental, emotional)",
-                        "Use of alcohol, tobacco, or illegal substances",
-                        "Violence, fighting, or disruptive behavior",
-                        "Damage to college property or equipment",
-                        "Unauthorized absence from duties",
-                        "Political activities within premises",
-                      ].map((item, index) => (
-                        <li
-                          key={index}
-                          className="flex items-start gap-2 text-gray-700"
-                        >
-                          <ArrowRight className="w-4 h-4 text-orange-500 mt-0.5 flex-shrink-0" />
-                          <span>{item}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
+            {/* 2. Bond Conditions Card - Beautiful UI */}
+            {bondConditions && (
+              <motion.div variants={cardVariants} whileHover="hover">
+                <Card className="border-0 shadow-xl bg-white/90 backdrop-blur-sm h-full overflow-hidden border border-amber-200">
+                  <CardHeader className="pb-4 bg-gradient-to-r from-orange-50 to-yellow-50">
+                    <CardTitle className="flex items-center gap-3 text-2xl text-amber-900">
+                      <motion.div variants={iconVariants}><Info className="w-8 h-8 text-orange-600" /></motion.div>
+                      {bondConditions.title}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-6 pt-6">
+                    {bondConditions.content.split('\n').map((section, idx) => {
+                      const [secTitle, ...items] = section.split(':');
+                      const pointList = items.join(':').split(',').map(i => i.trim());
+                      return (
+                        <div key={idx}>
+                          <h4 className="font-semibold text-lg mb-3 text-gray-800">{secTitle.trim()}</h4>
+                          <ul className="text-gray-700 space-y-2">
+                            {pointList.map((item, iIdx) => (
+                              <motion.li key={iIdx} className={`flex items-center gap-2 p-2 rounded-lg hover:${idx === 0 ? 'bg-orange-50' : 'bg-red-50'} transition-all duration-300 border ${idx === 0 ? 'border-orange-100' : 'border-red-100'}`} variants={itemVariants} whileHover="hover">
+                                <ArrowRight className={`w-4 h-4 ${idx === 0 ? 'text-amber-600' : 'text-red-500'}`} />
+                                <span>{item}</span>
+                                {idx === 1 && <motion.div className="w-2 h-2 bg-red-400 rounded-full opacity-0 group-hover:opacity-100 ml-auto" animate={{ scale: [1, 1.5, 1], opacity: [0.5, 1, 0.5] }} transition={{ duration: 1.5, repeat: Infinity, delay: iIdx * 0.2 }} />}
+                              </motion.li>
+                            ))}
+                          </ul>
+                        </div>
+                      );
+                    })}
+                  </CardContent>
+                </Card>
+              </motion.div>
+            )}
           </div>
 
-          {/* Academic Requirements Card */}
-          <div className="grid lg:grid-cols-2 gap-8">
+          {/* 3. Bond Execution Process Card - Beautiful UI */}
+          {bondExecution && (
             <motion.div variants={cardVariants} whileHover="hover">
-              <Card className="border-0 shadow-xl h-full bg-white/90 backdrop-blur-sm border border-amber-200">
+              <Card className="border-0 shadow-xl bg-white/90 backdrop-blur-sm overflow-hidden border border-amber-200">
+                <CardHeader className="pb-4 bg-gradient-to-r from-yellow-50 to-amber-50">
+                  <CardTitle className="flex items-center gap-3 text-2xl text-amber-900">
+                    <motion.div variants={iconVariants}><Download className="w-8 h-8 text-amber-600" /></motion.div>
+                    {bondExecution.title}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="pt-6">
+                  <div className="grid md:grid-cols-2 gap-8">
+                    {bondExecution.content.split('\n').map((section, idx) => {
+                      const [secTitle, ...items] = section.split(':');
+                      const pointList = items.join(':').split(',').map(i => i.trim());
+                      return (
+                        <div key={idx}>
+                          <h4 className="font-semibold text-lg mb-4 text-gray-800">{secTitle.trim()}</h4>
+                          <div className="space-y-3">
+                            {pointList.map((item, iIdx) => (
+                              <motion.div key={iIdx} className={`flex items-center gap-3 p-3 ${idx === 0 ? 'bg-amber-50 border-amber-200' : 'bg-orange-50 border-orange-200'} rounded-lg border transition-all duration-300`} variants={itemVariants} whileHover="hover">
+                                {idx === 0 ? <CheckCircle className="w-4 h-4 text-amber-600" /> : <Calendar className="w-4 h-4 text-orange-600" />}
+                                <span className="text-gray-700">{item}</span>
+                                {idx === 1 && iIdx === pointList.length - 1 && <motion.div className="w-2 h-2 bg-red-500 rounded-full ml-auto" animate={{ scale: [1, 1.5, 1], opacity: [1, 0.5, 1] }} transition={{ duration: 1, repeat: Infinity }} />}
+                              </motion.div>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          )}
+
+          {/* 4. Bond Release Card - Beautiful UI */}
+          {bondRelease && (
+            <motion.div variants={cardVariants} whileHover="hover">
+              <Card className="border-0 shadow-xl bg-white/90 backdrop-blur-sm overflow-hidden border border-green-200">
+                <CardHeader className="pb-4 bg-gradient-to-r from-green-50 to-emerald-50">
+                  <CardTitle className="flex items-center gap-3 text-2xl text-amber-900">
+                    <motion.div variants={iconVariants}><CheckCircle className="w-8 h-8 text-green-500" /></motion.div>
+                    {bondRelease.title}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="pt-6">
+                  <motion.p className="text-gray-700 text-lg leading-relaxed p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border border-green-200" whileHover={{ scale: 1.02, backgroundColor: "rgba(16, 185, 129, 0.1)" }}>
+                    {bondRelease.content}
+                  </motion.p>
+                  <div className="flex justify-center mt-6">
+                    <motion.div className="w-16 h-16 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center text-white text-2xl" animate={{ scale: [1, 1.1, 1], rotate: [0, 5, -5, 0] }} transition={{ duration: 3, repeat: Infinity }}>✓</motion.div>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          )}
+
+          {/* 5. Any New Cards added by Admin */}
+          <div className="grid lg:grid-cols-2 gap-8">
+            {otherBonds.map((bond) => (
+              <motion.div key={bond._id} variants={cardVariants} whileHover="hover">
+                <Card className="border-0 shadow-xl bg-white/90 backdrop-blur-sm h-full overflow-hidden border border-orange-200">
+                  <CardHeader className="pb-4 bg-gradient-to-r from-amber-50 to-orange-50">
+                    <CardTitle className="flex items-center gap-3 text-2xl text-amber-900">
+                      <motion.div variants={iconVariants}><FileText className="w-8 h-8 text-amber-600" /></motion.div>
+                      {bond.title}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="pt-6">
+                    <p className="text-gray-700 leading-relaxed whitespace-pre-line">{bond.content}</p>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            ))}
+          </div>
+        </motion.div>
+      </div>
+    </div>
+  );
+};
+export function Bond() {
+  return (
+    <BondPage
+      type="student"
+      pageTitle="Student Bond Agreement"
+      pageSubtitle="Essential legal and service requirements for MBBS program enrollment"
+    />
+  );
+}
+
+export function Instructions() {
+  const [guidelines, setGuidelines] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchGuidelines = async () => {
+      try {
+        const response = await axiosInstance.get("/guidelines");
+        setGuidelines(response.data);
+      } catch (err) {
+        console.error("Error fetching guidelines:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchGuidelines();
+  }, []);
+
+  const staggerContainer = {
+    hidden: { opacity: 0 },
+    visible: { opacity: 1, transition: { staggerChildren: 0.2, delayChildren: 0.1 } },
+  };
+
+  const cardVariants = {
+    hidden: { opacity: 0, y: 30, scale: 0.95 },
+    visible: { opacity: 1, y: 0, scale: 1, transition: { type: "spring", stiffness: 100, damping: 15, duration: 0.6 } },
+    hover: { y: -5, scale: 1.01, transition: { duration: 0.3 } },
+  };
+
+  if (loading) return (
+    <div className="min-h-screen flex items-center justify-center bg-amber-50">
+      <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }} className="w-12 h-12 border-4 border-amber-600 border-t-transparent rounded-full" />
+    </div>
+  );
+
+  const groupedGuidelines = guidelines.reduce((acc, curr) => {
+    if (!acc[curr.category]) acc[curr.category] = [];
+    acc[curr.category].push(curr);
+    return acc;
+  }, {});
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-amber-50 to-orange-50 py-16 relative">
+      <img src={backgroundImage4} alt="Instructions Background" className="absolute inset-0 w-full h-full object-cover z-0 opacity-20" />
+      <div className="container mx-auto px-4 relative z-10">
+        <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} className="text-center mb-16">
+          <h1 className="text-5xl font-bold text-gray-900 mb-6">Instructions for Students and Parents</h1>
+          <p className="text-xl text-gray-700 max-w-3xl mx-auto">Essential guidelines and code of conduct for a successful academic journey</p>
+        </motion.div>
+
+        <motion.div variants={staggerContainer} initial="hidden" animate="visible" className="max-w-6xl mx-auto space-y-8">
+          <div className="grid lg:grid-cols-2 gap-8">
+            {/* General Guidelines Block */}
+            {groupedGuidelines["General Guidelines"] && (
+              <motion.div variants={cardVariants} whileHover="hover">
+                <Card className="border-0 shadow-xl h-full bg-white/90 backdrop-blur-sm border border-orange-200">
+                  <CardHeader className="pb-4">
+                    <CardTitle className="flex items-center gap-3 text-2xl" style={{ color: "#78350f" }}>
+                      <GraduationCap className="w-8 h-8 text-amber-600" />
+                      General Guidelines
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    {groupedGuidelines["General Guidelines"].map((sub, idx) => (
+                      <div key={idx}>
+                        <h4 className="font-semibold text-lg mb-3 flex items-center gap-2 text-gray-800">
+                          {sub.subCategory === "Academic Conduct" ? <BookOpen className="w-5 h-5 text-amber-600" /> : <Users className="w-5 h-5 text-amber-600" />}
+                          {sub.subCategory}
+                        </h4>
+                        <ul className="space-y-2 ml-3">
+                          {sub.points.map((point, pIdx) => (
+                            <li key={pIdx} className="flex items-start gap-2 text-gray-700">
+                              <CheckCircle className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" />
+                              <span>{point}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    ))}
+                  </CardContent>
+                </Card>
+              </motion.div>
+            )}
+
+            {/* Code of Conduct Block */}
+            {groupedGuidelines["Code of Conduct"] && (
+              <motion.div variants={cardVariants} whileHover="hover">
+                <Card className="border-0 shadow-xl h-full bg-white/90 backdrop-blur-sm border border-orange-200">
+                  <CardHeader className="pb-4">
+                    <CardTitle className="flex items-center gap-3 text-2xl" style={{ color: "#78350f" }}>
+                      <FileText className="w-8 h-8 text-amber-600" />
+                      Code of Conduct
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    <Alert className="bg-orange-50 border-orange-300 text-orange-800 p-3 rounded-xl">
+                      <Info className="h-5 w-5 text-orange-600 mr-2" />
+                      <AlertDescription>
+                        <strong>Zero Tolerance Policy:</strong> Strict anti-ragging policy. Any form of ragging is punishable and may lead to expulsion.
+                      </AlertDescription>
+                    </Alert>
+                    {groupedGuidelines["Code of Conduct"].map((sub, idx) => (
+                      <div key={idx}>
+                        <h4 className="font-semibold text-lg mb-3 text-gray-800">{sub.subCategory}</h4>
+                        <ul className="space-y-2 ml-3">
+                          {sub.points.map((point, pIdx) => (
+                            <li key={pIdx} className="flex items-start gap-2 text-gray-700">
+                              <ArrowRight className="w-4 h-4 text-orange-500 mt-0.5 flex-shrink-0" />
+                              <span>{point}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    ))}
+                  </CardContent>
+                </Card>
+              </motion.div>
+            )}
+          </div>
+
+          <div className="grid lg:grid-cols-2 gap-8">
+            {/* Academic Requirements Block */}
+            {groupedGuidelines["Academic Requirements"] && (
+              <motion.div variants={cardVariants} whileHover="hover">
+                <Card className="border-0 shadow-xl h-full bg-white/90 backdrop-blur-sm border border-amber-200">
+                  <CardHeader className="pb-4">
+                    <CardTitle className="flex items-center gap-3 text-2xl" style={{ color: "#78350f" }}>
+                      <Calendar className="w-8 h-8 text-amber-600" />
+                      Academic Requirements
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    {groupedGuidelines["Academic Requirements"].map((sub, idx) => (
+                      <div key={idx}>
+                        <h4 className="font-semibold text-lg mb-3 text-gray-800">{sub.subCategory}</h4>
+                        <ul className="space-y-2 ml-3">
+                          {sub.points.map((point, pIdx) => (
+                            <li key={pIdx} className="flex items-start gap-2 text-gray-700">
+                              <CheckCircle className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" />
+                              <span>{point}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    ))}
+                  </CardContent>
+                </Card>
+              </motion.div>
+            )}
+
+            {/* For Parents/Guardians Block */}
+            {groupedGuidelines["For Parents/Guardians"] && (
+              <motion.div variants={cardVariants} whileHover="hover">
+                <Card className="border-0 shadow-xl h-full bg-white/90 backdrop-blur-sm border border-amber-200">
+                  <CardHeader className="pb-4">
+                    <CardTitle className="flex items-center gap-3 text-2xl" style={{ color: "#78350f" }}>
+                      <Users className="w-8 h-8 text-amber-600" />
+                      For Parents/Guardians
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    {groupedGuidelines["For Parents/Guardians"].map((sub, idx) => (
+                      <div key={idx}>
+                        <h4 className="font-semibold text-lg mb-3 text-gray-800">{sub.subCategory}</h4>
+                        <ul className="space-y-2 ml-3">
+                          {sub.points.map((point, pIdx) => (
+                            <li key={pIdx} className="flex items-start gap-2 text-gray-700">
+                              <CheckCircle className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" />
+                              <span>{point}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    ))}
+                  </CardContent>
+                </Card>
+              </motion.div>
+            )}
+          </div>
+
+          {/* Contact Information Block */}
+          {groupedGuidelines["Contact Information"] && (
+            <motion.div variants={cardVariants} whileHover="hover">
+              <Card className="border-0 shadow-xl bg-white/90 backdrop-blur-sm border border-amber-200">
                 <CardHeader className="pb-4">
-                  <CardTitle
-                    className="flex items-center gap-3 text-2xl"
-                    style={{ color: "#78350f" }}
-                  >
-                    <Calendar className="w-8 h-8 text-amber-600" />
-                    Academic Requirements
+                  <CardTitle className="flex items-center gap-3 text-2xl" style={{ color: "#78350f" }}>
+                    <Info className="w-8 h-8 text-amber-600" />
+                    Contact Information
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid md:grid-cols-2 gap-6">
-                    <div>
-                      <h4 className="font-semibold text-lg mb-3 text-gray-800">
-                        Attendance Policy
-                      </h4>
-                      <ul className="space-y-2 ml-3">
-                        {[
-                          "Minimum 90% attendance in Theory class and 100% in Clinic",
-                          "Shortage may lead to exam debarment",
-                          "Medical leave requires certification",
-                          "Regular monitoring and counseling",
-                          "Must Complete Clinical Submission Requirement in All Subjects"
-                        ].map((item, index) => (
-                          <li
-                            key={index}
-                            className="flex items-start gap-2 text-gray-700"
-                          >
-                            <CheckCircle className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" />
-                            <span>{item}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                    <div>
-                      <h4 className="font-semibold text-lg mb-3 text-gray-800">
-                        Examination Rules
-                      </h4>
-                      <ul className="space-y-2 ml-3">
-                        {[
-                          "Punctuality in examinations",
-                          "Carry valid identity card",
-                          "No unfair means or malpractice",
-                          "Follow all exam regulations",
-                        ].map((item, index) => (
-                          <li
-                            key={index}
-                            className="flex items-start gap-2 text-gray-700"
-                          >
-                            <CheckCircle className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" />
-                            <span>{item}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
+                  <div className="grid md:grid-cols-1 gap-8">
+                    {groupedGuidelines["Contact Information"].map((sub, idx) => (
+                      <div key={idx} className="text-center p-6 bg-orange-50 rounded-2xl border border-orange-200">
+                        <h4 className="font-semibold text-lg mb-3 text-gray-800">{sub.subCategory}</h4>
+                        <div className="space-y-2 text-gray-700">
+                          {sub.points.map((point, pIdx) => (
+                            <p key={pIdx}>{point}</p>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </CardContent>
               </Card>
             </motion.div>
-
-            {/* For Parents/Guardians Card */}
-            <motion.div variants={cardVariants} whileHover="hover">
-              <Card className="border-0 shadow-xl h-full bg-white/90 backdrop-blur-sm border border-orange-200">
-                <CardHeader className="pb-4">
-                  <CardTitle
-                    className="flex items-center gap-3 text-2xl"
-                    style={{ color: "#78350f" }}
-                  >
-                    <Users className="w-8 h-8 text-amber-600" />
-                    For Parents/Guardians
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <div>
-                    <h4 className="font-semibold text-lg mb-3 text-gray-800">
-                      Communication
-                    </h4>
-                    <ul className="space-y-2 ml-3">
-                      {[
-                        "Regular communication with administration",
-                        "Attend parent-teacher meetings",
-                        "Update contact information promptly",
-                        "Monitor student's academic progress",
-                      ].map((item, index) => (
-                        <li
-                          key={index}
-                          className="flex items-start gap-2 text-gray-700"
-                        >
-                          <CheckCircle className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" />
-                          <span>{item}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                  <div>
-                    <h4 className="font-semibold text-lg mb-3 text-gray-800">
-                      Support & Guidance
-                    </h4>
-                    <ul className="space-y-2 ml-3">
-                      {[
-                        "Encourage regular study habits",
-                        "Support co-curricular activities",
-                        "Address difficulties promptly",
-                        "Maintain positive communication",
-                      ].map((item, index) => (
-                        <li
-                          key={index}
-                          className="flex items-start gap-2 text-gray-700"
-                        >
-                          <CheckCircle className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" />
-                          <span>{item}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          </div>
-
-          {/* Contact Information Card */}
-          <motion.div variants={cardVariants} whileHover="hover">
-            <Card className="border-0 shadow-xl bg-white/90 backdrop-blur-sm border border-amber-200">
-              <CardHeader className="pb-4">
-                <CardTitle
-                  className="flex items-center gap-3 text-2xl"
-                  style={{ color: "#78350f" }}
-                >
-                  <Info className="w-8 h-8 text-amber-600" />
-                  Contact Information
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid md:grid-cols-1 gap-8">
-                  <div className="text-center p-6 bg-orange-50 rounded-2xl border border-orange-200">
-                    <h4 className="font-semibold text-lg mb-3 text-gray-800">
-                      Academic Office
-                    </h4>
-                    <div className="space-y-2 text-gray-700">
-                      <p>Phone: +91-79-2268-1406</p>
-                      <p>Email: principalgcona@gmail.com and pricipalgsona@gmail.com</p>
-                      <p>Office Hours: 9:00 AM - 5:00 PM</p>
-                    </div>
-                  </div>
-                  {/* <div className="text-center p-6 bg-amber-50 rounded-2xl border border-amber-200">
-                    <h4 className="font-semibold text-lg mb-3 text-gray-800">
-                      Student Counselor
-                    </h4>
-                    <div className="space-y-2 text-gray-700">
-                      <p>Phone: +91-79-2268-5678</p>
-                      <p>Email: counselor@medicalcollege.edu</p>
-                      <p>Available: Mon-Fri, 10:00 AM - 4:00 PM</p>
-                    </div> */}
-                  {/* </div> */}
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
+          )}
         </motion.div>
       </div>
     </div>

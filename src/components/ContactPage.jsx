@@ -123,7 +123,7 @@ export function ContactPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 py-16">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 py-12">
       <div className="container mx-auto px-4">
         {/* Header Section with Animation */}
         <div className="text-center mb-16 animate-fade-in-up">

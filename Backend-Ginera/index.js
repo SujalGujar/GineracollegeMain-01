@@ -24,18 +24,30 @@ if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir);
 }
 
-
 // Routes
 const sliderRoutes = require('./routes/sliderRoutes');
 const programRoutes = require('./routes/programRoutes');
 const testimonialRoutes = require('./routes/testimonialRoutes');
 const contentRoutes = require('./routes/contentRoutes');
 const aboutRoutes = require('./routes/aboutRoutes');
+const courseRoutes = require('./routes/courseRoutes');
+const admissionStepRoutes = require('./routes/admissionStepRoutes');
+const admissionRuleRoutes = require('./routes/admissionRuleRoutes');
+const bondRoutes = require('./routes/bondRoutes');
+const guidelineRoutes = require('./routes/guidelineRoutes');
+const departmentRoutes = require('./routes/departmentRoutes');
+
 app.use('/api/sliders', sliderRoutes);
 app.use('/api/programs', programRoutes);
 app.use('/api/testimonials', testimonialRoutes);
 app.use('/api/content', contentRoutes);
 app.use('/api/about', aboutRoutes);
+app.use('/api/courses', courseRoutes);
+app.use('/api/admission-steps', admissionStepRoutes);
+app.use('/api/admission-rules', admissionRuleRoutes);
+app.use('/api/bonds', bondRoutes);
+app.use('/api/guidelines', guidelineRoutes);
+app.use('/api/departments', departmentRoutes);
 
 // MongoDB Connection
 mongoose.set('bufferCommands', false);
@@ -43,8 +55,8 @@ mongoose.set('bufferCommands', false);
 const connectDB = async () => {
   try {
     await mongoose.connect(process.env.MONGODB_URI, {
-      serverSelectionTimeoutMS: 10000, // Increase timeout from 5s to 10s
-      socketTimeoutMS: 45000,         // Close sockets after 45s of inactivity
+      serverSelectionTimeoutMS: 10000,
+      socketTimeoutMS: 45000,
     });
     console.log('✅ Connected to MongoDB Atlas');
   } catch (err) {

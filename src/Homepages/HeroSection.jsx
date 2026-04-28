@@ -21,27 +21,50 @@ const backgroundSlides = [
   },
 ];
 
-const HeroSection = () => {
+const HeroSection = ({ departmentName }) => {
   const [currentBgSlide, setCurrentBgSlide] = useState(0);
   const [slides, setSlides] = useState(backgroundSlides);
 
   useEffect(() => {
     const fetchSliders = async () => {
       try {
-        const response = await axiosInstance.get("/sliders");
+        let url = "/sliders";
+        if (departmentName) {
+          // departmentName here is the slug from App.tsx (e.g. "department-of-fundamentals-of-nursing")
+          // We need to find the department ID. We can fetch all departments and match.
+          const deptsRes = await axiosInstance.get("/departments");
+          const depts = deptsRes.data;
+          
+          const matchedDept = depts.find(d => {
+            const slug = d.name.toLowerCase()
+              .replace(/\s+/g, "-")
+              .replace(/[()&]/g, "")
+              .replace(/,/g, "");
+            return slug === departmentName;
+          });
+
+          if (matchedDept) {
+            url = `/sliders?department=${matchedDept._id}`;
+          }
+        }
+        
+        const response = await axiosInstance.get(url);
         if (response.data && response.data.length > 0) {
           const backendSlides = response.data.map(item => ({
-            image: `http://localhost:8080${item.imageUrl}`,
+            image: item.imageUrl.startsWith('http') ? item.imageUrl : `http://localhost:8080${item.imageUrl}`,
             alt: item.title || "Ginera College Slider"
           }));
           setSlides(backendSlides);
+        } else {
+          setSlides(backgroundSlides);
         }
       } catch (error) {
         console.error("Error fetching slider images:", error);
+        setSlides(backgroundSlides);
       }
     };
     fetchSliders();
-  }, []);
+  }, [departmentName]);
 
   useEffect(() => {
     const bgTimer = setInterval(() => {

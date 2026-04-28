@@ -8,6 +8,7 @@ import HomePage from './components/HomePage.jsx';
 
 import { AboutLogo, DeanMessage, History, Location, VisionMission, Achievements } from './components/AboutPages';
 import { CoursesOffered, AdmissionProcedure, AdmissionRules, Bond, Instructions } from './components/AdmissionPages';
+import HeroSection from './Homepages/HeroSection';
 
 import { GenericDepartment } from './components/DepartmentPages';
 
@@ -73,8 +74,10 @@ export default function App() {
         return <AdmissionProcedure />;
       case 'admission-rules':
         return <AdmissionRules />;
-      case 'bond':
+      case 'student-bond':
         return <Bond />;
+      case 'service-bond':
+        return <div>Service Bond page has been removed.</div>;
       case 'instructions':
         return <Instructions />;
       
@@ -124,6 +127,11 @@ export default function App() {
       <div className="min-h-screen bg-background flex flex-col">
         {currentPage !== 'admin' && <Header currentPage={currentPage} onNavigate={handleNavigation} />}
         <main className="flex-1">
+          {currentPage !== 'admin' && currentPage !== 'home' && (
+            <HeroSection 
+              departmentName={currentPage.startsWith('department-') ? currentPage.replace('department-', '') : null} 
+            />
+          )}
           {renderCurrentPage()}
         </main>
       

@@ -16,7 +16,13 @@ exports.getSliders = async (req, res) => {
   if (dbError) return dbError;
 
   try {
-    const sliders = await sliderService.getAllSliders();
+    const { department } = req.query;
+    let sliders;
+    if (department && department !== 'null' && department !== 'undefined') {
+      sliders = await sliderService.getSlidersByDepartment(department);
+    } else {
+      sliders = await sliderService.getAllSliders();
+    }
     res.status(200).json(sliders);
   } catch (error) {
     res.status(500).json({ message: 'Error fetching sliders', error: error.message });
@@ -34,7 +40,8 @@ exports.uploadSliders = async (req, res) => {
 
     const sliderDataArray = req.files.map(file => ({
       title: req.body.title || 'Ginera College Slider',
-      imageUrl: `/uploads/${file.filename}`
+      imageUrl: `/uploads/${file.filename}`,
+      department: req.body.department || null
     }));
 
     const savedSliders = await sliderService.createSliders(sliderDataArray);
