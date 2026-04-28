@@ -16,8 +16,10 @@ const fadeInUp = {
   }),
 };
 
+import axiosInstance from "../api/axiosInstance";
+
 export function AffiliatedInstitutes() {
-  const institutes = [
+  const DEFAULT_INSTITUTES = [
     {
       name: "Civil Hospital Ahmedabad",
       type: "Teaching Hospital",
@@ -237,6 +239,22 @@ export function AffiliatedInstitutes() {
     },
 
   ];
+
+  const [institutes, setInstitutes] = React.useState(DEFAULT_INSTITUTES);
+
+  React.useEffect(() => {
+    const fetchInstitutes = async () => {
+      try {
+        const response = await axiosInstance.get('/institutes');
+        if (response.data && response.data.length > 0) {
+          setInstitutes(response.data);
+        }
+      } catch (err) {
+        console.error("Error fetching institutes:", err);
+      }
+    };
+    fetchInstitutes();
+  }, []);
 
   return (
     <motion.div

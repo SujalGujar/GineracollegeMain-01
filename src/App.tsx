@@ -122,7 +122,11 @@ export default function App() {
         return <ContactPage />;
       case 'admin':
         if (isLoggedIn) {
-          return <AdminPanel />;
+          return <AdminPanel onLogout={() => {
+            setIsLoggedIn(false);
+            localStorage.removeItem('adminAuthenticated');
+            handleNavigation('home');
+          }} />;
         }
         return <LoginPage onLogin={() => {
           setIsLoggedIn(true);

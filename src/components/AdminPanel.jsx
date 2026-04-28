@@ -1210,7 +1210,90 @@ const GalleryTab = ({ galleryImages, galleryForm, setGalleryForm, openModal, del
   </div>
 );
 
-// ── MAIN ADMIN PANEL ─────────────────────────────────────
+const InstitutesTab = ({ institutes, openModal, del }) => (
+  <div className="space-y-6">
+    <SectionHeader icon={Building2} title="Affiliated Institutes" subtitle={`${institutes.length} partners registered`}
+      action={<AddBtn onClick={() => openModal("institute")} label="Add Institute"/>}/>
+    <div className="grid grid-cols-1 gap-3">
+      {institutes.map(inst => (
+        <RowItem key={inst._id}
+          left={<div className="w-12 h-12 rounded-xl bg-amber-50 flex items-center justify-center text-2xl shadow-sm border border-amber-100">{inst.icon || "🏥"}</div>}
+          badge={inst.type} title={inst.name} sub={inst.capacity}
+          onEdit={() => openModal("institute", inst)}
+          onDelete={() => del(`/institutes/${inst._id}`)}/>
+      ))}
+      {institutes.length === 0 && <EmptyState icon={Building2} text="No institutes registered yet"/>}
+    </div>
+  </div>
+);
+
+const InstituteForm = ({ editItem, closeModal, fetchData, notify }) => {
+  const [form, setForm] = useState({
+    name: "", type: "", description: "", description2: "", description3: "",
+    established: "", capacity: "", icon: "🏥",
+    specialties: "", services: "",
+    contact: { address: "", phone: "", website: "" }
+  });
+
+  useEffect(() => {
+    if (editItem) {
+      setForm({
+        ...editItem,
+        specialties: Array.isArray(editItem.specialties) ? editItem.specialties.join(", ") : "",
+        services: Array.isArray(editItem.services) ? editItem.services.join(", ") : "",
+        contact: { ...editItem.contact }
+      });
+    }
+  }, [editItem]);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const payload = {
+      ...form,
+      specialties: form.specialties.split(",").map(s => s.trim()).filter(Boolean),
+      services: form.services.split(",").map(s => s.trim()).filter(Boolean)
+    };
+    try {
+      if (editItem) await axiosInstance.put(`/institutes/${editItem._id}`, payload);
+      else await axiosInstance.post("/institutes", payload);
+      notify(editItem ? "Updated" : "Created");
+      closeModal();
+      fetchData();
+    } catch { notify("Operation failed", "error"); }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="grid grid-cols-2 gap-4">
+        <Field label="Institute Name"><input required value={form.name} onChange={e=>setForm({...form, name:e.target.value})} className={inputCls} style={inputStyle}/></Field>
+        <Field label="Type (e.g. Hospital)"><input required value={form.type} onChange={e=>setForm({...form, type:e.target.value})} className={inputCls} style={inputStyle}/></Field>
+      </div>
+      <div className="grid grid-cols-3 gap-4">
+        <Field label="Established"><input value={form.established} onChange={e=>setForm({...form, established:e.target.value})} className={inputCls} style={inputStyle}/></Field>
+        <Field label="Capacity"><input value={form.capacity} onChange={e=>setForm({...form, capacity:e.target.value})} className={inputCls} style={inputStyle}/></Field>
+        <Field label="Icon Emoji"><input value={form.icon} onChange={e=>setForm({...form, icon:e.target.value})} className={inputCls} style={inputStyle}/></Field>
+      </div>
+      <Field label="Main Description"><textarea required rows={3} value={form.description} onChange={e=>setForm({...form, description:e.target.value})} className={`${inputCls} resize-none`} style={inputStyle}/></Field>
+      <Field label="Additional Description"><textarea rows={2} value={form.description2} onChange={e=>setForm({...form, description2:e.target.value})} className={`${inputCls} resize-none`} style={inputStyle}/></Field>
+      <Field label="Clinical Areas (comma separated)"><textarea rows={2} value={form.specialties} onChange={e=>setForm({...form, specialties:e.target.value})} className={`${inputCls} resize-none`} style={inputStyle}/></Field>
+      <Field label="Key Services (comma separated)"><textarea rows={2} value={form.services} onChange={e=>setForm({...form, services:e.target.value})} className={`${inputCls} resize-none`} style={inputStyle}/></Field>
+      
+      <div className="p-4 rounded-2xl bg-gray-50 space-y-4 border border-gray-100">
+        <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Contact Details</p>
+        <Field label="Address"><input value={form.contact.address} onChange={e=>setForm({...form, contact:{...form.contact, address:e.target.value}})} className={inputCls} style={inputStyle}/></Field>
+        <div className="grid grid-cols-2 gap-4">
+          <Field label="Phone"><input value={form.contact.phone} onChange={e=>setForm({...form, contact:{...form.contact, phone:e.target.value}})} className={inputCls} style={inputStyle}/></Field>
+          <Field label="Website"><input value={form.contact.website} onChange={e=>setForm({...form, contact:{...form.contact, website:e.target.value}})} className={inputCls} style={inputStyle}/></Field>
+        </div>
+      </div>
+
+      <div className="flex gap-3 pt-2">
+        <button type="button" onClick={closeModal} className="flex-1 py-3 rounded-xl border font-bold text-sm" style={{ borderColor: C.border }}>Cancel</button>
+        <button type="submit" className="flex-[2] py-3 rounded-xl text-sm font-bold text-white bg-amber-900" style={{ background: C.brand }}>{editItem ? "Save Changes" : "Create"}</button>
+      </div>
+    </form>
+  );
+};
 
 const AdminPanel = ({ onLogout }) => {
   const [activeTab, setActiveTab] = useState("Home Page");
@@ -1242,6 +1325,7 @@ const AdminPanel = ({ onLogout }) => {
   const [bonds, setBonds] = useState([]);
   const [guidelines, setGuidelines] = useState([]);
   const [departments, setDepartments] = useState([]);
+  const [institutes, setInstitutes] = useState([]);
 
   // Form States
   const [programForm, setProgramForm] = useState({ title:"",description:"",duration:"",category:"Undergraduate",courses:"",image:null });
@@ -1291,12 +1375,14 @@ const AdminPanel = ({ onLogout }) => {
         axiosInstance.get("/departments"),
         axiosInstance.get("/sliders?department=all"),
         axiosInstance.get("/gallery"),
+        axiosInstance.get("/institutes"),
       ]);
       setPrograms(r[0].data); setTestimonials(r[1].data); setAcademicContent(r[2].data);
       setMilestones(r[3].data); setDeanMessage(r[4].data); setCollegeLogo(r[5].data);
       setVisionMission(r[6].data); setCoreValues(r[7].data); setCourses(r[8].data);
       setAdmissionSteps(r[9].data); setAdmissionRules(r[10].data); setBonds(r[11].data);
       setGuidelines(r[12].data); setDepartments(r[13].data); setSliders(r[14].data); setGalleryImages(r[15].data);
+      setInstitutes(r[16].data);
     } catch { notify("Error fetching data", "error"); }
     finally { setLoading(false); }
   };
@@ -1336,6 +1422,7 @@ const AdminPanel = ({ onLogout }) => {
     { name: "About Us",     icon: Info },
     { name: "Admission",    icon: Layers },
     { name: "Departments",  icon: Building2 },
+    { name: "Institutes",   icon: Building2 },
     { name: "Gallery",      icon: ImageIcon },
     { name: "Settings",     icon: Settings },
   ];
@@ -1353,6 +1440,7 @@ const AdminPanel = ({ onLogout }) => {
     guideline:    { title: editItem ? "Edit Guidelines" : "Add Guidelines", subtitle: "Student / parent guidance" },
     department:   { title: editItem ? "Edit Dept"       : "Add Department", subtitle: "Create a new department" },
     gallery:      { title: editItem ? "Edit Photo"      : "Add Photo",      subtitle: "Gallery image" },
+    institute:    { title: editItem ? "Edit Institute"  : "Add Institute",  subtitle: "Affiliated institute details" },
   }[modalType] || {};
 
   return (
@@ -1389,6 +1477,7 @@ const AdminPanel = ({ onLogout }) => {
                   {activeTab === "Admission" && <AdmissionTab admSub={admSub} setAdmSub={setAdmSub} courses={courses} openModal={openModal} setCourseForm={setCourseForm} del={del} admissionSteps={admissionSteps} setStepForm={setStepForm} admissionRules={admissionRules} setRuleForm={setRuleForm} bonds={bonds} setBondForm={setBondForm} guidelines={guidelines} setGuidelineForm={setGuidelineForm}/>}
                   {activeTab === "Departments" && <DepartmentsTab selectedDept={selectedDept} setSelectedDept={setSelectedDept} departments={departments} deptForm={deptForm} setDeptForm={setDeptForm} deptSub={deptSub} setDeptSub={setDeptSub} deptFacultyForm={deptFacultyForm} setDeptFacultyForm={setDeptFacultyForm} deptFacilityInput={deptFacilityInput} setDeptFacilityInput={setDeptFacilityInput} deptActivityInput={deptActivityInput} setDeptActivityInput={setDeptActivityInput} sliders={sliders} axiosInstance={axiosInstance} fetchData={fetchData} notify={notify} openModal={openModal} del={del} handleSliderUpload={handleSliderUpload}/>}
                   {activeTab === "Gallery" && <GalleryTab galleryImages={galleryImages} galleryForm={galleryForm} setGalleryForm={setGalleryForm} openModal={openModal} del={del} />}
+                  {activeTab === "Institutes" && <InstitutesTab institutes={institutes} openModal={openModal} del={del} />}
                   {activeTab === "Settings" && (
                     <div className="flex flex-col items-center justify-center py-32 text-center" style={{ color: C.muted }}>
                       <Settings size={48} className="mb-4 opacity-30"/>
@@ -1415,6 +1504,7 @@ const AdminPanel = ({ onLogout }) => {
         {modalType === "guideline" && <GuidelineForm editItem={editItem} guidelineForm={guidelineForm} setGuidelineForm={setGuidelineForm} closeModal={closeModal} fetchData={fetchData} notify={notify}/>}
         {modalType === "department" && <DeptForm editItem={editItem} deptForm={deptForm} setDeptForm={setDeptForm} closeModal={closeModal} fetchData={fetchData} notify={notify}/>}
         {modalType === "gallery" && <GalleryForm editItem={editItem} formState={galleryForm} setFormState={setGalleryForm} closeModal={closeModal} fetchData={fetchData} notify={notify} axiosInstance={axiosInstance}/>}
+        {modalType === "institute" && <InstituteForm editItem={editItem} closeModal={closeModal} fetchData={fetchData} notify={notify}/>}
       </Modal>
     </div>
   );

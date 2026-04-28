@@ -37,6 +37,7 @@ const bondRoutes = require('./routes/bondRoutes');
 const guidelineRoutes = require('./routes/guidelineRoutes');
 const departmentRoutes = require('./routes/departmentRoutes');
 const galleryRoutes = require('./routes/galleryRoutes');
+const instituteRoutes = require('./routes/instituteRoutes');
 
 app.use('/api/sliders', sliderRoutes);
 app.use('/api/gallery', galleryRoutes);
@@ -50,6 +51,7 @@ app.use('/api/admission-rules', admissionRuleRoutes);
 app.use('/api/bonds', bondRoutes);
 app.use('/api/guidelines', guidelineRoutes);
 app.use('/api/departments', departmentRoutes);
+app.use('/api/institutes', instituteRoutes);
 
 // MongoDB Connection
 mongoose.set('bufferCommands', false);
