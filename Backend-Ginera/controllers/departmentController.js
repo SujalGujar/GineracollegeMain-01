@@ -3,9 +3,9 @@ const mongoose = require('mongoose');
 
 const checkDbConnection = (res) => {
   if (mongoose.connection.readyState !== 1) {
-    return res.status(503).json({ 
-      message: 'Database not connected', 
-      error: 'Database not available.' 
+    return res.status(503).json({
+      message: 'Database not connected',
+      error: 'Database not available.'
     });
   }
   return null;
@@ -202,7 +202,9 @@ exports.getDepartmentBySlug = async (req, res) => {
 
 exports.createDepartment = async (req, res) => {
   try {
-    const department = new Department(req.body);
+    const data = { ...req.body };
+    if (req.file) data.logoUrl = `/uploads/${req.file.filename}`;
+    const department = new Department(data);
     await department.save();
     res.status(201).json(department);
   } catch (error) {
@@ -212,7 +214,20 @@ exports.createDepartment = async (req, res) => {
 
 exports.updateDepartment = async (req, res) => {
   try {
-    const department = await Department.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    const data = { ...req.body };
+    if (req.file) data.logoUrl = `/uploads/${req.file.filename}`;
+
+    if (typeof data.faculty === 'string') {
+      try { data.faculty = JSON.parse(data.faculty); } catch (e) { }
+    }
+    if (typeof data.facilities === 'string') {
+      try { data.facilities = JSON.parse(data.facilities); } catch (e) { }
+    }
+    if (typeof data.activities === 'string') {
+      try { data.activities = JSON.parse(data.activities); } catch (e) { }
+    }
+
+    const department = await Department.findByIdAndUpdate(req.params.id, data, { new: true });
     if (!department) return res.status(404).json({ message: 'Department not found' });
     res.status(200).json(department);
   } catch (error) {

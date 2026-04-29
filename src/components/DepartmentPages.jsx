@@ -562,7 +562,11 @@ function DepartmentPage({ department, sliders }) {
         <div className="max-w-6xl mx-auto">
         <div className="mb-8">
           <div className="flex items-center gap-4 mb-4">
-            <div className="text-4xl">{department.icon}</div>
+            {department.logoUrl ? (
+              <img src={imgUrl(department.logoUrl)} className="w-16 h-16 rounded-xl object-cover shrink-0 border shadow-sm" alt={department.name} />
+            ) : (
+              <div className="text-4xl shrink-0">{department.icon || "🏥"}</div>
+            )}
             <div>
               <h1 className="text-3xl font-bold">{department.name}</h1>
               <Badge variant="secondary" className="mt-2">

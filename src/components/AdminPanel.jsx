@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   LayoutDashboard, Image as ImageIcon, BookOpen, Users, Settings,
@@ -67,15 +68,18 @@ const Toast = ({ note }) => (
   </AnimatePresence>
 );
 
-const Field = ({ label, children }) => (
-  <div className="space-y-1.5">
-    <label className="block text-xs font-bold uppercase tracking-wider" style={{ color: C.muted }}>{label}</label>
+const Field = ({ label, hint, children }) => (
+  <div className="flex flex-col gap-1">
+    <label className="text-[13px] font-semibold text-gray-700 leading-tight">{label}</label>
+    {hint && <p className="text-[11px] text-gray-400 -mt-0.5">{hint}</p>}
     {children}
   </div>
 );
 
-const inputCls = "w-full px-4 py-2.5 rounded-xl border text-sm outline-none transition-all focus:ring-2";
-const inputStyle = { borderColor: C.border, "--tw-ring-color": C.accent + "40" };
+const inputCls = "w-full px-4 py-3 rounded-xl border bg-white text-sm text-gray-800 outline-none transition-all placeholder:text-gray-400 focus:border-gray-400 focus:ring-2 focus:ring-gray-200";
+const inputStyle = { borderColor: "#E2E8F0" };
+const formBtnPrimary = "w-full py-3.5 rounded-xl text-sm font-bold text-white tracking-wide shadow-md hover:opacity-90 active:scale-[0.98] transition-all flex items-center justify-center gap-2";
+const formBtnSecondary = "flex-1 py-3.5 rounded-xl border text-sm font-semibold text-gray-600 bg-white hover:bg-gray-50 transition-all";
 
 const Modal = ({ show, onClose, title, subtitle, children }) => (
   <AnimatePresence>
@@ -87,8 +91,8 @@ const Modal = ({ show, onClose, title, subtitle, children }) => (
           initial={{ opacity: 0, scale: 0.95 }} 
           animate={{ opacity: 1, scale: 1 }} 
           exit={{ opacity: 0, scale: 0.95 }}
-          className="fixed top-[50%] left-[50%] z-[101] w-[95%] sm:w-[95%] md:w-[90%] lg:max-w-6xl max-h-[95dvh] flex flex-col rounded-3xl overflow-hidden shadow-2xl"
-          style={{ background: C.surface, transform: "translate(-50%, -50%)" }}>
+          className="relative z-[101] w-full sm:w-[90%] md:w-[85%] lg:w-[75%] max-w-4xl max-h-[90dvh] flex flex-col rounded-t-3xl sm:rounded-3xl overflow-hidden shadow-2xl"
+          style={{ background: C.surface }}>
           <div className="flex items-start justify-between p-6 border-b shrink-0" style={{ borderColor: C.border, background: C.bg }}>
             <div>
               <h3 className="text-xl font-bold" style={{ color: C.text }}>{title}</h3>
@@ -100,7 +104,7 @@ const Modal = ({ show, onClose, title, subtitle, children }) => (
               <X size={18} style={{ color: C.muted }}/>
             </button>
           </div>
-          <div className="overflow-y-auto flex-1 p-6 space-y-5">
+          <div className="overflow-y-auto flex-1 p-6 sm:p-8 space-y-5 bg-gray-50">
             {children}
           </div>
         </motion.div>
@@ -114,8 +118,8 @@ const Modal = ({ show, onClose, title, subtitle, children }) => (
 const ProgramForm = ({ editItem, programForm, setProgramForm, closeModal, fetchData, notify }) => (
   <form onSubmit={async e => { 
     e.preventDefault(); 
-    if (!editItem && (!programForm.images || programForm.images.length === 0)) {
-      return notify("Please select cover images", "error");
+    if (!editItem && !programForm.image) {
+      return notify("Please select a cover image", "error");
     }
     const fd = new FormData();
     fd.append("title", programForm.title || "");
@@ -127,10 +131,8 @@ const ProgramForm = ({ editItem, programForm, setProgramForm, closeModal, fetchD
         ? programForm.courses.split(",").map(c => c.trim()).filter(Boolean)
         : (programForm.courses || [])
     ));
-    if (programForm.images && programForm.images.length > 0) {
-      for (let i = 0; i < programForm.images.length; i++) {
-        fd.append("images", programForm.images[i]);
-      }
+    if (programForm.image) {
+      fd.append("image", programForm.image);
     }
     const url = editItem ? `/programs/${editItem._id}` : "/programs";
     try {
@@ -150,30 +152,22 @@ const ProgramForm = ({ editItem, programForm, setProgramForm, closeModal, fetchD
     <Field label="Description"><textarea required rows={3} value={programForm.description} onChange={e=>setProgramForm({...programForm,description:e.target.value})} className={`${inputCls} resize-none`} style={inputStyle}/></Field>
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
       <Field label="Duration"><input value={programForm.duration} onChange={e=>setProgramForm({...programForm,duration:e.target.value})} className={inputCls} style={inputStyle} placeholder="e.g. 4 Years"/></Field>
-      <Field label="Cover Images">
-        <label className="flex items-center gap-2 px-4 py-2.5 rounded-xl border cursor-pointer hover:bg-gray-50 transition text-sm" style={{ borderColor: C.border, color: C.muted }}>
-          <ImageIcon size={16}/>{programForm.images && programForm.images.length > 0 ? `${programForm.images.length} files selected` : "Select images"}
-          <input type="file" multiple className="hidden" onChange={e=>setProgramForm({...programForm,images:e.target.files})} />
+      <Field label="Cover Image">
+        <label className="flex items-center gap-2 px-4 py-3 rounded-xl border bg-white cursor-pointer hover:bg-gray-50 transition text-sm text-gray-500" style={{ borderColor: "#E2E8F0" }}>
+          <ImageIcon size={16}/>{programForm.image && typeof programForm.image === 'object' ? programForm.image.name : "Select image"}
+          <input type="file" className="hidden" onChange={e=>setProgramForm({...programForm,image:e.target.files[0]})} />
         </label>
-        {programForm.images && programForm.images.length > 0 ? (
-          <div className="flex gap-2 mt-2 overflow-x-auto pb-1 custom-scrollbar">
-            {Array.from(programForm.images).map((file, i) => (
-              <img key={i} src={URL.createObjectURL(file)} className="w-10 h-10 object-cover rounded-md border shadow-sm shrink-0" alt={`new-${i}`}/>
-            ))}
-          </div>
-        ) : editItem && (editItem.imageUrls?.length > 0 || editItem.imageUrl) ? (
-          <div className="flex gap-2 mt-2 overflow-x-auto pb-1 custom-scrollbar">
-            {(editItem.imageUrls && editItem.imageUrls.length > 0 ? editItem.imageUrls : [editItem.imageUrl]).map((url, i) => (
-              <img key={i} src={imgUrl(url)} className="w-10 h-10 object-cover rounded-md border shadow-sm shrink-0" alt={`existing-${i}`}/>
-            ))}
-          </div>
+        {programForm.image && typeof programForm.image === 'object' ? (
+          <img src={URL.createObjectURL(programForm.image)} className="mt-2 h-14 w-14 object-cover rounded-xl border shadow-sm" alt="preview"/>
+        ) : editItem?.imageUrl ? (
+          <img src={imgUrl(editItem.imageUrl)} className="mt-2 h-14 w-14 object-cover rounded-xl border shadow-sm" alt="current image"/>
         ) : null}
       </Field>
     </div>
     <Field label="Courses (comma separated)"><textarea rows={2} value={programForm.courses} onChange={e=>setProgramForm({...programForm,courses:e.target.value})} className={`${inputCls} resize-none`} style={inputStyle}/></Field>
     <div className="flex gap-3 pt-2">
-      <button type="button" onClick={closeModal} className="flex-1 py-3 rounded-xl border font-bold text-sm transition hover:bg-gray-50" style={{ borderColor: C.border, color: C.muted }}>Cancel</button>
-      <button type="submit" className="flex-[2] py-3 rounded-xl text-sm font-bold text-white flex items-center justify-center gap-2" style={{ background: C.brand }}><Save size={16}/>{editItem?"Save Changes":"Create"}</button>
+      <button type="button" onClick={closeModal} className={formBtnSecondary}>Cancel</button>
+      <button type="submit" className={`${formBtnPrimary} flex-[2]`} style={{ background: C.brand }}><Save size={16}/>{editItem?"Save Changes":"Create"}</button>
     </div>
   </form>
 );
@@ -204,15 +198,15 @@ const TestimonialForm = ({ editItem, testimonialForm, setTestimonialForm, closeM
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
       <Field label="Rating (1–5)"><input type="number" min={1} max={5} value={testimonialForm.rating} onChange={e=>setTestimonialForm({...testimonialForm,rating:parseInt(e.target.value)})} className={inputCls} style={inputStyle}/></Field>
       <Field label="Photo">
-        <label className="flex items-center gap-2 px-4 py-2.5 rounded-xl border cursor-pointer hover:bg-gray-50 text-sm transition" style={{ borderColor: C.border, color: C.muted }}>
+        <label className="flex items-center gap-2 px-4 py-3 rounded-xl border bg-white cursor-pointer hover:bg-gray-50 text-sm transition text-gray-500" style={{ borderColor: "#E2E8F0" }}>
           <ImageIcon size={16}/>{testimonialForm.image && typeof testimonialForm.image === 'object' ? testimonialForm.image.name : "Select photo"}
           <input type="file" className="hidden" onChange={e=>setTestimonialForm({...testimonialForm,image:e.target.files[0]})} />
         </label>
       </Field>
     </div>
     <div className="flex gap-3 pt-2">
-      <button type="button" onClick={closeModal} className="flex-1 py-3 rounded-xl border font-bold text-sm hover:bg-gray-50 transition" style={{ borderColor: C.border, color: C.muted }}>Cancel</button>
-      <button type="submit" className="flex-[2] py-3 rounded-xl text-sm font-bold text-white flex items-center justify-center gap-2" style={{ background: C.brand }}><Save size={16}/>{editItem?"Save Changes":"Create"}</button>
+      <button type="button" onClick={closeModal} className={formBtnSecondary}>Cancel</button>
+      <button type="submit" className={`${formBtnPrimary} flex-[2]`} style={{ background: C.brand }}><Save size={16}/>{editItem?"Save Changes":"Create"}</button>
     </div>
   </form>
 );
@@ -240,8 +234,8 @@ const MilestoneForm = ({ editItem, milestoneForm, setMilestoneForm, closeModal, 
     </Field>
     <Field label="Description"><textarea required rows={3} value={milestoneForm.description} onChange={e=>setMilestoneForm({...milestoneForm,description:e.target.value})} className={`${inputCls} resize-none`} style={inputStyle}/></Field>
     <div className="flex gap-3 pt-2">
-      <button type="button" onClick={closeModal} className="flex-1 py-3 rounded-xl border font-bold text-sm hover:bg-gray-50" style={{ borderColor: C.border, color: C.muted }}>Cancel</button>
-      <button type="submit" className="flex-[2] py-3 rounded-xl text-sm font-bold text-white" style={{ background: C.brand }}>{editItem?"Save":"Add"}</button>
+      <button type="button" onClick={closeModal} className={formBtnSecondary}>Cancel</button>
+      <button type="submit" className={`${formBtnPrimary} flex-[2]`} style={{ background: C.brand }}>{editItem?"Save":"Add"}</button>
     </div>
   </form>
 );
@@ -263,8 +257,8 @@ const VisionMissionForm = ({ editItem, vmForm, setVmForm, closeModal, fetchData,
     </Field>
     <Field label="Content"><textarea required rows={4} value={vmForm.content} onChange={e=>setVmForm({...vmForm,content:e.target.value})} className={`${inputCls} resize-none`} style={inputStyle}/></Field>
     <div className="flex gap-3 pt-2">
-      <button type="button" onClick={closeModal} className="flex-1 py-3 rounded-xl border font-bold text-sm hover:bg-gray-50" style={{ borderColor: C.border, color: C.muted }}>Cancel</button>
-      <button type="submit" className="flex-[2] py-3 rounded-xl text-sm font-bold text-white" style={{ background: C.brand }}>{editItem?"Update":"Add"}</button>
+      <button type="button" onClick={closeModal} className={formBtnSecondary}>Cancel</button>
+      <button type="submit" className={`${formBtnPrimary} flex-[2]`} style={{ background: C.brand }}>{editItem?"Update":"Add"}</button>
     </div>
   </form>
 );
@@ -286,8 +280,8 @@ const CoreValueForm = ({ editItem, cvForm, setCvForm, closeModal, fetchData, not
     <Field label="Description"><textarea required rows={3} value={cvForm.description} onChange={e=>setCvForm({...cvForm,description:e.target.value})} className={`${inputCls} resize-none`} style={inputStyle}/></Field>
     <Field label="Gradient (Tailwind classes)"><input value={cvForm.color} onChange={e=>setCvForm({...cvForm,color:e.target.value})} placeholder="from-amber-500 to-orange-500" className={inputCls} style={inputStyle}/></Field>
     <div className="flex gap-3 pt-2">
-      <button type="button" onClick={closeModal} className="flex-1 py-3 rounded-xl border font-bold text-sm hover:bg-gray-50" style={{ borderColor: C.border, color: C.muted }}>Cancel</button>
-      <button type="submit" className="flex-[2] py-3 rounded-xl text-sm font-bold text-white" style={{ background: C.brand }}>{editItem?"Update":"Add"}</button>
+      <button type="button" onClick={closeModal} className={formBtnSecondary}>Cancel</button>
+      <button type="submit" className={`${formBtnPrimary} flex-[2]`} style={{ background: C.brand }}>{editItem?"Update":"Add"}</button>
     </div>
   </form>
 );
@@ -316,8 +310,8 @@ const CourseForm = ({ editItem, courseForm, setCourseForm, closeModal, fetchData
     <Field label="Eligibility"><textarea rows={2} value={courseForm.eligibility} onChange={e=>setCourseForm({...courseForm,eligibility:e.target.value})} className={`${inputCls} resize-none`} style={inputStyle}/></Field>
     <Field label="Highlights (comma separated)"><textarea rows={2} value={courseForm.highlights} onChange={e=>setCourseForm({...courseForm,highlights:e.target.value})} className={`${inputCls} resize-none`} style={inputStyle}/></Field>
     <div className="flex gap-3 pt-2">
-      <button type="button" onClick={closeModal} className="flex-1 py-3 rounded-xl border font-bold text-sm hover:bg-gray-50" style={{ borderColor: C.border, color: C.muted }}>Cancel</button>
-      <button type="submit" className="flex-[2] py-3 rounded-xl text-sm font-bold text-white flex items-center justify-center gap-2" style={{ background: C.brand }}><Save size={16}/>{editItem?"Save Changes":"Create"}</button>
+      <button type="button" onClick={closeModal} className={formBtnSecondary}>Cancel</button>
+      <button type="submit" className={`${formBtnPrimary} flex-[2]`} style={{ background: C.brand }}><Save size={16}/>{editItem?"Save Changes":"Create"}</button>
     </div>
   </form>
 );
@@ -343,8 +337,8 @@ const StepForm = ({ editItem, stepForm, setStepForm, closeModal, fetchData, noti
     <Field label="Title"><input required value={stepForm.title} onChange={e=>setStepForm({...stepForm,title:e.target.value})} className={inputCls} style={inputStyle}/></Field>
     <Field label="Description"><textarea required rows={3} value={stepForm.description} onChange={e=>setStepForm({...stepForm,description:e.target.value})} className={`${inputCls} resize-none`} style={inputStyle}/></Field>
     <div className="flex gap-3 pt-2">
-      <button type="button" onClick={closeModal} className="flex-1 py-3 rounded-xl border font-bold text-sm hover:bg-gray-50" style={{ borderColor: C.border, color: C.muted }}>Cancel</button>
-      <button type="submit" className="flex-[2] py-3 rounded-xl text-sm font-bold text-white" style={{ background: C.brand }}>{editItem?"Save":"Add"} Step</button>
+      <button type="button" onClick={closeModal} className={formBtnSecondary}>Cancel</button>
+      <button type="submit" className={`${formBtnPrimary} flex-[2]`} style={{ background: C.brand }}>{editItem?"Save":"Add"} Step</button>
     </div>
   </form>
 );
@@ -374,8 +368,8 @@ const RuleForm = ({ editItem, ruleForm, setRuleForm, closeModal, fetchData, noti
     <Field label="Title"><input required value={ruleForm.title} onChange={e=>setRuleForm({...ruleForm,title:e.target.value})} className={inputCls} style={inputStyle}/></Field>
     <Field label="Description"><textarea required rows={4} value={ruleForm.description} onChange={e=>setRuleForm({...ruleForm,description:e.target.value})} className={`${inputCls} resize-none`} style={inputStyle}/></Field>
     <div className="flex gap-3 pt-2">
-      <button type="button" onClick={closeModal} className="flex-1 py-3 rounded-xl border font-bold text-sm hover:bg-gray-50" style={{ borderColor: C.border, color: C.muted }}>Cancel</button>
-      <button type="submit" className="flex-[2] py-3 rounded-xl text-sm font-bold text-white" style={{ background: C.brand }}>{editItem?"Save":"Add"} Rule</button>
+      <button type="button" onClick={closeModal} className={formBtnSecondary}>Cancel</button>
+      <button type="submit" className={`${formBtnPrimary} flex-[2]`} style={{ background: C.brand }}>{editItem?"Save":"Add"} Rule</button>
     </div>
   </form>
 );
@@ -394,8 +388,8 @@ const BondForm = ({ editItem, bondForm, setBondForm, closeModal, fetchData, noti
     <Field label="Content"><textarea required rows={4} value={bondForm.content} onChange={e=>setBondForm({...bondForm,content:e.target.value})} className={`${inputCls} resize-none`} style={inputStyle}/></Field>
     <Field label="Display Order"><input type="number" value={bondForm.order} onChange={e=>setBondForm({...bondForm,order:parseInt(e.target.value)})} className={inputCls} style={inputStyle}/></Field>
     <div className="flex gap-3 pt-2">
-      <button type="button" onClick={closeModal} className="flex-1 py-3 rounded-xl border font-bold text-sm hover:bg-gray-50" style={{ borderColor: C.border, color: C.muted }}>Cancel</button>
-      <button type="submit" className="flex-[2] py-3 rounded-xl text-sm font-bold text-white" style={{ background: C.brand }}>{editItem?"Update":"Add"}</button>
+      <button type="button" onClick={closeModal} className={formBtnSecondary}>Cancel</button>
+      <button type="submit" className={`${formBtnPrimary} flex-[2]`} style={{ background: C.brand }}>{editItem?"Update":"Add"}</button>
     </div>
   </form>
 );
@@ -421,32 +415,55 @@ const GuidelineForm = ({ editItem, guidelineForm, setGuidelineForm, closeModal, 
     </div>
     <Field label="Points (one per line)"><textarea required rows={6} value={guidelineForm.points} onChange={e=>setGuidelineForm({...guidelineForm,points:e.target.value})} className={`${inputCls} resize-none`} style={inputStyle}/></Field>
     <div className="flex gap-3 pt-2">
-      <button type="button" onClick={closeModal} className="flex-1 py-3 rounded-xl border font-bold text-sm hover:bg-gray-50" style={{ borderColor: C.border, color: C.muted }}>Cancel</button>
-      <button type="submit" className="flex-[2] py-3 rounded-xl text-sm font-bold text-white" style={{ background: C.brand }}>{editItem?"Update":"Add"}</button>
+      <button type="button" onClick={closeModal} className={formBtnSecondary}>Cancel</button>
+      <button type="submit" className={`${formBtnPrimary} flex-[2]`} style={{ background: C.brand }}>{editItem?"Update":"Add"}</button>
     </div>
   </form>
 );
 
 const DeptForm = ({ editItem, deptForm, setDeptForm, closeModal, fetchData, notify }) => (
-  <form onSubmit={async e => { 
-    e.preventDefault(); 
-    const url=editItem?`/departments/${editItem._id}`:"/departments"; 
-    try{
-      if(editItem) await axiosInstance.put(url,deptForm); 
-      else await axiosInstance.post("/departments",deptForm); 
+  <form onSubmit={async e => {
+    e.preventDefault();
+    const fd = new FormData();
+    fd.append("name", deptForm.name || "");
+    fd.append("slug", deptForm.slug || "");
+    fd.append("category", deptForm.category || "Nursing Department");
+    fd.append("description", deptForm.description || "");
+    if (deptForm.logo instanceof File) fd.append("logo", deptForm.logo);
+    const url = editItem ? `/departments/${editItem._id}` : "/departments";
+    try {
+      if (editItem) await axiosInstance.put(url, fd);
+      else await axiosInstance.post(url, fd);
       notify("Saved"); closeModal(); fetchData();
-    } catch { notify("Failed","error"); }
-  }} className="space-y-4">
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-      <Field label="Name"><input required value={deptForm.name} onChange={e=>setDeptForm({...deptForm,name:e.target.value})} className={inputCls} style={inputStyle}/></Field>
-      <Field label="URL Slug (fixed ID)"><input required value={deptForm.slug} onChange={e=>setDeptForm({...deptForm,slug:e.target.value.toLowerCase().replace(/\s+/g,'-')})} className={inputCls} style={inputStyle} placeholder="e.g. fundamentals"/></Field>
-      <Field label="Category"><input required value={deptForm.category} onChange={e=>setDeptForm({...deptForm,category:e.target.value})} className={inputCls} style={inputStyle}/></Field>
-      <Field label="Icon (emoji)"><input value={deptForm.icon} onChange={e=>setDeptForm({...deptForm,icon:e.target.value})} className={inputCls} style={inputStyle}/></Field>
+    } catch { notify("Failed", "error"); }
+  }} className="space-y-5">
+
+    {/* Logo upload — full width, prominent */}
+    <div className="flex flex-col items-center gap-3 p-6 rounded-2xl border-2 border-dashed bg-white" style={{ borderColor: "#D1C7BC" }}>
+      {deptForm.logo instanceof File ? (
+        <img src={URL.createObjectURL(deptForm.logo)} style={{ width: '80px', height: '80px', objectFit: 'cover' }} className="rounded-2xl border-2 shadow-md" alt="preview"/>
+      ) : editItem?.logoUrl ? (
+        <img src={imgUrl(editItem.logoUrl)} style={{ width: '80px', height: '80px', objectFit: 'cover' }} className="rounded-2xl border-2 shadow-md" alt="current logo"/>
+      ) : (
+        <div style={{ width: '80px', height: '80px' }} className="rounded-2xl flex items-center justify-center text-4xl bg-[#FDF0E6]">🏥</div>
+      )}
+      <label className="flex items-center gap-2 px-5 py-2.5 rounded-xl cursor-pointer text-sm font-semibold text-white shadow hover:opacity-90 transition" style={{ background: "#6B3F1D" }}>
+        <ImageIcon size={15}/>
+        {deptForm.logo instanceof File ? "Change Logo" : editItem?.logoUrl ? "Replace Logo" : "Upload Department Logo"}
+        <input type="file" accept="image/*" className="hidden" onChange={e => setDeptForm({...deptForm, logo: e.target.files[0]})}/>
+      </label>
+      <p className="text-xs text-gray-400">PNG, JPG or WEBP · Recommended 200×200px</p>
     </div>
-    <Field label="Short Description"><input required value={deptForm.description} onChange={e=>setDeptForm({...deptForm,description:e.target.value})} className={inputCls} style={inputStyle}/></Field>
+
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <Field label="Department Name"><input required value={deptForm.name} onChange={e=>setDeptForm({...deptForm,name:e.target.value})} className={inputCls} style={inputStyle} placeholder="e.g. Fundamentals of Nursing"/></Field>
+      <Field label="URL Slug" hint="Unique ID used in the URL, no spaces"><input required value={deptForm.slug} onChange={e=>setDeptForm({...deptForm,slug:e.target.value.toLowerCase().replace(/\s+/g,'-')})} className={inputCls} style={inputStyle} placeholder="e.g. fundamentals"/></Field>
+      <Field label="Category"><input required value={deptForm.category} onChange={e=>setDeptForm({...deptForm,category:e.target.value})} className={inputCls} style={inputStyle} placeholder="e.g. Nursing Department"/></Field>
+    </div>
+    <Field label="Short Description"><input required value={deptForm.description} onChange={e=>setDeptForm({...deptForm,description:e.target.value})} className={inputCls} style={inputStyle} placeholder="Brief description of the department"/></Field>
     <div className="flex gap-3 pt-2">
-      <button type="button" onClick={closeModal} className="flex-1 py-3 rounded-xl border font-bold text-sm hover:bg-gray-50" style={{ borderColor: C.border, color: C.muted }}>Cancel</button>
-      <button type="submit" className="flex-[2] py-3 rounded-xl text-sm font-bold text-white" style={{ background: C.brand }}>{editItem?"Update":"Create"}</button>
+      <button type="button" onClick={closeModal} className={formBtnSecondary}>Cancel</button>
+      <button type="submit" className={`${formBtnPrimary} flex-[2]`} style={{ background: C.brand }}>{editItem?"Update Department":"Create Department"}</button>
     </div>
   </form>
 );
@@ -583,30 +600,38 @@ const SidebarContent = ({ onClose, activeTab, setActiveTab, selectedDept, setSel
   </div>
 );
 
-const Sidebar = ({ sidebarOpen, setSidebarOpen, ...props }) => (
+const Sidebar = ({ isMobile, sidebarOpen, setSidebarOpen, ...props }) => (
   <>
-    <aside className="hidden lg:flex flex-col w-80 shrink-0 h-full border-r border-black/10"
-           style={{ background: C.brand }}>
-      <SidebarContent onClose={null} {...props} />
-    </aside>
+    {/* Desktop Sidebar */}
+    {!isMobile && (
+      <aside className="flex flex-col w-80 shrink-0 h-full border-r border-black/10"
+             style={{ background: C.brand }}>
+        <SidebarContent onClose={null} {...props} />
+      </aside>
+    )}
 
-    <AnimatePresence>
-      {sidebarOpen && (
-        <>
-          <motion.div
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            onClick={() => setSidebarOpen(false)}
-            className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm lg:hidden"/>
-          <motion.aside
-            initial={{ x: -340 }} animate={{ x: 0 }} exit={{ x: -340 }}
-            transition={{ type: "tween", duration: 0.3 }}
-            className="fixed inset-y-0 left-0 z-[110] w-80 flex flex-col lg:hidden shadow-2xl"
-            style={{ background: C.brand }}>
-            <SidebarContent onClose={() => setSidebarOpen(false)} {...props} />
-          </motion.aside>
-        </>
-      )}
-    </AnimatePresence>
+    {/* Mobile Sidebar */}
+    {isMobile && typeof document !== 'undefined' && createPortal(
+      <AnimatePresence>
+        {sidebarOpen && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              onClick={() => setSidebarOpen(false)}
+              className="fixed inset-0 z-[9999] bg-black/60 backdrop-blur-sm"
+              style={{ position: 'fixed', top: 0, right: 0, bottom: 0, left: 0 }}/>
+            <motion.aside
+              initial={{ x: -340 }} animate={{ x: 0 }} exit={{ x: -340 }}
+              transition={{ type: "tween", duration: 0.3 }}
+              className="fixed inset-y-0 left-0 z-[10000] w-80 flex flex-col shadow-2xl"
+              style={{ background: C.brand, position: 'fixed', top: 0, bottom: 0, left: 0 }}>
+              <SidebarContent onClose={() => setSidebarOpen(false)} {...props} />
+            </motion.aside>
+          </>
+        )}
+      </AnimatePresence>,
+      document.body
+    )}
   </>
 );
 
@@ -684,7 +709,7 @@ const AcademicTab = ({ programs, academicContent, setAcademicContent, axiosInsta
   <div className="space-y-6">
     <SectionHeader icon={BookOpen} title="Academic Programs"
       subtitle={`${programs.length} programs currently active`}
-      action={<AddBtn onClick={() => { setProgramForm({title:"",description:"",duration:"",category:"Undergraduate",courses:"",images:null}); openModal("program"); }} label="Add New Program"/>}/>
+      action={<AddBtn onClick={() => { setProgramForm({title:"",description:"",duration:"",category:"Undergraduate",courses:"",image:null}); openModal("program"); }} label="Add New Program"/>}/>
 
     <div className="p-6 rounded-2xl space-y-4 shadow-sm" style={{ background: C.surface, border:`1px solid ${C.border}` }}>
       <p className="text-sm font-bold uppercase tracking-widest" style={{ color: C.muted }}>Section Banner Content</p>
@@ -707,7 +732,7 @@ const AcademicTab = ({ programs, academicContent, setAcademicContent, axiosInsta
             <img src={imgUrl(p.imageUrl)} className="w-full h-full object-cover" alt=""/>
           </div>}
           badge={p.category} title={p.title} sub={p.duration}
-          onEdit={() => { setProgramForm({ title:p.title,description:p.description,duration:p.duration,category:p.category,courses:p.courses?.join(", ")||"",images:null }); openModal("program",p); }}
+          onEdit={() => { setProgramForm({ title:p.title,description:p.description,duration:p.duration,category:p.category,courses:p.courses?.join(", ")||"",image:null }); openModal("program",p); }}
           onDelete={() => del(`/programs/${p._id}`)}/>
       ))}
       {programs.length === 0 && <EmptyState icon={BookOpen} text="No programs registered yet"/>}
@@ -995,27 +1020,42 @@ const DepartmentsTab = ({ selectedDept, setSelectedDept, departments, deptForm, 
   if (!selectedDept) return (
     <div className="space-y-6">
       <SectionHeader icon={Building2} title="Academic Departments" subtitle={`Managing ${departments.length} nursing specialties`}
-        action={<AddBtn onClick={() => { setDeptForm({name:"",slug:"",category:"Nursing Department",description:"",overview:"",overview2:"",faculty:[],facilities:[],activities:[],icon:"🏥"}); openModal("department"); }} label="New Department"/>}/>
+        action={<AddBtn onClick={() => { setDeptForm({name:"",slug:"",category:"Nursing Department",description:"",overview:"",overview2:"",faculty:[],facilities:[],activities:[],logo:null}); openModal("department"); }} label="New Department"/>}/>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
         {departments.map(d => (
-          <motion.div key={d._id} whileHover={{ y:-4, shadow:"0 12px 24px -10px rgba(0,0,0,0.1)" }}
-            onClick={() => { setSelectedDept(d); setDeptForm({...d}); setDeptSub("Overview"); }}
-            className="p-6 rounded-3xl cursor-pointer group transition-all relative overflow-hidden"
+          <motion.div key={d._id} whileHover={{ y:-4 }}
+            className="p-6 rounded-3xl group transition-all relative overflow-hidden"
             style={{ background: C.surface, border:`1px solid ${C.border}` }}>
             <div className={`absolute top-0 right-0 w-20 h-20 bg-amber-500 opacity-[0.02] rounded-bl-[80px] group-hover:opacity-[0.06] transition-all`}/>
-            <div className="flex items-center gap-4 mb-5">
-              <span className="text-4xl group-hover:scale-110 transition-transform duration-300 block drop-shadow-sm">{d.icon||"🏥"}</span>
-              <div className="min-w-0">
-                <p className="font-bold text-sm truncate leading-tight mb-1" style={{ color: C.text }}>{d.name}</p>
-                <Pill color={C.brand}>{d.category}</Pill>
-              </div>
+            {/* Edit / Delete row */}
+            <div className="flex justify-end gap-1.5 mb-3">
+              <IconBtn onClick={e => { e.stopPropagation(); setDeptForm({...d, logo: null}); openModal("department", d); }}>
+                <Edit3 size={14}/>
+              </IconBtn>
+              <IconBtn danger onClick={e => { e.stopPropagation(); del(`/departments/${d._id}`); }}>
+                <Trash2 size={14}/>
+              </IconBtn>
             </div>
-            <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-wider" style={{ color: C.muted }}>
-              <div className="flex gap-3">
-                <span>{d.faculty?.length||0} Staff</span>
-                <span>{d.facilities?.length||0} Labs</span>
+            {/* Card body — click to open detail editor */}
+            <div className="cursor-pointer" onClick={() => { setSelectedDept(d); setDeptForm({...d}); setDeptSub("Overview"); }}>
+              <div className="flex items-center gap-4 mb-5">
+                {d.logoUrl ? (
+                  <img src={imgUrl(d.logoUrl)} className="w-12 h-12 rounded-xl object-cover shrink-0 border shadow-sm group-hover:scale-105 transition-transform duration-300" alt=""/>
+                ) : (
+                  <div className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl shrink-0" style={{ background: C.accentSoft }}>🏥</div>
+                )}
+                <div className="min-w-0">
+                  <p className="font-bold text-sm truncate leading-tight mb-1" style={{ color: C.text }}>{d.name}</p>
+                  <Pill color={C.brand}>{d.category}</Pill>
+                </div>
               </div>
-              <ChevronRight size={14} className="group-hover:translate-x-1 transition-transform" style={{ color: C.accent }}/>
+              <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-wider" style={{ color: C.muted }}>
+                <div className="flex gap-3">
+                  <span>{d.faculty?.length||0} Staff</span>
+                  <span>{d.facilities?.length||0} Labs</span>
+                </div>
+                <ChevronRight size={14} className="group-hover:translate-x-1 transition-transform" style={{ color: C.accent }}/>
+              </div>
             </div>
           </motion.div>
         ))}
@@ -1032,7 +1072,11 @@ const DepartmentsTab = ({ selectedDept, setSelectedDept, departments, deptForm, 
           <button onClick={() => setSelectedDept(null)} className="p-3 rounded-2xl hover:bg-gray-50 transition-all shrink-0 border shadow-sm group" style={{ borderColor: C.border, color: C.muted }}>
             <ArrowLeft size={20} className="group-hover:-translate-x-1 transition-transform"/>
           </button>
-          <span className="text-4xl shrink-0 drop-shadow-sm">{deptForm.icon||"🏥"}</span>
+          {deptForm.logoUrl || selectedDept.logoUrl ? (
+            <img src={imgUrl(deptForm.logoUrl || selectedDept.logoUrl)} className="w-12 h-12 rounded-xl object-cover shrink-0 border shadow-sm" alt=""/>
+          ) : (
+            <span className="text-3xl shrink-0 drop-shadow-sm">🏥</span>
+          )}
           <div className="min-w-0 flex-1">
             <p className="font-bold text-base sm:text-xl whitespace-nowrap overflow-hidden text-ellipsis leading-tight" style={{ color: C.text }}>{selectedDept.name}</p>
             <div className="flex items-center gap-2 mt-1">
@@ -1045,7 +1089,19 @@ const DepartmentsTab = ({ selectedDept, setSelectedDept, departments, deptForm, 
         <button
           onClick={async () => {
             try {
-              await axiosInstance.put(`/departments/${selectedDept._id}`, deptForm);
+              const fd = new FormData();
+              fd.append("name", deptForm.name || "");
+              fd.append("category", deptForm.category || "");
+              fd.append("description", deptForm.description || "");
+              fd.append("overview", deptForm.overview || "");
+              fd.append("overview2", deptForm.overview2 || "");
+              if (deptForm.faculty) fd.append("faculty", JSON.stringify(deptForm.faculty));
+              if (deptForm.facilities) fd.append("facilities", JSON.stringify(deptForm.facilities));
+              if (deptForm.activities) fd.append("activities", JSON.stringify(deptForm.activities));
+              if (deptForm.logo instanceof File) {
+                fd.append("logo", deptForm.logo);
+              }
+              await axiosInstance.put(`/departments/${selectedDept._id}`, fd);
               notify("Department Updated Successfully");
               fetchData();
             } catch { notify("Failed to save changes","error"); }
@@ -1062,11 +1118,25 @@ const DepartmentsTab = ({ selectedDept, setSelectedDept, departments, deptForm, 
         <div className="p-7 rounded-3xl shadow-sm border" style={{ background: C.surface, borderColor: C.border }}>
           {deptSub === "Overview" && (
             <div className="space-y-5 animate-in fade-in slide-in-from-bottom-2 duration-300">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-5 items-end">
                 <Field label="Department Display Name"><input value={deptForm.name} onChange={e=>setDeptForm({...deptForm,name:e.target.value})} className={inputCls} style={inputStyle}/></Field>
-                <Field label="URL Slug (fixed ID)"><input value={deptForm.slug} onChange={e=>setDeptForm({...deptForm,slug:e.target.value})} className={inputCls} style={inputStyle} readOnly/></Field>
                 <Field label="Academic Category"><input value={deptForm.category} onChange={e=>setDeptForm({...deptForm,category:e.target.value})} className={inputCls} style={inputStyle}/></Field>
-                <Field label="Identity Icon (Emoji)"><input value={deptForm.icon} onChange={e=>setDeptForm({...deptForm,icon:e.target.value})} className={inputCls} style={inputStyle}/></Field>
+                <Field label="Department Logo">
+                  <div className="flex items-center gap-3">
+                    {deptForm.logo instanceof File ? (
+                      <img src={URL.createObjectURL(deptForm.logo)} className="h-12 w-12 object-cover rounded-xl border" alt="preview"/>
+                    ) : deptForm.logoUrl || selectedDept.logoUrl ? (
+                      <img src={imgUrl(deptForm.logoUrl || selectedDept.logoUrl)} className="h-12 w-12 object-cover rounded-xl border" alt="current logo"/>
+                    ) : (
+                      <div className="h-12 w-12 rounded-xl flex items-center justify-center text-xl bg-gray-100">🏥</div>
+                    )}
+                    <label className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl border bg-white cursor-pointer hover:bg-gray-50 transition text-sm text-gray-500" style={{ borderColor: "#E2E8F0" }}>
+                      <ImageIcon size={16}/>
+                      {deptForm.logo instanceof File ? "Change Logo" : "Upload Image"}
+                      <input type="file" accept="image/*" className="hidden" onChange={e => setDeptForm({...deptForm, logo: e.target.files[0]})}/>
+                    </label>
+                  </div>
+                </Field>
               </div>
               <Field label="Short Introduction"><input value={deptForm.description} onChange={e=>setDeptForm({...deptForm,description:e.target.value})} className={inputCls} style={inputStyle}/></Field>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
@@ -1443,6 +1513,13 @@ const AdminPanel = ({ onLogout }) => {
   const [modalType, setModalType] = useState("");
   const [editItem, setEditItem] = useState(null);
 
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 1024);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   // Data
   const [sliders, setSliders] = useState([]);
   const [programs, setPrograms] = useState([]);
@@ -1588,7 +1665,7 @@ const AdminPanel = ({ onLogout }) => {
   }[modalType] || {};
 
   return (
-    <div className="flex w-full h-screen bg-gray-50 text-gray-900 font-sans overflow-hidden" style={{ height: '100dvh' }}>
+    <div className={`flex w-full bg-gray-50 text-gray-900 font-sans`} style={{ minHeight: isMobile ? '100dvh' : 'auto', height: isMobile ? 'auto' : '100dvh', overflow: isMobile ? 'visible' : 'hidden' }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap');
         * { font-family: 'DM Sans', sans-serif; box-sizing: border-box; }
@@ -1599,12 +1676,12 @@ const AdminPanel = ({ onLogout }) => {
       `}</style>
 
       <Toast note={note}/>
-      <Sidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} activeTab={activeTab} setActiveTab={setActiveTab} selectedDept={selectedDept} setSelectedDept={setSelectedDept} navItems={navItems} onLogout={onLogout}/>
+      <Sidebar isMobile={isMobile} sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} activeTab={activeTab} setActiveTab={setActiveTab} selectedDept={selectedDept} setSelectedDept={setSelectedDept} navItems={navItems} onLogout={onLogout}/>
       
-      <main className="flex-1 flex flex-col overflow-hidden">
+      <main className={`flex-1 flex flex-col ${isMobile ? '' : 'overflow-hidden'}`}>
         <Header setSidebarOpen={setSidebarOpen} selectedDept={selectedDept} activeTab={activeTab}/>
         
-        <div className="flex-1 overflow-y-auto p-4 lg:p-8 custom-scrollbar">
+        <div className={`flex-1 p-4 lg:p-8 custom-scrollbar ${isMobile ? '' : 'overflow-y-auto'}`}>
           <div className="max-w-7xl mx-auto">
             {loading && (
               <div className="flex items-center justify-center py-20">

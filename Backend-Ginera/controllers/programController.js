@@ -28,12 +28,11 @@ exports.createProgram = async (req, res) => {
   if (dbError) return dbError;
 
   try {
-    const imageUrls = req.files && req.files.length > 0 ? req.files.map(f => `/uploads/${f.filename}`) : [];
-    const imageUrl = imageUrls.length > 0 ? imageUrls[0] : '';
+    const imageUrl = req.file ? `/uploads/${req.file.filename}` : '';
     const programData = {
       ...req.body,
       imageUrl,
-      imageUrls,
+      imageUrls: imageUrl ? [imageUrl] : [],
       courses: req.body.courses ? JSON.parse(req.body.courses) : []
     };
     const program = await programService.createProgram(programData);
@@ -50,9 +49,9 @@ exports.updateProgram = async (req, res) => {
   try {
     const { id } = req.params;
     let updateData = { ...req.body };
-    if (req.files && req.files.length > 0) {
-      updateData.imageUrls = req.files.map(f => `/uploads/${f.filename}`);
-      updateData.imageUrl = updateData.imageUrls[0];
+    if (req.file) {
+      updateData.imageUrl = `/uploads/${req.file.filename}`;
+      updateData.imageUrls = [updateData.imageUrl];
     }
     if (req.body.courses) {
       updateData.courses = JSON.parse(req.body.courses);

@@ -1289,9 +1289,10 @@ const HomePage=({ onNavigate }) => {
                     onHoverEnd={(e) => e.currentTarget.style.boxShadow = "var(--card-shadow)"}
                   >
                     <div style={{ position: "relative", height: 200, overflow: "hidden", flexShrink: 0 }}>
-                      <ImageSlider 
-                        images={prog.imageUrls && prog.imageUrls.length > 0 ? prog.imageUrls : [prog.imageUrl || prog.image || "/placeholder.png"]} 
-                        interval={3000 + (i * 500)} // Stagger the slider animations a bit
+                      <motion.img 
+                        src={imageUrl} 
+                        alt={prog.title}
+                        style={{ width: "100%", height: "100%", objectFit: "cover" }} 
                       />
                       <div style={{
                         position: "absolute", inset: 0,

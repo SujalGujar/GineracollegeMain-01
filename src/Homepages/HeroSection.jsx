@@ -154,7 +154,7 @@ const HeroSection = ({ departmentName }) => {
       </div>
 
       {/* Slide Dots */}
-      <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 flex items-center gap-2 z-30">
+      <div className="absolute bottom-6 right-12 flex items-center gap-2 z-30">
         {slides.map((_, index) => (
           <button
             key={index}
@@ -164,31 +164,7 @@ const HeroSection = ({ departmentName }) => {
         ))}
       </div>
 
-      {/* Scroll Indicator */}
-      <motion.div
-        className="absolute right-8 bottom-10 z-30 flex flex-col items-center gap-2"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.5, duration: 0.8 }}
-      >
-        <span
-          style={{
-            fontFamily: "'DM Sans', sans-serif",
-            fontSize: "0.6rem",
-            letterSpacing: "0.25em",
-            color: "rgba(255,255,255,0.4)",
-            textTransform: "uppercase",
-            writingMode: "vertical-rl",
-          }}
-        >
-          Scroll
-        </span>
-        <motion.div
-          className="scroll-line"
-          animate={{ scaleY: [0, 1, 0], originY: 0 }}
-          transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}
-        />
-      </motion.div>
+
     </section>
   );
 }

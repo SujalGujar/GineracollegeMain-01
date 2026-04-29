@@ -43,9 +43,9 @@ const departmentSchema = new mongoose.Schema({
   activities: [{
     type: String
   }],
-  icon: {
+  logoUrl: {
     type: String,
-    default: '🏥'
+    default: ''
   },
   createdAt: {
     type: Date,
