@@ -4,7 +4,8 @@ import {
   LayoutDashboard, Image as ImageIcon, BookOpen, Users, Settings,
   LogOut, Plus, Trash2, Edit3, ChevronRight, Upload, FileText,
   X, Menu, Save, CheckCircle2, AlertCircle, Layers, Info,
-  ArrowLeft, Building2, Zap, ChevronDown, ChevronUp, Eye
+  ArrowLeft, Building2, Zap, ChevronDown, ChevronUp, Eye,
+  GraduationCap, Phone, MapPin
 } from "lucide-react";
 import axiosInstance from "../api/axiosInstance";
 
@@ -52,8 +53,8 @@ const Toast = ({ note }) => (
   <AnimatePresence>
     {note && (
       <motion.div
-        initial={{ opacity: 0, y: -24 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -24 }}
-        className="fixed top-4 left-1/2 -translate-x-1/2 z-[200] flex items-center gap-3 px-5 py-3 rounded-2xl shadow-2xl border text-sm font-semibold"
+        initial={{ opacity: 0, y: 24, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 24, scale: 0.95 }}
+        className="fixed bottom-6 right-6 z-[9999] flex items-center gap-3 px-5 py-4 rounded-2xl shadow-2xl border text-sm font-semibold"
         style={{
           background: note.type === "error" ? C.dangerSoft : C.successSoft,
           borderColor: note.type === "error" ? "#FCA5A5" : "#86EFAC",
@@ -83,9 +84,11 @@ const Modal = ({ show, onClose, title, subtitle, children }) => (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
           onClick={onClose} className="absolute inset-0 bg-black/50 backdrop-blur-sm"/>
         <motion.div
-          initial={{ opacity: 0, y: 60 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 60 }}
-          className="relative w-full sm:max-w-2xl max-h-[92dvh] flex flex-col rounded-t-3xl sm:rounded-3xl overflow-hidden shadow-2xl"
-          style={{ background: C.surface }}>
+          initial={{ opacity: 0, scale: 0.95 }} 
+          animate={{ opacity: 1, scale: 1 }} 
+          exit={{ opacity: 0, scale: 0.95 }}
+          className="fixed top-[50%] left-[50%] z-[101] w-[95%] sm:w-[95%] md:w-[90%] lg:max-w-6xl max-h-[95dvh] flex flex-col rounded-3xl overflow-hidden shadow-2xl"
+          style={{ background: C.surface, transform: "translate(-50%, -50%)" }}>
           <div className="flex items-start justify-between p-6 border-b shrink-0" style={{ borderColor: C.border, background: C.bg }}>
             <div>
               <h3 className="text-xl font-bold" style={{ color: C.text }}>{title}</h3>
@@ -111,21 +114,30 @@ const Modal = ({ show, onClose, title, subtitle, children }) => (
 const ProgramForm = ({ editItem, programForm, setProgramForm, closeModal, fetchData, notify }) => (
   <form onSubmit={async e => { 
     e.preventDefault(); 
-    if (!editItem && !programForm.image) {
-      return notify("Please select a cover image", "error");
+    if (!editItem && (!programForm.images || programForm.images.length === 0)) {
+      return notify("Please select cover images", "error");
     }
-    const fd=new FormData(); 
-    Object.entries(programForm).forEach(([k,v]) => { 
-      if(k==="courses") fd.append(k,JSON.stringify(typeof v === 'string' ? v.split(",").map(c=>c.trim()).filter(Boolean) : v)); 
-      else if(k==="image"&&v instanceof File) fd.append("image",v); 
-      else if(k!=="image" && k!=="courses") fd.append(k,v||""); 
-    }); 
-    const url=editItem?`/programs/${editItem._id}`:"/programs"; 
-    try{
-      if(editItem) await axiosInstance.put(url,fd); 
-      else await axiosInstance.post(url,fd); 
-      notify(editItem?"Updated":"Created"); closeModal(); fetchData();
-    } catch { notify("Failed","error"); }
+    const fd = new FormData();
+    fd.append("title", programForm.title || "");
+    fd.append("description", programForm.description || "");
+    fd.append("duration", programForm.duration || "");
+    fd.append("category", programForm.category || "Undergraduate");
+    fd.append("courses", JSON.stringify(
+      typeof programForm.courses === 'string'
+        ? programForm.courses.split(",").map(c => c.trim()).filter(Boolean)
+        : (programForm.courses || [])
+    ));
+    if (programForm.images && programForm.images.length > 0) {
+      for (let i = 0; i < programForm.images.length; i++) {
+        fd.append("images", programForm.images[i]);
+      }
+    }
+    const url = editItem ? `/programs/${editItem._id}` : "/programs";
+    try {
+      if (editItem) await axiosInstance.put(url, fd);
+      else await axiosInstance.post(url, fd);
+      notify(editItem ? "Updated" : "Created"); closeModal(); fetchData();
+    } catch { notify("Failed", "error"); }
   }} className="space-y-4">
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
       <Field label="Program Title"><input required value={programForm.title} onChange={e=>setProgramForm({...programForm,title:e.target.value})} className={inputCls} style={inputStyle} placeholder="e.g. B.Sc. Nursing"/></Field>
@@ -138,11 +150,24 @@ const ProgramForm = ({ editItem, programForm, setProgramForm, closeModal, fetchD
     <Field label="Description"><textarea required rows={3} value={programForm.description} onChange={e=>setProgramForm({...programForm,description:e.target.value})} className={`${inputCls} resize-none`} style={inputStyle}/></Field>
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
       <Field label="Duration"><input value={programForm.duration} onChange={e=>setProgramForm({...programForm,duration:e.target.value})} className={inputCls} style={inputStyle} placeholder="e.g. 4 Years"/></Field>
-      <Field label="Cover Image">
+      <Field label="Cover Images">
         <label className="flex items-center gap-2 px-4 py-2.5 rounded-xl border cursor-pointer hover:bg-gray-50 transition text-sm" style={{ borderColor: C.border, color: C.muted }}>
-          <ImageIcon size={16}/>{programForm.image && typeof programForm.image === 'object' ? programForm.image.name : "Select image"}
-          <input type="file" className="hidden" onChange={e=>setProgramForm({...programForm,image:e.target.files[0]})} />
+          <ImageIcon size={16}/>{programForm.images && programForm.images.length > 0 ? `${programForm.images.length} files selected` : "Select images"}
+          <input type="file" multiple className="hidden" onChange={e=>setProgramForm({...programForm,images:e.target.files})} />
         </label>
+        {programForm.images && programForm.images.length > 0 ? (
+          <div className="flex gap-2 mt-2 overflow-x-auto pb-1 custom-scrollbar">
+            {Array.from(programForm.images).map((file, i) => (
+              <img key={i} src={URL.createObjectURL(file)} className="w-10 h-10 object-cover rounded-md border shadow-sm shrink-0" alt={`new-${i}`}/>
+            ))}
+          </div>
+        ) : editItem && (editItem.imageUrls?.length > 0 || editItem.imageUrl) ? (
+          <div className="flex gap-2 mt-2 overflow-x-auto pb-1 custom-scrollbar">
+            {(editItem.imageUrls && editItem.imageUrls.length > 0 ? editItem.imageUrls : [editItem.imageUrl]).map((url, i) => (
+              <img key={i} src={imgUrl(url)} className="w-10 h-10 object-cover rounded-md border shadow-sm shrink-0" alt={`existing-${i}`}/>
+            ))}
+          </div>
+        ) : null}
       </Field>
     </div>
     <Field label="Courses (comma separated)"><textarea rows={2} value={programForm.courses} onChange={e=>setProgramForm({...programForm,courses:e.target.value})} className={`${inputCls} resize-none`} style={inputStyle}/></Field>
@@ -659,7 +684,7 @@ const AcademicTab = ({ programs, academicContent, setAcademicContent, axiosInsta
   <div className="space-y-6">
     <SectionHeader icon={BookOpen} title="Academic Programs"
       subtitle={`${programs.length} programs currently active`}
-      action={<AddBtn onClick={() => { setProgramForm({title:"",description:"",duration:"",category:"Undergraduate",courses:"",image:null}); openModal("program"); }} label="Add New Program"/>}/>
+      action={<AddBtn onClick={() => { setProgramForm({title:"",description:"",duration:"",category:"Undergraduate",courses:"",images:null}); openModal("program"); }} label="Add New Program"/>}/>
 
     <div className="p-6 rounded-2xl space-y-4 shadow-sm" style={{ background: C.surface, border:`1px solid ${C.border}` }}>
       <p className="text-sm font-bold uppercase tracking-widest" style={{ color: C.muted }}>Section Banner Content</p>
@@ -682,7 +707,7 @@ const AcademicTab = ({ programs, academicContent, setAcademicContent, axiosInsta
             <img src={imgUrl(p.imageUrl)} className="w-full h-full object-cover" alt=""/>
           </div>}
           badge={p.category} title={p.title} sub={p.duration}
-          onEdit={() => { setProgramForm({ title:p.title,description:p.description,duration:p.duration,category:p.category,courses:p.courses?.join(", ")||"",image:null }); openModal("program",p); }}
+          onEdit={() => { setProgramForm({ title:p.title,description:p.description,duration:p.duration,category:p.category,courses:p.courses?.join(", ")||"",images:null }); openModal("program",p); }}
           onDelete={() => del(`/programs/${p._id}`)}/>
       ))}
       {programs.length === 0 && <EmptyState icon={BookOpen} text="No programs registered yet"/>}
@@ -697,22 +722,24 @@ const TestimonialsTab = ({ testimonials, testimonialForm, setTestimonialForm, op
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
       {testimonials.map(t => (
         <motion.div key={t._id} initial={{ opacity:0, scale:0.95 }} animate={{ opacity:1, scale:1 }}
-          className="p-5 rounded-2xl group relative shadow-sm transition-all hover:shadow-md" style={{ background: C.surface, border:`1px solid ${C.border}` }}>
-          <div className="absolute top-4 right-4 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
-            <IconBtn onClick={() => { setTestimonialForm({name:t.name,role:t.role,content:t.content,rating:t.rating,image:null}); openModal("testimonial",t); }}><Edit3 size={14}/></IconBtn>
-            <IconBtn danger onClick={() => del(`/testimonials/${t._id}`)}><Trash2 size={14}/></IconBtn>
-          </div>
-          <div className="flex items-center gap-4 mb-4">
-            <img src={imgUrl(t.imageUrl)} alt={t.name} className="w-14 h-14 rounded-full object-cover border-2 shadow-inner" style={{ borderColor: C.accentSoft }}/>
-            <div>
-              <p className="font-bold text-sm" style={{ color: C.text }}>{t.name}</p>
-              <p className="text-xs font-medium" style={{ color: C.muted }}>{t.role}</p>
-              <div className="flex gap-0.5 mt-1">
-                {[...Array(5)].map((_,i) => <span key={i} className="text-sm" style={{ color: i < t.rating ? "#F59E0B" : C.border }}>★</span>)}
+          className="p-6 rounded-3xl group relative shadow-md transition-all hover:shadow-lg flex flex-col h-full" style={{ background: C.surface, border:`1px solid ${C.border}` }}>
+          <div className="flex items-start justify-between gap-4 mb-4">
+            <div className="flex items-center gap-4">
+              <img src={imgUrl(t.imageUrl)} alt={t.name} className="w-14 h-14 rounded-full object-cover border-2 shadow-inner" style={{ borderColor: C.accentSoft }}/>
+              <div>
+                <p className="font-bold text-sm leading-tight mb-1" style={{ color: C.text }}>{t.name}</p>
+                <p className="text-xs font-medium" style={{ color: C.muted }}>{t.role}</p>
+                <div className="flex gap-0.5 mt-1">
+                  {[...Array(5)].map((_,i) => <span key={i} className="text-sm" style={{ color: i < t.rating ? "#F59E0B" : C.border }}>★</span>)}
+                </div>
               </div>
             </div>
+            <div className="flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+              <IconBtn onClick={() => { setTestimonialForm({name:t.name,role:t.role,content:t.content,rating:t.rating,image:null}); openModal("testimonial",t); }}><Edit3 size={14}/></IconBtn>
+              <IconBtn danger onClick={() => del(`/testimonials/${t._id}`)}><Trash2 size={14}/></IconBtn>
+            </div>
           </div>
-          <p className="text-xs leading-relaxed italic text-gray-600 line-clamp-4">"{t.content}"</p>
+          <p className="text-sm leading-relaxed italic text-gray-600 line-clamp-4 mt-1 flex-1">"{t.content}"</p>
         </motion.div>
       ))}
       {testimonials.length === 0 && <div className="col-span-full"><EmptyState icon={Users} text="No testimonials available"/></div>}
@@ -789,7 +816,7 @@ const AboutTab = ({ aboutSub, setAboutSub, collegeLogo, setCollegeLogo, logoFile
           <div className="space-y-6">
             <SectionHeader icon={Zap} title="Historical Milestones" subtitle={`Tracing our growth since inception`}
               action={<AddBtn onClick={() => { setMilestoneForm({year:"",event:"",icon:"🎯",color:"#1e3a8a",description:""}); openModal("milestone"); }} label="New Milestone"/>}/>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5" style={{ gap: '1.25rem' }}>
               {milestones.map(m => (
                 <div key={m._id} className="p-5 rounded-2xl group relative transition-all hover:shadow-md" style={{ background: C.surface, border:`1px solid ${C.border}`, borderLeft:`5px solid ${m.color}` }}>
                   <div className="flex items-start gap-4">
@@ -814,9 +841,9 @@ const AboutTab = ({ aboutSub, setAboutSub, collegeLogo, setCollegeLogo, logoFile
            <div className="space-y-6">
              <SectionHeader icon={Info} title="Vision & Mission" subtitle="Strategic direction statements"
                 action={<AddBtn onClick={() => { setVmForm({type:"vision",content:"",order:0}); openModal("visionMission"); }} label="Add Statement"/>}/>
-             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6" style={{ gap: '1.5rem' }}>
                 {["vision","mission"].map(type => (
-                  <div key={type} className="space-y-3">
+                  <div key={type} className="flex flex-col gap-3" style={{ gap: '0.75rem' }}>
                     <p className="text-xs font-bold uppercase tracking-widest pl-2" style={{ color: C.muted }}>{type} Statement</p>
                     {visionMission.filter(v=>v.type===type).map(v => (
                       <div key={v._id} className="p-5 rounded-2xl relative group shadow-sm" style={{ background: C.surface, border:`1px solid ${C.border}` }}>
@@ -837,7 +864,7 @@ const AboutTab = ({ aboutSub, setAboutSub, collegeLogo, setCollegeLogo, logoFile
            <div className="space-y-6">
              <SectionHeader icon={CheckCircle2} title="Institutional Values" subtitle="The pillars of our culture"
                 action={<AddBtn onClick={() => { setCvForm({icon:"🌟",title:"",description:"",color:"from-amber-500 to-orange-500",order:0}); openModal("coreValue"); }} label="Add Core Value"/>}/>
-             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5" style={{ gap: '1.25rem' }}>
                 {coreValues.map(v => (
                   <div key={v._id} className="p-6 rounded-3xl group relative transition-all hover:shadow-lg overflow-hidden" style={{ background: C.surface, border:`1px solid ${C.border}` }}>
                     <div className={`absolute top-0 right-0 w-24 h-24 bg-gradient-to-br ${v.color} opacity-[0.03] rounded-bl-[100px] transition-all group-hover:opacity-[0.08]`}/>
@@ -1295,11 +1322,118 @@ const InstituteForm = ({ editItem, closeModal, fetchData, notify }) => {
   );
 };
 
+const KeyPersonForm = ({ editItem, keyPersonForm, setKeyPersonForm, closeModal, fetchData, notify, axiosInstance }) => (
+  <form onSubmit={async e => { 
+    e.preventDefault(); 
+    const url=editItem?`/contact/key-persons/${editItem._id}`:"/contact/key-persons"; 
+    const payload = {...keyPersonForm, responsibilities: typeof keyPersonForm.responsibilities==="string"?keyPersonForm.responsibilities.split("\n").filter(Boolean):keyPersonForm.responsibilities};
+    try{
+      if(editItem) await axiosInstance.put(url,payload); 
+      else await axiosInstance.post(url,payload); 
+      notify("Saved"); closeModal(); fetchData();
+    } catch { notify("Failed","error"); }
+  }} className="space-y-4">
+    <div className="grid grid-cols-2 gap-4">
+      <Field label="Name"><input required value={keyPersonForm.name} onChange={e=>setKeyPersonForm({...keyPersonForm,name:e.target.value})} className={inputCls} style={inputStyle}/></Field>
+      <Field label="Position"><input required value={keyPersonForm.position} onChange={e=>setKeyPersonForm({...keyPersonForm,position:e.target.value})} className={inputCls} style={inputStyle}/></Field>
+    </div>
+    <div className="grid grid-cols-2 gap-4">
+      <Field label="Qualification"><input value={keyPersonForm.qualification} onChange={e=>setKeyPersonForm({...keyPersonForm,qualification:e.target.value})} className={inputCls} style={inputStyle}/></Field>
+      <Field label="Phone"><input value={keyPersonForm.phone} onChange={e=>setKeyPersonForm({...keyPersonForm,phone:e.target.value})} className={inputCls} style={inputStyle}/></Field>
+    </div>
+    <div className="grid grid-cols-2 gap-4">
+      <Field label="Email"><input value={keyPersonForm.email} onChange={e=>setKeyPersonForm({...keyPersonForm,email:e.target.value})} className={inputCls} style={inputStyle}/></Field>
+      <Field label="Hours"><input value={keyPersonForm.hours} onChange={e=>setKeyPersonForm({...keyPersonForm,hours:e.target.value})} className={inputCls} style={inputStyle}/></Field>
+    </div>
+    <div className="grid grid-cols-2 gap-4">
+      <Field label="Icon Emoji"><input value={keyPersonForm.icon} onChange={e=>setKeyPersonForm({...keyPersonForm,icon:e.target.value})} className={inputCls} style={inputStyle}/></Field>
+      <Field label="Gradient Color (e.g. from-blue-500 to-blue-600)"><input value={keyPersonForm.color} onChange={e=>setKeyPersonForm({...keyPersonForm,color:e.target.value})} className={inputCls} style={inputStyle}/></Field>
+    </div>
+    <Field label="Responsibilities (one per line)"><textarea required rows={4} value={keyPersonForm.responsibilities} onChange={e=>setKeyPersonForm({...keyPersonForm,responsibilities:e.target.value})} className={`${inputCls} resize-none`} style={inputStyle}/></Field>
+    <div className="flex gap-3 pt-2">
+      <button type="button" onClick={closeModal} className="flex-1 py-3 rounded-xl border font-bold text-sm hover:bg-gray-50" style={{ borderColor: C.border, color: C.muted }}>Cancel</button>
+      <button type="submit" className="flex-[2] py-3 rounded-xl text-sm font-bold text-white" style={{ background: C.brand }}>{editItem?"Save":"Add"}</button>
+    </div>
+  </form>
+);
+
+const ContactDeptForm = ({ editItem, contactDeptForm, setContactDeptForm, closeModal, fetchData, notify, axiosInstance }) => (
+  <form onSubmit={async e => { 
+    e.preventDefault(); 
+    const url=editItem?`/contact/departments/${editItem._id}`:"/contact/departments"; 
+    try{
+      if(editItem) await axiosInstance.put(url,contactDeptForm); 
+      else await axiosInstance.post(url,contactDeptForm); 
+      notify("Saved"); closeModal(); fetchData();
+    } catch { notify("Failed","error"); }
+  }} className="space-y-4">
+    <div className="grid grid-cols-2 gap-4">
+      <Field label="Department Name"><input required value={contactDeptForm.name} onChange={e=>setContactDeptForm({...contactDeptForm,name:e.target.value})} className={inputCls} style={inputStyle}/></Field>
+      <Field label="Icon Emoji"><input value={contactDeptForm.icon} onChange={e=>setContactDeptForm({...contactDeptForm,icon:e.target.value})} className={inputCls} style={inputStyle}/></Field>
+    </div>
+    <Field label="Phone"><input value={contactDeptForm.phone} onChange={e=>setContactDeptForm({...contactDeptForm,phone:e.target.value})} className={inputCls} style={inputStyle}/></Field>
+    <Field label="Email"><input value={contactDeptForm.email} onChange={e=>setContactDeptForm({...contactDeptForm,email:e.target.value})} className={inputCls} style={inputStyle}/></Field>
+    <div className="flex gap-3 pt-2">
+      <button type="button" onClick={closeModal} className="flex-1 py-3 rounded-xl border font-bold text-sm hover:bg-gray-50" style={{ borderColor: C.border, color: C.muted }}>Cancel</button>
+      <button type="submit" className="flex-[2] py-3 rounded-xl text-sm font-bold text-white" style={{ background: C.brand }}>{editItem?"Save":"Add"}</button>
+    </div>
+  </form>
+);
+
+const ContactTab = ({ contactSub, setContactSub, keyPersons, setKeyPersonForm, contactDepartments, setContactDeptForm, contactInfo, setContactInfo, openModal, del, notify, axiosInstance }) => (
+  <div className="space-y-6">
+    <SubTabs tabs={["Key Persons", "Departments", "College Info"]} active={contactSub} onChange={setContactSub}/>
+    
+    {contactSub === "Key Persons" && (
+      <div className="space-y-6">
+        <SectionHeader icon={Users} title="Key Administrative Contacts" subtitle="Manage main contacts shown on the contact page"
+          action={<AddBtn onClick={() => { setKeyPersonForm({name:"",position:"",qualification:"",phone:"",email:"",hours:"",icon:"👨‍⚕️",color:"from-blue-500 to-blue-600",responsibilities:""}); openModal("keyPerson"); }} label="Add Person"/>}/>
+        <div className="grid grid-cols-1 gap-3">
+          {keyPersons.map(p => <RowItem key={p._id} icon={p.icon} title={p.name} sub={p.position}
+            onEdit={() => { setKeyPersonForm({...p,responsibilities:p.responsibilities?.join("\n")||""}); openModal("keyPerson",p); }} onDelete={() => del(`/contact/key-persons/${p._id}`)}/>)}
+        </div>
+      </div>
+    )}
+
+    {contactSub === "Departments" && (
+      <div className="space-y-6">
+        <SectionHeader icon={Building2} title="Department Contact Directory" subtitle="Manage specific departments on the contact page"
+          action={<AddBtn onClick={() => { setContactDeptForm({name:"",phone:"",email:"",icon:"📚"}); openModal("contactDept"); }} label="Add Department"/>}/>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {contactDepartments.map(d => (
+            <RowItem key={d._id} icon={d.icon} title={d.name} sub={d.phone + " | " + d.email}
+              onEdit={() => { setContactDeptForm({...d}); openModal("contactDept",d); }} onDelete={() => del(`/contact/departments/${d._id}`)}/>
+          ))}
+        </div>
+      </div>
+    )}
+
+    {contactSub === "College Info" && (
+      <div className="space-y-6">
+        <SectionHeader icon={MapPin} title="College Contact Information" subtitle="Address, phone, and general emails"/>
+        <div className="p-6 rounded-2xl space-y-4 shadow-sm" style={{ background: C.surface, border:`1px solid ${C.border}` }}>
+          <Field label="College Address"><textarea required rows={4} value={contactInfo.address||""} onChange={e=>setContactInfo({...contactInfo,address:e.target.value})} className={`${inputCls} resize-none`} style={inputStyle}/></Field>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Field label="Reception Phone"><input value={contactInfo.receptionPhone||""} onChange={e=>setContactInfo({...contactInfo,receptionPhone:e.target.value})} className={inputCls} style={inputStyle}/></Field>
+            <Field label="Ambulance Phone"><input value={contactInfo.ambulancePhone||""} onChange={e=>setContactInfo({...contactInfo,ambulancePhone:e.target.value})} className={inputCls} style={inputStyle}/></Field>
+          </div>
+          <Field label="General Email"><input value={contactInfo.generalEmail||""} onChange={e=>setContactInfo({...contactInfo,generalEmail:e.target.value})} className={inputCls} style={inputStyle}/></Field>
+          <button onClick={async () => { try { await axiosInstance.put("/contact/info", contactInfo); notify("Contact Info Saved"); } catch { notify("Failed to save","error"); }}}
+            className="px-6 py-2.5 rounded-xl text-sm font-bold text-white shadow-md hover:opacity-90" style={{ background: C.brand }}>
+            Save College Info
+          </button>
+        </div>
+      </div>
+    )}
+  </div>
+);
+
 const AdminPanel = ({ onLogout }) => {
   const [activeTab, setActiveTab] = useState("Home Page");
   const [aboutSub, setAboutSub] = useState("Branding");
   const [admSub, setAdmSub] = useState("Courses");
   const [deptSub, setDeptSub] = useState("Overview");
+  const [contactSub, setContactSub] = useState("Key Persons");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [selectedDeptForSlider, setSelectedDeptForSlider] = useState("null");
   const [selectedDept, setSelectedDept] = useState(null);
@@ -1326,6 +1460,9 @@ const AdminPanel = ({ onLogout }) => {
   const [guidelines, setGuidelines] = useState([]);
   const [departments, setDepartments] = useState([]);
   const [institutes, setInstitutes] = useState([]);
+  const [keyPersons, setKeyPersons] = useState([]);
+  const [contactDepartments, setContactDepartments] = useState([]);
+  const [contactInfo, setContactInfo] = useState({ address: "", receptionPhone: "", ambulancePhone: "", generalEmail: "" });
 
   // Form States
   const [programForm, setProgramForm] = useState({ title:"",description:"",duration:"",category:"Undergraduate",courses:"",image:null });
@@ -1347,6 +1484,8 @@ const AdminPanel = ({ onLogout }) => {
 
   const [galleryImages, setGalleryImages] = useState([]);
   const [galleryForm, setGalleryForm] = useState({ title:"", description:"", category:"college_campus_view", image:null });
+  const [keyPersonForm, setKeyPersonForm] = useState({ name:"",position:"",qualification:"",phone:"",email:"",hours:"",icon:"👨‍⚕️",color:"from-blue-500 to-blue-600",responsibilities:"" });
+  const [contactDeptForm, setContactDeptForm] = useState({ name:"",phone:"",email:"",icon:"📚" });
 
   const notify = (message, type = "success") => {
     setNote({ message, type });
@@ -1376,13 +1515,16 @@ const AdminPanel = ({ onLogout }) => {
         axiosInstance.get("/sliders?department=all"),
         axiosInstance.get("/gallery"),
         axiosInstance.get("/institutes"),
+        axiosInstance.get("/contact/key-persons"),
+        axiosInstance.get("/contact/departments"),
+        axiosInstance.get("/contact/info"),
       ]);
       setPrograms(r[0].data); setTestimonials(r[1].data); setAcademicContent(r[2].data);
       setMilestones(r[3].data); setDeanMessage(r[4].data); setCollegeLogo(r[5].data);
       setVisionMission(r[6].data); setCoreValues(r[7].data); setCourses(r[8].data);
       setAdmissionSteps(r[9].data); setAdmissionRules(r[10].data); setBonds(r[11].data);
       setGuidelines(r[12].data); setDepartments(r[13].data); setSliders(r[14].data); setGalleryImages(r[15].data);
-      setInstitutes(r[16].data);
+      setInstitutes(r[16].data); setKeyPersons(r[17].data); setContactDepartments(r[18].data); setContactInfo(r[19].data);
     } catch { notify("Error fetching data", "error"); }
     finally { setLoading(false); }
   };
@@ -1424,7 +1566,7 @@ const AdminPanel = ({ onLogout }) => {
     { name: "Departments",  icon: Building2 },
     { name: "Institutes",   icon: Building2 },
     { name: "Gallery",      icon: ImageIcon },
-    { name: "Settings",     icon: Settings },
+    { name: "Contact Us",   icon: Phone },
   ];
 
   const modalMeta = {
@@ -1441,10 +1583,12 @@ const AdminPanel = ({ onLogout }) => {
     department:   { title: editItem ? "Edit Dept"       : "Add Department", subtitle: "Create a new department" },
     gallery:      { title: editItem ? "Edit Photo"      : "Add Photo",      subtitle: "Gallery image" },
     institute:    { title: editItem ? "Edit Institute"  : "Add Institute",  subtitle: "Affiliated institute details" },
+    keyPerson:    { title: editItem ? "Edit Contact"    : "Add Contact",    subtitle: "Key administrative contact" },
+    contactDept:  { title: editItem ? "Edit Dept"       : "Add Dept",       subtitle: "Contact department" },
   }[modalType] || {};
 
   return (
-    <div className="flex h-screen bg-gray-50 text-gray-900 font-sans overflow-hidden">
+    <div className="flex w-full h-screen bg-gray-50 text-gray-900 font-sans overflow-hidden" style={{ height: '100dvh' }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap');
         * { font-family: 'DM Sans', sans-serif; box-sizing: border-box; }
@@ -1478,6 +1622,7 @@ const AdminPanel = ({ onLogout }) => {
                   {activeTab === "Departments" && <DepartmentsTab selectedDept={selectedDept} setSelectedDept={setSelectedDept} departments={departments} deptForm={deptForm} setDeptForm={setDeptForm} deptSub={deptSub} setDeptSub={setDeptSub} deptFacultyForm={deptFacultyForm} setDeptFacultyForm={setDeptFacultyForm} deptFacilityInput={deptFacilityInput} setDeptFacilityInput={setDeptFacilityInput} deptActivityInput={deptActivityInput} setDeptActivityInput={setDeptActivityInput} sliders={sliders} axiosInstance={axiosInstance} fetchData={fetchData} notify={notify} openModal={openModal} del={del} handleSliderUpload={handleSliderUpload}/>}
                   {activeTab === "Gallery" && <GalleryTab galleryImages={galleryImages} galleryForm={galleryForm} setGalleryForm={setGalleryForm} openModal={openModal} del={del} />}
                   {activeTab === "Institutes" && <InstitutesTab institutes={institutes} openModal={openModal} del={del} />}
+                  {activeTab === "Contact Us" && <ContactTab contactSub={contactSub} setContactSub={setContactSub} keyPersons={keyPersons} setKeyPersonForm={setKeyPersonForm} contactDepartments={contactDepartments} setContactDeptForm={setContactDeptForm} contactInfo={contactInfo} setContactInfo={setContactInfo} openModal={openModal} del={del} notify={notify} axiosInstance={axiosInstance} />}
                   {activeTab === "Settings" && (
                     <div className="flex flex-col items-center justify-center py-32 text-center" style={{ color: C.muted }}>
                       <Settings size={48} className="mb-4 opacity-30"/>
@@ -1505,6 +1650,8 @@ const AdminPanel = ({ onLogout }) => {
         {modalType === "department" && <DeptForm editItem={editItem} deptForm={deptForm} setDeptForm={setDeptForm} closeModal={closeModal} fetchData={fetchData} notify={notify}/>}
         {modalType === "gallery" && <GalleryForm editItem={editItem} formState={galleryForm} setFormState={setGalleryForm} closeModal={closeModal} fetchData={fetchData} notify={notify} axiosInstance={axiosInstance}/>}
         {modalType === "institute" && <InstituteForm editItem={editItem} closeModal={closeModal} fetchData={fetchData} notify={notify}/>}
+        {modalType === "keyPerson" && <KeyPersonForm editItem={editItem} keyPersonForm={keyPersonForm} setKeyPersonForm={setKeyPersonForm} closeModal={closeModal} fetchData={fetchData} notify={notify} axiosInstance={axiosInstance}/>}
+        {modalType === "contactDept" && <ContactDeptForm editItem={editItem} contactDeptForm={contactDeptForm} setContactDeptForm={setContactDeptForm} closeModal={closeModal} fetchData={fetchData} notify={notify} axiosInstance={axiosInstance}/>}
       </Modal>
     </div>
   );

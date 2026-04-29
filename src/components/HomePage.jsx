@@ -780,6 +780,7 @@ import collegelogo2 from "../Logos/collegelogo2.webp";
 import collegelogo3 from "../Logos/collegelogo3.webp";
 import collegelogo4 from "../Logos/collegelogo4.webp";
 import HeroSection from "../Homepages/HeroSection";
+import ImageSlider from "./ImageSlider";
 import axiosInstance from "../api/axiosInstance";
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -1288,12 +1289,9 @@ const HomePage=({ onNavigate }) => {
                     onHoverEnd={(e) => e.currentTarget.style.boxShadow = "var(--card-shadow)"}
                   >
                     <div style={{ position: "relative", height: 200, overflow: "hidden", flexShrink: 0 }}>
-                      <motion.img
-                        src={imageUrl}
-                        alt={prog.title}
-                        style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                        whileHover={{ scale: 1.06 }}
-                        transition={{ duration: 0.5 }}
+                      <ImageSlider 
+                        images={prog.imageUrls && prog.imageUrls.length > 0 ? prog.imageUrls : [prog.imageUrl || prog.image || "/placeholder.png"]} 
+                        interval={3000 + (i * 500)} // Stagger the slider animations a bit
                       />
                       <div style={{
                         position: "absolute", inset: 0,

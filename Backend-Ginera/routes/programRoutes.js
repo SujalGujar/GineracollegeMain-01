@@ -17,8 +17,8 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 router.get('/', programController.getPrograms);
-router.post('/', upload.single('image'), programController.createProgram);
-router.put('/:id', upload.single('image'), programController.updateProgram);
+router.post('/', upload.array('images', 10), programController.createProgram);
+router.put('/:id', upload.array('images', 10), programController.updateProgram);
 router.delete('/:id', programController.deleteProgram);
 
 module.exports = router;

@@ -12,8 +12,11 @@ const programSchema = new mongoose.Schema({
   },
   imageUrl: {
     type: String,
-    required: true
+    required: false
   },
+  imageUrls: [{
+    type: String
+  }],
   duration: {
     type: String,
     required: true

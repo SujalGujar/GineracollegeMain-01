@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
@@ -15,6 +15,7 @@ import {
   Calendar,
 } from "lucide-react";
 import SendMessageButton from "../components/Buttons/SendMessageButton.";
+import axiosInstance from "../api/axiosInstance";
 
 export function ContactPage() {
   const [formData, setFormData] = useState({
@@ -24,6 +25,14 @@ export function ContactPage() {
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [keyContacts, setKeyContacts] = useState([]);
+  const [departments, setDepartments] = useState([]);
+  const [contactInfo, setContactInfo] = useState({
+    address: "Government Medical College\nCivil Hospital Campus\nAsarwa, Ahmedabad - 380016\nGujarat, India",
+    receptionPhone: "+91-96011 11973",
+    ambulancePhone: "108",
+    generalEmail: "principalgcona@gmail.com"
+  });
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -36,91 +45,30 @@ export function ContactPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
-
-    // Simulate form submission
     await new Promise((resolve) => setTimeout(resolve, 1500));
-
     console.log("Form submitted:", formData);
     alert("Thank you for your message! We will get back to you soon.");
     setFormData({ name: "", email: "", message: "" });
     setIsSubmitting(false);
   };
 
-  const keyContacts = [
-    {
-      name: "Dr. Hiral S. Shah",
-      position: " Principal",
-      qualification: " M.Sc. in Obstetrics and Gynaecological Nursing",
-      phone: "+91-96011 11973",
-      email: "principalgcona@gmail.com",
-      // office: "Dean's Office, Administrative Block",
-      hours: "9:00 AM - 5:00 PM (Mon-Fri)/Sat(Half Day)",
-      icon: "👨‍⚕️",
-      color: "from-blue-500 to-blue-600",
-      responsibilities: [
-        "Overall Institutional administration",
-        "Academic policy decisions",
-        "Faculty development",
-        "External relations",
-      ],
-    },
-    {
-      name: "Mrs. Minaxiben R. Patel",
-      position: "I/C Principal Nursing Officer Class-2(PHN Tutor)",
-      qualification: "M.Sc.(Medical Surgical Nursing)",
-      phone: "+91-98792 25542",
-      email: "principalgsona@gmail.com",
-      // office: "Academic Office, Second Floor",
-      hours: "9:00 AM - 5:00 PM (Mon-Fri)/Sat(Half Day)",
-      icon: "👩‍⚕️",
-      color: "from-purple-500 to-purple-600",
-      responsibilities: [
-        "Coordinate Diploma In General Nursing And Midwifery Program",
-
-        "Academic curriculum development",
-        "Student affairs management",
-      ],
-    },
-  ];
-
-  const departments = [
-    {
-      name: "Admissions Office",
-      phone: "+91-79-2268-0010",
-      email: "admissions@gmc.edu.in",
-      icon: "📚",
-    },
-    {
-      name: "Academic Office",
-      phone: "+91-79-2268-0011",
-      email: "academic@gmc.edu.in",
-      icon: "🎓",
-    },
-    {
-      name: "Examination Cell",
-      phone: "+91-79-2268-0012",
-      email: "exams@gmc.edu.in",
-      icon: "📝",
-    },
-    {
-      name: "Student Affairs",
-      phone: "+91-79-2268-0013",
-      email: "students@gmc.edu.in",
-      icon: "👥",
-    },
-    {
-      name: "Hospital Administration",
-      phone: "+91-79-2268-0014",
-      email: "hospital@gmc.edu.in",
-      icon: "🏥",
-    },
-    {
-      name: "Finance Office",
-      phone: "+91-79-2268-0015",
-      email: "finance@gmc.edu.in",
-      icon: "💰",
-    },
-  ];
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [kpRes, cdRes, ciRes] = await Promise.all([
+          axiosInstance.get("/contact/key-persons"),
+          axiosInstance.get("/contact/departments"),
+          axiosInstance.get("/contact/info"),
+        ]);
+        setKeyContacts(kpRes.data);
+        setDepartments(cdRes.data);
+        if (ciRes.data) setContactInfo(ciRes.data);
+      } catch (error) {
+        console.error("Failed to fetch contact data", error);
+      }
+    };
+    fetchData();
+  }, []);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 py-12">
@@ -346,14 +294,8 @@ export function ContactPage() {
                     <MapPin className="h-5 w-5 text-blue-600" />
                     Address
                   </h4>
-                  <p className="text-gray-600 leading-relaxed">
-                    Government Medical College
-                    <br />
-                    Civil Hospital Campus
-                    <br />
-                    Asarwa, Ahmedabad - 380016
-                    <br />
-                    Gujarat, India
+                  <p className="text-gray-600 leading-relaxed whitespace-pre-line">
+                    {contactInfo.address}
                   </p>
                 </div>
 
@@ -363,21 +305,20 @@ export function ContactPage() {
                     Main Phone Numbers
                   </h4>
                   <div className="text-gray-600 space-y-2">
-                    <p className="flex items-center gap-2">
-                      <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
-                      Reception:{" "}
-                      <span className="font-semibold">+91-96011 11973</span>
-                    </p>
-                    {/* <p className="flex items-center gap-2">
-                      <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
-                      Emergency:{" "}
-                      <span className="font-semibold">+91-79-2268-0100</span>
-                    </p> */}
-                    <p className="flex items-center gap-2">
-                      <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
-                      Ambulance:{" "}
-                      <span className="font-semibold text-red-600">108</span>
-                    </p>
+                    {contactInfo.receptionPhone && (
+                      <p className="flex items-center gap-2">
+                        <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+                        Reception:{" "}
+                        <span className="font-semibold">{contactInfo.receptionPhone}</span>
+                      </p>
+                    )}
+                    {contactInfo.ambulancePhone && (
+                      <p className="flex items-center gap-2">
+                        <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+                        Ambulance:{" "}
+                        <span className="font-semibold text-red-600">{contactInfo.ambulancePhone}</span>
+                      </p>
+                    )}
                   </div>
                 </div>
 
@@ -387,18 +328,12 @@ export function ContactPage() {
                     Email Addresses
                   </h4>
                   <div className="text-gray-600 space-y-2">
-                    <p className="flex items-center gap-2">
-                      <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
-                      General: principalgcona@gmail.com
-                    </p>
-                    {/* <p className="flex items-center gap-2">
-                      <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
-                      Admissions: admissions@gmc.edu.in
-                    </p> */}
-                    {/* <p className="flex items-center gap-2">
-                      <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
-                      Academic: academic@gmc.edu.in
-                    </p> */}
+                    {contactInfo.generalEmail && (
+                      <p className="flex items-center gap-2">
+                        <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+                        General: {contactInfo.generalEmail}
+                      </p>
+                    )}
                   </div>
                 </div>
               </CardContent>
