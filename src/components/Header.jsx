@@ -43,7 +43,6 @@ const NAV_ITEMS = [
       { label: "Courses Offered", page: "courses" },
       { label: "Admission Procedure", page: "admission-procedure" },
       { label: "Admission Rules", page: "admission-rules" },
-      { label: "Student Bond Agreement", page: "student-bond" },
       { label: "Student Guidelines", page: "instructions" },
     ],
   },
@@ -84,7 +83,6 @@ const PAGE_SECTION_MAP = {
   "courses": "admissions",
   "admission-procedure": "admissions",
   "admission-rules": "admissions",
-  "student-bond": "admissions",
   "instructions": "admissions",
 
   "college-photos": "gallery",

@@ -1245,17 +1245,28 @@ const HomePage=({ onNavigate }) => {
                   scrollbarWidth: "none",
                   msOverflowStyle: "none",
                   paddingBottom: 24,
+                  minHeight: "400px",
+                  position: "relative"
                 }}
               >
                 <style>{`
                   #programs-slider::-webkit-scrollbar { display: none; }
                 `}</style>
-              {programsToDisplay.map((prog, i) => {
+              {loadingPrograms ? (
+                <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/50 backdrop-blur-sm rounded-3xl z-10">
+                  <motion.div
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                    className="w-10 h-10 border-4 border-orange-500 border-t-transparent rounded-full mb-4"
+                  />
+                  <p className="text-gray-500 font-medium">Loading Programs...</p>
+                </div>
+              ) : programsToDisplay.map((prog, i) => {
                 const programId = prog._id || i;
                 const isExpanded = expandedProgram === programId;
                 const courses = Array.isArray(prog.courses) ? prog.courses : [];
-                const displayCourses = isExpanded ? courses : courses.slice(0, 5);
-                const hasMore = courses.length > 5;
+                const displayCourses = isExpanded ? courses : courses.slice(0, 2);
+                const hasMore = courses.length > 2;
                 const getImgUrl = (url) => {
                   if (!url) return "/placeholder.png";
                   if (url.startsWith("http")) return url;
@@ -1336,7 +1347,7 @@ const HomePage=({ onNavigate }) => {
                             alignSelf: "flex-start",
                           }}
                         >
-                          {isExpanded ? "Show Less ↑" : `Read More (+${courses.length - 5} more)`}
+                          {isExpanded ? "Read Less" : `Read More (+${courses.length - 2} more)`}
                           <ArrowRight size={12} style={{ transform: isExpanded ? "rotate(90deg)" : "none", transition: "transform 0.2s" }} />
                         </button>
                       )}

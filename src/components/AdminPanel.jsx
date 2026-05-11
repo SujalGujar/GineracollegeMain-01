@@ -541,7 +541,7 @@ const EmptyState = ({ icon: Icon, text }) => (
 // ── SIDEBAR COMPONENTS ───────────────────────────────────
 
 const SidebarContent = ({ onClose, activeTab, setActiveTab, selectedDept, setSelectedDept, navItems, onLogout }) => (
-  <div className="flex flex-col h-full">
+  <div className="flex flex-col h-full min-h-0">
     <div className="flex items-center gap-3 p-6 border-b border-white/10 shrink-0">
       <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center shadow-inner">
         <LayoutDashboard size={20} className="text-white"/>
@@ -557,7 +557,7 @@ const SidebarContent = ({ onClose, activeTab, setActiveTab, selectedDept, setSel
       )}
     </div>
 
-    <nav className="flex-1 overflow-y-auto py-6 px-4 space-y-1 custom-scrollbar scrollbar-hide">
+    <nav className="flex-1 min-h-0 overflow-y-auto py-6 px-4 space-y-1 scrollbar-hide">
       {navItems.map(({ name, icon: Icon }) => {
         const active = activeTab === name && !selectedDept;
         return (
@@ -725,17 +725,40 @@ const AcademicTab = ({ programs, academicContent, setAcademicContent, axiosInsta
       </button>
     </div>
 
-    <div className="grid grid-cols-1 gap-3">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {programs.map(p => (
-        <RowItem key={p._id}
-          left={<div className="w-16 h-12 rounded-xl overflow-hidden border-2 shrink-0 shadow-sm" style={{ borderColor: C.border }}>
-            <img src={imgUrl(p.imageUrl)} className="w-full h-full object-cover" alt=""/>
-          </div>}
-          badge={p.category} title={p.title} sub={p.duration}
-          onEdit={() => { setProgramForm({ title:p.title,description:p.description,duration:p.duration,category:p.category,courses:p.courses?.join(", ")||"",image:null }); openModal("program",p); }}
-          onDelete={() => del(`/programs/${p._id}`)}/>
+        <motion.div key={p._id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+          className="p-6 rounded-3xl group relative shadow-md transition-all hover:shadow-lg flex flex-col h-full"
+          style={{ background: C.surface, border:`1px solid ${C.border}` }}>
+          
+          <div className="flex items-start justify-between gap-4 mb-4">
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 rounded-2xl overflow-hidden border-2 shadow-sm shrink-0" style={{ borderColor: C.accentSoft }}>
+                <img src={imgUrl(p.imageUrl)} alt={p.title} className="w-full h-full object-cover"/>
+              </div>
+              <div className="min-w-0">
+                <p className="font-bold text-sm leading-tight mb-1 truncate" style={{ color: C.text }}>{p.title}</p>
+                <div className="flex flex-wrap gap-1.5 items-center">
+                   <Pill color={C.brand}>{p.category}</Pill>
+                   <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{p.duration}</span>
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+              <IconBtn onClick={() => { setProgramForm({ title:p.title,description:p.description,duration:p.duration,category:p.category,courses:p.courses?.join(", ")||"",image:null }); openModal("program",p); }}><Edit3 size={14}/></IconBtn>
+              <IconBtn danger onClick={() => del(`/programs/${p._id}`)}><Trash2 size={14}/></IconBtn>
+            </div>
+          </div>
+
+          <div className="mt-1 flex-1">
+            <p className="text-xs leading-relaxed text-gray-500 line-clamp-3">
+              {p.description}
+            </p>
+          </div>
+        </motion.div>
       ))}
-      {programs.length === 0 && <EmptyState icon={BookOpen} text="No programs registered yet"/>}
+      {programs.length === 0 && <div className="col-span-full"><EmptyState icon={BookOpen} text="No programs registered yet"/></div>}
     </div>
   </div>
 );
@@ -912,7 +935,7 @@ const AboutTab = ({ aboutSub, setAboutSub, collegeLogo, setCollegeLogo, logoFile
 
 const AdmissionTab = ({ admSub, setAdmSub, courses, openModal, setCourseForm, del, admissionSteps, setStepForm, admissionRules, setRuleForm, bonds, setBondForm, guidelines, setGuidelineForm }) => (
   <div className="space-y-6">
-    <SubTabs tabs={["Courses","Procedure","Eligibility","Student Bond","Guidelines"]} active={admSub} onChange={setAdmSub}/>
+    <SubTabs tabs={["Courses","Procedure","Eligibility","Guidelines"]} active={admSub} onChange={setAdmSub}/>
     
     {admSub === "Courses" && (
       <div className="space-y-6">
@@ -969,16 +992,7 @@ const AdmissionTab = ({ admSub, setAdmSub, courses, openModal, setCourseForm, de
       </div>
     )}
 
-    {admSub === "Student Bond" && (
-      <div className="space-y-6">
-        <SectionHeader icon={FileText} title="Legal Bond Agreement" subtitle="Institutional agreement points"
-          action={<AddBtn onClick={() => { setBondForm({type:"student",title:"",content:"",order:0}); openModal("bond"); }} label="Add Point"/>}/>
-        <div className="grid grid-cols-1 gap-3">
-          {bonds.filter(b=>b.type==="student").map(b => <RowItem key={b._id} icon={<FileText size={20} style={{color:C.accent}}/>} title={b.title} sub={b.content?.slice(0,100)+"..."}
-            onEdit={() => { setBondForm({...b}); openModal("bond",b); }} onDelete={() => del(`/bonds/${b._id}`)}/>)}
-        </div>
-      </div>
-    )}
+
 
     {admSub === "Guidelines" && (
       <div className="space-y-6">
@@ -1665,31 +1679,35 @@ const AdminPanel = ({ onLogout }) => {
   }[modalType] || {};
 
   return (
-    <div className={`flex w-full bg-gray-50 text-gray-900 font-sans`} style={{ minHeight: isMobile ? '100dvh' : 'auto', height: isMobile ? 'auto' : '100dvh', overflow: isMobile ? 'visible' : 'hidden' }}>
+    <div className="flex h-full w-full min-h-0 bg-gray-50 text-gray-900 font-sans overflow-hidden">
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap');
         * { font-family: 'DM Sans', sans-serif; box-sizing: border-box; }
         .scrollbar-hide::-webkit-scrollbar { display: none; }
         .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
-        ::-webkit-scrollbar { width: 5px; height: 5px; }
-        ::-webkit-scrollbar-thumb { background: #D1C7BC; border-radius: 10px; }
+        /* Premium admin scrollbar */
+        .admin-scroll::-webkit-scrollbar { width: 8px; }
+        .admin-scroll::-webkit-scrollbar-track { background: #F4F1EE; border-radius: 10px; }
+        .admin-scroll::-webkit-scrollbar-thumb { background: #C4A882; border-radius: 10px; border: 2px solid #F4F1EE; }
+        .admin-scroll::-webkit-scrollbar-thumb:hover { background: #6B3F1D; }
+        .admin-scroll { scrollbar-width: thin; scrollbar-color: #C4A882 #F4F1EE; }
       `}</style>
 
       <Toast note={note}/>
       <Sidebar isMobile={isMobile} sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} activeTab={activeTab} setActiveTab={setActiveTab} selectedDept={selectedDept} setSelectedDept={setSelectedDept} navItems={navItems} onLogout={onLogout}/>
       
-      <main className={`flex-1 flex flex-col ${isMobile ? '' : 'overflow-hidden'}`}>
+      <main className="flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden">
         <Header setSidebarOpen={setSidebarOpen} selectedDept={selectedDept} activeTab={activeTab}/>
         
-        <div className={`flex-1 p-4 lg:p-8 custom-scrollbar ${isMobile ? '' : 'overflow-y-auto'}`}>
+        <div className="flex-1 min-h-0 relative">
+          <div className="admin-scroll absolute inset-0 overflow-y-auto p-4 lg:p-8">
           <div className="max-w-7xl mx-auto">
             {loading && (
-              <div className="flex items-center justify-center py-20">
+              <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/60 backdrop-blur-sm">
                 <div className="w-10 h-10 border-4 border-t-transparent rounded-full animate-spin" style={{ borderColor: C.accent, borderTopColor: "transparent" }}/>
               </div>
             )}
-            {!loading && (
-              <AnimatePresence mode="wait">
+            <AnimatePresence mode="wait">
                 <motion.div key={activeTab + (selectedDept?._id || "")} initial={{ opacity:0, y:12 }} animate={{ opacity:1, y:0 }} exit={{ opacity:0, y:-12 }} transition={{ duration:0.25 }}>
                   {activeTab === "Home Page" && <HomeTab selectedDeptForSlider={selectedDeptForSlider} setSelectedDeptForSlider={setSelectedDeptForSlider} departments={departments} sliders={sliders} handleSliderUpload={handleSliderUpload} updateSliderImage={updateSliderImage} del={del}/>}
                   {activeTab === "Academic" && <AcademicTab programs={programs} academicContent={academicContent} setAcademicContent={setAcademicContent} axiosInstance={axiosInstance} notify={notify} openModal={openModal} setProgramForm={setProgramForm} del={del}/>}
@@ -1708,10 +1726,10 @@ const AdminPanel = ({ onLogout }) => {
                   )}
                 </motion.div>
               </AnimatePresence>
-            )}
           </div>
         </div>
-      </main>
+      </div>
+    </main>
 
       <Modal show={showModal} onClose={closeModal} title={modalMeta.title} subtitle={modalMeta.subtitle}>
         {modalType === "program" && <ProgramForm editItem={editItem} programForm={programForm} setProgramForm={setProgramForm} closeModal={closeModal} fetchData={fetchData} notify={notify}/>}
