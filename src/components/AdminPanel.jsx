@@ -91,7 +91,7 @@ const Modal = ({ show, onClose, title, subtitle, children }) => (
           initial={{ opacity: 0, scale: 0.95 }} 
           animate={{ opacity: 1, scale: 1 }} 
           exit={{ opacity: 0, scale: 0.95 }}
-          className="relative z-[101] w-full sm:w-[90%] md:w-[85%] lg:w-[75%] max-w-4xl max-h-[90dvh] flex flex-col rounded-t-3xl sm:rounded-3xl overflow-hidden shadow-2xl"
+          className="relative z-[101] w-full sm:w-[90%] md:w-[85%] lg:w-[75%] max-w-4xl max-h-[85vh] flex flex-col rounded-t-3xl sm:rounded-3xl overflow-hidden shadow-2xl"
           style={{ background: C.surface }}>
           <div className="flex items-start justify-between p-6 border-b shrink-0" style={{ borderColor: C.border, background: C.bg }}>
             <div>
@@ -104,7 +104,7 @@ const Modal = ({ show, onClose, title, subtitle, children }) => (
               <X size={18} style={{ color: C.muted }}/>
             </button>
           </div>
-          <div className="overflow-y-auto flex-1 p-6 sm:p-8 space-y-5 bg-gray-50">
+          <div className="overflow-y-auto admin-scroll flex-1 p-6 sm:p-8 space-y-5 bg-gray-50">
             {children}
           </div>
         </motion.div>
@@ -221,9 +221,10 @@ const MilestoneForm = ({ editItem, milestoneForm, setMilestoneForm, closeModal, 
       notify("Saved"); closeModal(); fetchData();
     } catch { notify("Failed","error"); }
   }} className="space-y-4">
-    <div className="grid grid-cols-2 gap-4">
+    <div className="grid grid-cols-3 gap-4">
       <Field label="Year"><input required value={milestoneForm.year} onChange={e=>setMilestoneForm({...milestoneForm,year:e.target.value})} placeholder="1963" className={inputCls} style={inputStyle}/></Field>
       <Field label="Icon (emoji)"><input value={milestoneForm.icon} onChange={e=>setMilestoneForm({...milestoneForm,icon:e.target.value})} className={inputCls} style={inputStyle}/></Field>
+      <Field label="Sort Order"><input type="number" required value={milestoneForm.order} onChange={e=>setMilestoneForm({...milestoneForm,order:parseInt(e.target.value)||0})} className={inputCls} style={inputStyle}/></Field>
     </div>
     <Field label="Event Title"><input required value={milestoneForm.event} onChange={e=>setMilestoneForm({...milestoneForm,event:e.target.value})} className={inputCls} style={inputStyle}/></Field>
     <Field label="Accent Color">
@@ -290,25 +291,55 @@ const CourseForm = ({ editItem, courseForm, setCourseForm, closeModal, fetchData
   <form onSubmit={async e => { 
     e.preventDefault(); 
     const url=editItem?`/courses/${editItem._id}`:"/courses"; 
+    const formattedForm = {
+      ...courseForm,
+      highlights: typeof courseForm.highlights === "string" 
+        ? courseForm.highlights.split(",").map(h => h.trim()).filter(h => h !== "")
+        : courseForm.highlights
+    };
     try{
-      if(editItem) await axiosInstance.put(url,courseForm); 
-      else await axiosInstance.post(url,courseForm); 
+      if(editItem) await axiosInstance.put(url,formattedForm); 
+      else await axiosInstance.post(url,formattedForm); 
       notify("Saved"); closeModal(); fetchData();
     } catch { notify("Failed","error"); }
   }} className="space-y-4">
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-      <Field label="Name"><input required value={courseForm.name} onChange={e=>setCourseForm({...courseForm,name:e.target.value})} className={inputCls} style={inputStyle}/></Field>
-      <Field label="Category">
-        <select value={courseForm.category} onChange={e=>setCourseForm({...courseForm,category:e.target.value})} className={inputCls} style={inputStyle}>
-          <option>Undergraduate Programs</option><option>Postgraduate Programs</option><option>Diploma Programs</option>
-        </select>
-      </Field>
-      <Field label="Duration"><input value={courseForm.duration} onChange={e=>setCourseForm({...courseForm,duration:e.target.value})} className={inputCls} style={inputStyle}/></Field>
-      <Field label="Seats"><input value={courseForm.seats} onChange={e=>setCourseForm({...courseForm,seats:e.target.value})} className={inputCls} style={inputStyle}/></Field>
-      <Field label="Icon (emoji)"><input value={courseForm.icon} onChange={e=>setCourseForm({...courseForm,icon:e.target.value})} className={inputCls} style={inputStyle}/></Field>
+    {/* Compact Basic Fields Grid */}
+    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      <div className="sm:col-span-2">
+        <Field label="Name"><input required value={courseForm.name} onChange={e=>setCourseForm({...courseForm,name:e.target.value})} className={inputCls} style={inputStyle}/></Field>
+      </div>
+      <div>
+        <Field label="Category">
+          <select value={courseForm.category} onChange={e=>setCourseForm({...courseForm,category:e.target.value})} className={inputCls} style={inputStyle}>
+            <option>Undergraduate Programs</option><option>Postgraduate Programs</option><option>Diploma Programs</option>
+          </select>
+        </Field>
+      </div>
+      <div>
+        <Field label="Duration"><input value={courseForm.duration} onChange={e=>setCourseForm({...courseForm,duration:e.target.value})} className={inputCls} style={inputStyle}/></Field>
+      </div>
+      <div>
+        <Field label="Seats"><input value={courseForm.seats} onChange={e=>setCourseForm({...courseForm,seats:e.target.value})} className={inputCls} style={inputStyle}/></Field>
+      </div>
+      <div>
+        <Field label="Icon (emoji)"><input value={courseForm.icon} onChange={e=>setCourseForm({...courseForm,icon:e.target.value})} className={inputCls} style={inputStyle}/></Field>
+      </div>
+      <div>
+        <Field label="Annual Fees"><input value={courseForm.fees} onChange={e=>setCourseForm({...courseForm,fees:e.target.value})} placeholder="e.g. ₹50,000" className={inputCls} style={inputStyle}/></Field>
+      </div>
+      <div className="sm:col-span-2">
+        <Field label="Official Link"><input value={courseForm.websiteLink} onChange={e=>setCourseForm({...courseForm,websiteLink:e.target.value})} placeholder="e.g. https://www.medadmgujarat.org" className={inputCls} style={inputStyle}/></Field>
+      </div>
     </div>
-    <Field label="Eligibility"><textarea rows={2} value={courseForm.eligibility} onChange={e=>setCourseForm({...courseForm,eligibility:e.target.value})} className={`${inputCls} resize-none`} style={inputStyle}/></Field>
-    <Field label="Highlights (comma separated)"><textarea rows={2} value={courseForm.highlights} onChange={e=>setCourseForm({...courseForm,highlights:e.target.value})} className={`${inputCls} resize-none`} style={inputStyle}/></Field>
+    
+    {/* Compact Textareas 2x2 Grid */}
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      <Field label="Brief Description"><textarea rows={2} value={courseForm.description||""} onChange={e=>setCourseForm({...courseForm,description:e.target.value})} className={`${inputCls} resize-none`} style={inputStyle}/></Field>
+      <Field label="Eligibility"><textarea rows={2} value={courseForm.eligibility} onChange={e=>setCourseForm({...courseForm,eligibility:e.target.value})} className={`${inputCls} resize-none`} style={inputStyle}/></Field>
+      <Field label="Highlights (comma separated)"><textarea rows={2} value={courseForm.highlights} onChange={e=>setCourseForm({...courseForm,highlights:e.target.value})} className={`${inputCls} resize-none`} style={inputStyle}/></Field>
+      <Field label="Admission Method"><textarea rows={2} value={courseForm.admission||""} onChange={e=>setCourseForm({...courseForm,admission:e.target.value})} className={`${inputCls} resize-none`} style={inputStyle}/></Field>
+    </div>
+
     <div className="flex gap-3 pt-2">
       <button type="button" onClick={closeModal} className={formBtnSecondary}>Cancel</button>
       <button type="submit" className={`${formBtnPrimary} flex-[2]`} style={{ background: C.brand }}><Save size={16}/>{editItem?"Save Changes":"Create"}</button>
@@ -863,7 +894,7 @@ const AboutTab = ({ aboutSub, setAboutSub, collegeLogo, setCollegeLogo, logoFile
         {aboutSub === "Timeline" && (
           <div className="space-y-6">
             <SectionHeader icon={Zap} title="Historical Milestones" subtitle={`Tracing our growth since inception`}
-              action={<AddBtn onClick={() => { setMilestoneForm({year:"",event:"",icon:"🎯",color:"#1e3a8a",description:""}); openModal("milestone"); }} label="New Milestone"/>}/>
+              action={<AddBtn onClick={() => { setMilestoneForm({year:"",event:"",icon:"🎯",color:"#1e3a8a",description:"",order:0}); openModal("milestone"); }} label="New Milestone"/>}/>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5" style={{ gap: '1.25rem' }}>
               {milestones.map(m => (
                 <div key={m._id} className="p-5 rounded-2xl group relative transition-all hover:shadow-md" style={{ background: C.surface, border:`1px solid ${C.border}`, borderLeft:`5px solid ${m.color}` }}>
@@ -876,7 +907,7 @@ const AboutTab = ({ aboutSub, setAboutSub, collegeLogo, setCollegeLogo, logoFile
                     </div>
                   </div>
                   <div className="absolute top-3 right-3 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <IconBtn onClick={() => { setMilestoneForm({year:m.year,event:m.event,icon:m.icon,color:m.color,description:m.description}); openModal("milestone",m); }}><Edit3 size={13}/></IconBtn>
+                    <IconBtn onClick={() => { setMilestoneForm({year:m.year,event:m.event,icon:m.icon,color:m.color,description:m.description,order:m.order||0}); openModal("milestone",m); }}><Edit3 size={13}/></IconBtn>
                     <IconBtn danger onClick={async()=>{ try{await axiosInstance.delete(`/about/milestones/${m._id}`); setMilestones(milestones.filter(x=>x._id!==m._id)); notify("Milestone Removed");}catch{notify("Delete failed","error");}}}><Trash2 size={13}/></IconBtn>
                   </div>
                 </div>
@@ -1341,7 +1372,7 @@ const InstitutesTab = ({ institutes, openModal, del }) => (
 const InstituteForm = ({ editItem, closeModal, fetchData, notify }) => {
   const [form, setForm] = useState({
     name: "", type: "", description: "", description2: "", description3: "",
-    established: "", capacity: "", icon: "🏥",
+    established: "", capacity: "", icon: "🏥", order: 0,
     specialties: "", services: "",
     contact: { address: "", phone: "", website: "" }
   });
@@ -1350,6 +1381,7 @@ const InstituteForm = ({ editItem, closeModal, fetchData, notify }) => {
     if (editItem) {
       setForm({
         ...editItem,
+        order: editItem.order || 0,
         specialties: Array.isArray(editItem.specialties) ? editItem.specialties.join(", ") : "",
         services: Array.isArray(editItem.services) ? editItem.services.join(", ") : "",
         contact: { ...editItem.contact }
@@ -1379,10 +1411,11 @@ const InstituteForm = ({ editItem, closeModal, fetchData, notify }) => {
         <Field label="Institute Name"><input required value={form.name} onChange={e=>setForm({...form, name:e.target.value})} className={inputCls} style={inputStyle}/></Field>
         <Field label="Type (e.g. Hospital)"><input required value={form.type} onChange={e=>setForm({...form, type:e.target.value})} className={inputCls} style={inputStyle}/></Field>
       </div>
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-4 gap-4">
         <Field label="Established"><input value={form.established} onChange={e=>setForm({...form, established:e.target.value})} className={inputCls} style={inputStyle}/></Field>
         <Field label="Capacity"><input value={form.capacity} onChange={e=>setForm({...form, capacity:e.target.value})} className={inputCls} style={inputStyle}/></Field>
         <Field label="Icon Emoji"><input value={form.icon} onChange={e=>setForm({...form, icon:e.target.value})} className={inputCls} style={inputStyle}/></Field>
+        <Field label="Sort Order"><input type="number" required value={form.order} onChange={e=>setForm({...form, order:parseInt(e.target.value)||0})} className={inputCls} style={inputStyle}/></Field>
       </div>
       <Field label="Main Description"><textarea required rows={3} value={form.description} onChange={e=>setForm({...form, description:e.target.value})} className={`${inputCls} resize-none`} style={inputStyle}/></Field>
       <Field label="Additional Description"><textarea rows={2} value={form.description2} onChange={e=>setForm({...form, description2:e.target.value})} className={`${inputCls} resize-none`} style={inputStyle}/></Field>
@@ -1558,7 +1591,7 @@ const AdminPanel = ({ onLogout }) => {
   // Form States
   const [programForm, setProgramForm] = useState({ title:"",description:"",duration:"",category:"Undergraduate",courses:"",image:null });
   const [testimonialForm, setTestimonialForm] = useState({ name:"",role:"",content:"",rating:5,image:null });
-  const [milestoneForm, setMilestoneForm] = useState({ year:"",event:"",icon:"🎯",color:"#1e3a8a",description:"" });
+  const [milestoneForm, setMilestoneForm] = useState({ year:"",event:"",icon:"🎯",color:"#1e3a8a",description:"",order:0 });
   const [vmForm, setVmForm] = useState({ type:"vision",content:"",order:0 });
   const [cvForm, setCvForm] = useState({ icon:"🌟",title:"",description:"",color:"from-amber-500 to-orange-500",order:0 });
   const [courseForm, setCourseForm] = useState({ category:"Undergraduate Programs",name:"",duration:"",seats:"",eligibility:"",description:"",icon:"👨‍⚕️",highlights:"",fees:"",admission:"",websiteLink:"" });

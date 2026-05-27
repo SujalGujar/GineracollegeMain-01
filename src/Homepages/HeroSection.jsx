@@ -28,7 +28,7 @@ const HeroSection = ({ departmentName }) => {
   useEffect(() => {
     const fetchSliders = async () => {
       try {
-        let url = "/sliders";
+        let url = "/sliders?department=null";
         if (departmentName) {
           // departmentName here is the slug from App.tsx (e.g. "department-of-fundamentals-of-nursing")
           // We need to find the department ID. We can fetch all departments and match.
@@ -127,7 +127,7 @@ const HeroSection = ({ departmentName }) => {
             <img
               src={slide.image}
               alt={slide.alt}
-              className="w-full h-full object-cover"
+              className="w-full h-full object-cover object-top"
             />
             {/* Dark overlay for better visibility of UI elements */}
             <div className="absolute inset-0 bg-black/30"></div>

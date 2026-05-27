@@ -3,7 +3,7 @@ const Institute = require('../models/Institute');
 // Get all institutes
 exports.getInstitutes = async (req, res) => {
   try {
-    const institutes = await Institute.find().sort({ createdAt: -1 });
+    const institutes = await Institute.find().sort({ order: 1, createdAt: -1 });
     res.json(institutes);
   } catch (err) {
     res.status(500).json({ message: err.message });

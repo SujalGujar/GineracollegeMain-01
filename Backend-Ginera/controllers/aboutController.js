@@ -23,7 +23,10 @@ exports.getMilestones = async (req, res) => {
 exports.createMilestone = async (req, res) => {
   try {
     const count = await Milestone.countDocuments();
-    const milestone = new Milestone({ ...req.body, order: count });
+    const milestone = new Milestone({ 
+      ...req.body, 
+      order: (req.body.order !== undefined && req.body.order !== '') ? Number(req.body.order) : count 
+    });
     await milestone.save();
     res.status(201).json(milestone);
   } catch (err) { res.status(400).json({ message: err.message }); }

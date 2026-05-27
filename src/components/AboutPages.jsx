@@ -90,12 +90,12 @@ export function AboutLogo({ onNavigate }) {
   const [collegeBranding, setCollegeBranding] = useState(null);
 
   useEffect(() => {
-    axiosInstance.get('/about/college-logo').then(r => setCollegeBranding(r.data)).catch(() => {});
+    axiosInstance.get('/about/college-logo').then(r => setCollegeBranding(r.data)).catch(() => { });
   }, []);
 
   const [visionMission, setVisionMission] = useState([]);
   useEffect(() => {
-    axiosInstance.get('/about/vision-mission').then(r => setVisionMission(r.data)).catch(() => {});
+    axiosInstance.get('/about/vision-mission').then(r => setVisionMission(r.data)).catch(() => { });
   }, []);
 
   const visionPoints = visionMission.filter(v => v.type === 'vision').map(v => v.content);
@@ -403,7 +403,7 @@ export function DeanMessage() {
   const [dean, setDean] = useState(null);
 
   useEffect(() => {
-    axiosInstance.get('/about/dean').then(r => setDean(r.data)).catch(() => {});
+    axiosInstance.get('/about/dean').then(r => setDean(r.data)).catch(() => { });
   }, []);
 
   const deanName = dean?.name || 'Dr. Hiral S. Shah';
@@ -567,40 +567,13 @@ export function DeanMessage() {
                     <motion.p key={i} className="text-gray-700 leading-relaxed text-lg text-justify" variants={textVariants}>
                       {text}
                     </motion.p>
-                  ))}  
+                  ))}
                   <motion.div className="bg-gradient-to-r from-[#F8F4F0] to-[#EDE7E1] p-6 rounded-2xl border-l-4 border-[#A2632E] shadow-md" variants={textVariants}>
                     <p className="text-gray-700 leading-relaxed text-lg">{deanHighlight}</p>
                   </motion.div>
                 </motion.div>
               </CardContent>
             </Card>
-          </motion.div>
-
-          {/* Statistics */}
-          <motion.div
-            className="grid grid-cols-2 lg:grid-cols-4 gap-6 my-12"
-            variants={containerVariants}
-            initial="visible"
-            whileInView="visible"
-            viewport={{ once: true }}
-          >
-            {deanStats.map((stat, index) => (
-              <motion.div
-                key={index}
-                className="text-center p-6 bg-white/80 rounded-2xl shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300"
-                variants={statsVariants}
-              >
-                <div
-                  className="font-bold text-3xl mb-2"
-                  style={{ color: stat.color }}
-                >
-                  {stat.number}
-                </div>
-                <div className="text-sm text-gray-600 font-medium leading-tight">
-                  {stat.label}
-                </div>
-              </motion.div>
-            ))}
           </motion.div>
         </div>
       </motion.div>
@@ -654,12 +627,12 @@ const fadeInLeft = {
 const fadeInRight = {
   hidden: { opacity: 0, x: 50 },
   visible: { opacity: 1, x: 0, transition: { duration: 0.8 } },
-};const fadeInUp = {
+}; const fadeInUp = {
   hidden: { opacity: 0, y: 30 },
-  visible: { 
-    opacity: 1, 
-    y: 0, 
-    transition: { duration: 0.6, ease: "easeOut" } 
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.6, ease: "easeOut" }
   },
 };
 
@@ -1287,8 +1260,8 @@ export function VisionMission() {
   const [coreValuesData, setCoreValuesData] = useState([]);
 
   useEffect(() => {
-    axiosInstance.get('/about/vision-mission').then(r => setVisionMission(r.data)).catch(() => {});
-    axiosInstance.get('/about/core-values').then(r => setCoreValuesData(r.data)).catch(() => {});
+    axiosInstance.get('/about/vision-mission').then(r => setVisionMission(r.data)).catch(() => { });
+    axiosInstance.get('/about/core-values').then(r => setCoreValuesData(r.data)).catch(() => { });
   }, []);
 
   const visionPoints = visionMission.filter(v => v.type === 'vision').map(v => v.content);
@@ -1512,31 +1485,31 @@ export function VisionMission() {
                     whileInView="visible"
                   >
                     {items2.map((item, index) => (
-                        <motion.li
-                          key={index}
-                          className="flex items-start gap-3 p-3 rounded-lg hover:bg-amber-50 transition-colors group cursor-pointer border border-transparent hover:border-amber-200"
-                          variants={listItemVariants}
-                          whileHover={{ x: 5 }}
-                          transition={{ type: "spring", stiffness: 400 }}
+                      <motion.li
+                        key={index}
+                        className="flex items-start gap-3 p-3 rounded-lg hover:bg-amber-50 transition-colors group cursor-pointer border border-transparent hover:border-amber-200"
+                        variants={listItemVariants}
+                        whileHover={{ x: 5 }}
+                        transition={{ type: "spring", stiffness: 400 }}
+                      >
+                        <motion.span
+                          className="text-amber-600 mt-1 flex-shrink-0 text-xl font-bold group-hover:text-orange-600"
+                          animate={{ scale: [1, 1.2, 1] }}
+                          transition={{
+                            duration: 2,
+                            repeat: Infinity,
+                            repeatDelay: 3,
+                            delay: index * 0.1,
+                          }}
                         >
-                          <motion.span
-                            className="text-amber-600 mt-1 flex-shrink-0 text-xl font-bold group-hover:text-orange-600"
-                            animate={{ scale: [1, 1.2, 1] }}
-                            transition={{
-                              duration: 2,
-                              repeat: Infinity,
-                              repeatDelay: 3,
-                              delay: index * 0.1,
-                            }}
-                          >
-                            •
-                          </motion.span>
-                          <span className="text-gray-700 group-hover:text-amber-900">
-                            {item}
-                          </span>
-                        </motion.li>
-                      ))}
-                    </motion.ul>
+                          •
+                        </motion.span>
+                        <span className="text-gray-700 group-hover:text-amber-900">
+                          {item}
+                        </span>
+                      </motion.li>
+                    ))}
+                  </motion.ul>
                 </CardContent>
 
                 {/* Animated Border */}
@@ -1690,37 +1663,45 @@ export function Achievements() {
     {
       category: "Academic Excellence",
       items: [
-        "NAAC 'A' Grade Accreditation (2015)",
-        "Top 10 Medical Colleges in Gujarat State",
-        "100% NEET PG pass rate for the last 3 years",
-        "Winner of Best Medical College Award (State Level - 2022)",
+        "This college is one of the best, biggest and oldest colleges of nursing in India and Gujarat state.",
+        "It is one of the premium Nursing institute in Gujarat, as there are key programs handled under good supervision of Dr Hiral S.Shah, Principal, College of Nursing, Ahmedabad.",
+        "Government of Gujarat gives opportunity to this college to collaborate with other institute abroad for Faculties and Students exchange program .",
+        "Students get admission only after getting higher ranks in Higher Secondary exams with science stream",
+        "Many students passed from this institute are working at different institutes/ hospitals in abroad, catering best care and getting best salaries. At least 60% of alumni of this college are abroad. ",
+        "Students passed from this institute get best job opportunities in the country as well as abroad."
       ],
     },
     {
       category: "Research & Innovation",
       items: [
-        "50+ research papers published in international journals (2023)",
-        "5 patents filed by faculty and students",
-        "₹2 Crore research grants received from government agencies",
-        "Established Center of Excellence in Molecular Biology",
+        "Every year more than 30 researches done by students and faculties and published in national and international journals.",
+
       ],
     },
     {
       category: "Clinical Excellence",
       items: [
-        "NABH accreditation for Civil Hospital",
-        "Successful organ transplant program",
-        "Advanced cardiac surgery program",
-        "Telemedicine services covering 100+ villages",
+        "Parent Hospital,Civil Hospital Asarwa,Ahmedabad",
+        "Affiliated Hospital ",
+        "U.N. Mehta Institute of Cardiology and Research Center",
+        "Mental Hospital, Ahmedabad",
+        "The M & J Institute of Ophthalmology",
+        "Government Spine Institute",
+        "Gujarat Cancer Research Institute",
+        "Institute of Kidney Diseases and Research Centre",
+        "Community Health Services",
+
       ],
     },
     {
       category: "Recognition & Awards",
       items: [
-        "Best Teaching Hospital Award - Gujarat (2023)",
-        "Excellence in Medical Education - National Award (2022)",
-        "Outstanding Community Service Recognition",
-        "Digital Initiative of the Year Award (2021)",
+        "300 - Nurses trained under Central Government aided workshop per year",
+        " More than 40 Nursing tutors were trained under Centre for midwifery training program.",
+
+        "Indira Gandhi National Open University, New Delhi has given opportunity to run Post Basic B.Sc. Nursing program at this college and it is successfully runing since 1993. Total output of this program is 30 per year and it is one of the best collaboration with Indira Gandhi National Open University, New Delhi",
+        "1224 Nurses were trained in 35 training programs till November - 2010 under GFATM R-7 Project",
+
       ],
     },
   ];
@@ -1813,28 +1794,92 @@ export function Achievements() {
 
                 {/* ✅ Content (Removed orange background) */}
                 <CardContent className="pt-4 bg-white/70 rounded-b-2xl">
-                  <ul className="space-y-3">
-                    {achievement.items.map((item, itemIndex) => (
-                      <motion.li
-                        key={itemIndex}
-                        className="flex items-start gap-3 transition-all duration-300 group/item hover:translate-x-1"
-                        initial={{ opacity: 0, x: -20 }}
-                        whileInView={{ opacity: 1, x: 0 }}
-                        transition={{ duration: 0.4, delay: itemIndex * 0.1 }}
-                        viewport={{ once: true }}
-                      >
-                        <Badge
-                          variant="outline"
-                          className="mt-1 flex-shrink-0 border-[#A2632E] text-[#A2632E] text-xs font-medium px-2 py-1 transition-all duration-300 group-hover:bg-[#A2632E] group-hover:text-white"
+                  {achievement.category === "Clinical Excellence" ? (
+                    <div className="space-y-4">
+                      {/* Parent Hospital Section */}
+                      <div className="bg-gradient-to-r from-[#A2632E]/5 to-transparent p-3 rounded-xl border-l-4 border-[#A2632E]">
+                        <div className="text-sm font-semibold text-[#A2632E] mb-2 uppercase tracking-wider flex items-center gap-2">
+                          <span className="w-1.5 h-3 bg-[#A2632E] rounded-full inline-block"></span>
+                          Parent Hospital
+                        </div>
+                        <ul className="space-y-2 pl-2">
+                          {achievement.items
+                            .filter(item => item && item.toLowerCase().includes("parent hospital"))
+                            .map((item, itemIndex) => {
+                              const parentText = item.includes(",")
+                                ? item.split(",").slice(1).map(s => s.trim()).join(", ")
+                                : item.replace(/parent\s+hospital/i, "").trim();
+                              return (
+                                <motion.li
+                                  key={itemIndex}
+                                  className="flex items-start gap-2.5 text-gray-700 text-sm hover:translate-x-1 transition-transform duration-300 font-medium"
+                                  initial={{ opacity: 0, x: -10 }}
+                                  whileInView={{ opacity: 1, x: 0 }}
+                                  transition={{ duration: 0.4 }}
+                                  viewport={{ once: true }}
+                                >
+                                  <span className="text-[#A2632E] text-base leading-none select-none">•</span>
+                                  <span className="leading-relaxed flex-1">{parentText}</span>
+                                </motion.li>
+                              );
+                            })}
+                        </ul>
+                      </div>
+
+                      {/* Affiliated Hospitals Section */}
+                      <div className="bg-gradient-to-r from-[#A2632E]/5 to-transparent p-3 rounded-xl border-l-4 border-[#A2632E]">
+                        <div className="text-sm font-semibold text-[#A2632E] mb-2 uppercase tracking-wider flex items-center gap-2">
+                          <span className="w-1.5 h-3 bg-[#A2632E] rounded-full inline-block"></span>
+                          Affiliated Hospitals / Institutes
+                        </div>
+                        <ul className="space-y-2 pl-2">
+                          {achievement.items
+                            .filter(item =>
+                              item &&
+                              item.trim() !== "" &&
+                              !item.toLowerCase().includes("parent hospital") &&
+                              !item.toLowerCase().includes("affiliated hospital")
+                            )
+                            .map((item, itemIndex) => (
+                              <motion.li
+                                key={itemIndex}
+                                className="flex items-start gap-2.5 text-gray-700 text-sm hover:translate-x-1 transition-transform duration-300"
+                                initial={{ opacity: 0, x: -10 }}
+                                whileInView={{ opacity: 1, x: 0 }}
+                                transition={{ duration: 0.4, delay: itemIndex * 0.05 }}
+                                viewport={{ once: true }}
+                              >
+                                <span className="text-[#A2632E] text-base leading-none select-none">•</span>
+                                <span className="leading-relaxed flex-1">{item}</span>
+                              </motion.li>
+                            ))}
+                        </ul>
+                      </div>
+                    </div>
+                  ) : (
+                    <ul className="space-y-3">
+                      {achievement.items.map((item, itemIndex) => (
+                        <motion.li
+                          key={itemIndex}
+                          className="flex items-start gap-3 transition-all duration-300 group/item hover:translate-x-1"
+                          initial={{ opacity: 0, x: -20 }}
+                          whileInView={{ opacity: 1, x: 0 }}
+                          transition={{ duration: 0.4, delay: itemIndex * 0.1 }}
+                          viewport={{ once: true }}
                         >
-                          {itemIndex + 1}.
-                        </Badge>
-                        <span className="text-gray-700 text-sm leading-relaxed flex-1 group-hover:text-[#111827] transition-colors duration-300">
-                          {item}
-                        </span>
-                      </motion.li>
-                    ))}
-                  </ul>
+                          <Badge
+                            variant="outline"
+                            className="mt-1 flex-shrink-0 border-[#A2632E] text-[#A2632E] text-xs font-medium px-2 py-1 transition-all duration-300 group-hover:bg-[#A2632E] group-hover:text-white"
+                          >
+                            {itemIndex + 1}.
+                          </Badge>
+                          <span className="text-gray-700 text-sm leading-relaxed flex-1 group-hover:text-[#111827] transition-colors duration-300">
+                            {item}
+                          </span>
+                        </motion.li>
+                      ))}
+                    </ul>
+                  )}
                 </CardContent>
               </Card>
             </motion.div>
@@ -1858,21 +1903,21 @@ export function Achievements() {
                 Notable Statistics
               </CardTitle>
               <p className="text-gray-700 mt-2 max-w-md mx-auto">
-                Key milestones that highlight our impact and success in medical
+                Key milestones that highlight our impact and success in nursing
                 education and healthcare.
               </p>
             </CardHeader>
 
             <CardContent className="pt-4 pb-10">
               <motion.div
-                className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8 text-center"
+                className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8 text-center"
                 variants={containerVariants}
               >
                 {[
-                  { number: "5000+", label: "Alumni Doctors" },
-                  { number: "95%", label: "Graduate Employment Rate" },
-                  { number: "200+", label: "Research Publications" },
-                  { number: "25", label: "Academic Awards" },
+                  { number: "5000+", label: "Alumni" },
+                  { number: "100%", label: "Graduate Employment Rate" },
+                  { number: "500+", label: "Research Publications" },
+
                 ].map((stat, index) => (
                   <motion.div
                     key={index}

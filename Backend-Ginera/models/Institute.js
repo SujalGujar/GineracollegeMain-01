@@ -16,6 +16,7 @@ const instituteSchema = new mongoose.Schema({
     website: { type: String }
   },
   icon: { type: String, default: '🏥' },
+  order: { type: Number, default: 0 },
   createdAt: { type: Date, default: Date.now }
 });
 

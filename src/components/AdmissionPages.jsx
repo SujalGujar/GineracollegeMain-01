@@ -179,10 +179,10 @@ export function CoursesOffered() {
     );
   }
 
-        //   admission: "Through University Entrance Exam",
-        // },
-    
-   
+  //   admission: "Through University Entrance Exam",
+  // },
+
+
 
   const toggleExpand = (id) => {
     setExpandedIds((prev) =>
@@ -514,7 +514,7 @@ export function CoursesOffered() {
           <Alert className="bg-gradient-to-r from-amber-500 to-orange-500 border-0 text-black">
             <Info className="h-5 w-5 text-black" />
             <AlertDescription className="text-black">
-              <strong>Admission Information:</strong> 
+              <strong>Admission Information:</strong>
               <a href="https://www.medadmgujarat.org/ga/home.aspx" target="_blank">https://www.medadmgujarat.org/ga/home.aspx</a>
             </AlertDescription>
           </Alert>
@@ -528,7 +528,7 @@ export function CoursesOffered() {
             {
               icon: <Stethoscope className="w-8 h-8" />,
               title: "Expert Faculty",
-              description: "Learn from experienced medical professionals and researchers with decades of clinical experience and academic expertise in their respective fields.",
+              description: "Learn from experienced nursing professionals and researchers with decades of clinical experience and academic expertise in their respective fields.",
               color: "from-amber-500 to-orange-500",
             },
             {
@@ -598,7 +598,7 @@ export function AdmissionProcedure() {
     );
   }
 
- 
+
 
   const toggleProcedureStep = (stepId) => {
     setExpandedProcedureSteps((prev) =>
@@ -610,14 +610,14 @@ export function AdmissionProcedure() {
 
 
   const requiredDocs = [
-   
+
     "Class 10th & 12th Marksheet and Certificates",
     "Transfer Certificate",
     "Birthdate Proof(Birth Certificate or 10th Certificate)"
   ];
   const additionalDocs = [
     "Caste Certificate (if applicable)",
-    
+
     "Medical Fitness Certificate",
     "Passport Size Photographs",
   ];
@@ -694,7 +694,7 @@ export function AdmissionProcedure() {
                           {expandedProcedureSteps.includes(step.step)
                             ? step.description
                             : step.description.slice(0, 100) +
-                              (step.description.length > 100 ? "..." : "")}
+                            (step.description.length > 100 ? "..." : "")}
                           {step.description.length > 100 && (
                             <button
                               onClick={() => toggleProcedureStep(step.step)}
@@ -865,8 +865,8 @@ export function AdmissionProcedure() {
           </div>
 
           {/* Buttons */}
-          
-          
+
+
         </motion.div>
       </div>
     </div>
@@ -1727,7 +1727,7 @@ export function AdmissionRules() {
                       >
                         {["10+2 with Physics, Chemistry, Biology/Biotechnology and English",
                           "Minimum 45% marks (40% for SC/ST/OBC candidates)",
-                          
+
                           "English as compulsory subject in 10+2",
                           "PCB subjects from recognized board",
                         ].map((item, index) => (
@@ -1754,29 +1754,29 @@ export function AdmissionRules() {
                           </motion.li>
                         ))}
                       </motion.ul>
-                      
+
                     </motion.div>
                     <motion.div className="p-4 rounded-lg border border-orange-200 bg-orange-50/50 group/item">
-                        <motion.p className="text-sm text-gray-700">
-                          {isCommitteeTextExpanded
-                            ? "Admission Committee for Physiotherapy, BSC Nursing, Prosthetics and Orthotics, Occupational Therapy, Optometry, Naturopathy, Audiology and Speech Therapy, GNM And ANM Admission Government of Gujarat, Gandhinagar"
-                            : "Admission Committee for Physiotherapy, BSC Nursing, Prosthetics and Orthotics..."}
-                          <button
-                            onClick={() => setIsCommitteeTextExpanded(!isCommitteeTextExpanded)}
-                            className="text-orange-600 font-semibold hover:underline text-xs ml-1 focus:outline-none"
-                          >
-                            {isCommitteeTextExpanded ? "Read less" : "Read more"}
-                          </button>
-                        </motion.p>
-                        <a
-                          href="https://www.medadmgujarat.org/ga/home.aspx"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-block mt-2 text-xs font-semibold text-white bg-orange-500 hover:bg-orange-600 px-3 py-1.5 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-opacity-50"
+                      <motion.p className="text-sm text-gray-700">
+                        {isCommitteeTextExpanded
+                          ? "Admission Committee for Physiotherapy, BSC Nursing, Prosthetics and Orthotics, Occupational Therapy, Optometry, Naturopathy, Audiology and Speech Therapy, GNM And ANM Admission Government of Gujarat, Gandhinagar"
+                          : "Admission Committee for Physiotherapy, BSC Nursing, Prosthetics and Orthotics..."}
+                        <button
+                          onClick={() => setIsCommitteeTextExpanded(!isCommitteeTextExpanded)}
+                          className="text-orange-600 font-semibold hover:underline text-xs ml-1 focus:outline-none"
                         >
-                          Visit Us
-                        </a>
-                      </motion.div>
+                          {isCommitteeTextExpanded ? "Read less" : "Read more"}
+                        </button>
+                      </motion.p>
+                      <a
+                        href="https://www.medadmgujarat.org/ga/home.aspx"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-block mt-2 text-xs font-semibold text-white bg-orange-500 hover:bg-orange-600 px-3 py-1.5 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-opacity-50"
+                      >
+                        Visit Us
+                      </a>
+                    </motion.div>
                   </motion.div>
 
                   {/* Right Column */}
@@ -1822,7 +1822,7 @@ export function AdmissionRules() {
                       >
                         {[
                           "Minimum 17 years as on December 31st of admission year",
-                          
+
                           "Age proof certificate mandatory",
                           "No age relaxation for management/NRI quota"
                         ]
@@ -2012,7 +2012,7 @@ export function AdmissionRules() {
                       >
                         {[
                           "Minimum 17 years as on admission date",
-                          
+
                           "No age limit for working professionals",
                           "Age relaxation as per government norms"
                         ]

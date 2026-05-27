@@ -51,7 +51,7 @@ const seedData = async () => {
         description: "Specialization in Critical care Nursing, Oncology Nursing, Nephro-Urological Nursing, Cardiovascular and Thoracic Nursing, Neurosciences Nursing, Orthopedic Nursing, Gastroenterology Nursing",
         icon: "❤️",
         highlights: [" Theory Blocks", "Clinical Rotations", "Community Rotations", "Internship Program"],
-        fees: "₹60,000",
+        fees: "₹50,000",
         admission: "Through University Entrance Exam"
       },
       {
@@ -63,7 +63,7 @@ const seedData = async () => {
         description: "Specialization in OBSTETRIC AND GYNAECOLOGICAL NURSING",
         icon: "❤️",
         highlights: [" Theory Blocks", "Clinical Rotations", "Community Rotations", "Internship Program"],
-        fees: "₹60,000",
+        fees: "₹50,000",
         admission: "Through University Entrance Exam"
       },
       {
@@ -75,7 +75,7 @@ const seedData = async () => {
         description: "Specialization in PEDIATRIC (CHILD HEALTH) NURSING",
         icon: "❤️",
         highlights: [" Theory Blocks", "Clinical Rotations", "Community Rotations", "Internship Program"],
-        fees: "₹60,000",
+        fees: "₹50,000",
         admission: "Through University Entrance Exam"
       },
       {
@@ -87,7 +87,7 @@ const seedData = async () => {
         description: "Specialization in PSYCHIATRIC (MENTAL HEALTH) NURSING",
         icon: "❤️",
         highlights: [" Theory Blocks", "Clinical Rotations", "Community Rotations", "Internship Program"],
-        fees: "₹60,000",
+        fees: "₹50,000",
         admission: "Through University Entrance Exam"
       },
       {
@@ -99,7 +99,7 @@ const seedData = async () => {
         description: "Specialization in COMMUNITY HEALTH NURSING",
         icon: "❤️",
         highlights: [" Theory Blocks", "Clinical Rotations", "Community Rotations", "Internship Program"],
-        fees: "₹60,000",
+        fees: "₹50,000",
         admission: "Through University Entrance Exam"
       },
       {
@@ -111,7 +111,7 @@ const seedData = async () => {
         description: "Specialization in Nurse Practitioners in critical care nursing (Residency Program)",
         icon: "❤️",
         highlights: [" Theory Blocks", "Clinical Rotations", "Community Rotations", "Internship Program"],
-        fees: "₹60,000",
+        fees: "₹50,000",
         admission: "Through University Entrance Exam"
       },
       {
@@ -123,7 +123,7 @@ const seedData = async () => {
         description: "Post Basic Diploma Specialty Nursing - Residency Program including Burn & Reconstructive Surgery, Orthopaedic, Neonatal, Oncology, Critical Care, etc.",
         icon: "❤️",
         highlights: [" Theory Blocks", "Clinical Rotations", "Community Rotations", "Residency Program"],
-        fees: "₹15000 + 15000 ",
+        fees: "₹5000 + 5000 ",
         admission: "Through Direct Admission upon Merit of Eligiblity Study by admission committee"
       }
     ];

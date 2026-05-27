@@ -504,7 +504,7 @@ const ImageSlider = ({ images }) => {
   }, [images]);
 
   return (
-    <div className="relative w-full aspect-[21/9] rounded-3xl overflow-hidden shadow-2xl mb-12 group">
+    <div className="relative w-full aspect-[16/7] rounded-3xl overflow-hidden shadow-2xl mb-12 group">
       <AnimatePresence mode="wait">
         <motion.img
           key={index}
@@ -513,7 +513,7 @@ const ImageSlider = ({ images }) => {
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.8 }}
-          className="absolute inset-0 w-full h-full object-cover"
+          className="absolute inset-0 w-full h-full object-cover object-top"
         />
       </AnimatePresence>
       <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />

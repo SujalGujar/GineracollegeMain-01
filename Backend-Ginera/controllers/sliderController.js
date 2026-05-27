@@ -20,7 +20,7 @@ exports.getSliders = async (req, res) => {
     let sliders;
     if (department && department !== 'null' && department !== 'undefined' && department !== 'all') {
       sliders = await sliderService.getSlidersByDepartment(department);
-    } else if (department === 'null') {
+    } else if (department === 'null' || !department || department === 'undefined') {
       sliders = await sliderService.getHomepageSliders();
     } else {
       sliders = await sliderService.getAllSliders();
