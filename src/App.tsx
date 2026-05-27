@@ -75,7 +75,7 @@ export default function App() {
     switch (currentPage) {
       case 'home':
         return <HomePage onNavigate={handleNavigation} />;
-      
+
       // About Us pages
       case 'about-logo':
         return <AboutLogo onNavigate={handleNavigation} />;
@@ -89,7 +89,7 @@ export default function App() {
         return <VisionMission />;
       case 'achievements':
         return <Achievements />;
-      
+
       // Admission pages
       case 'courses':
         return <CoursesOffered />;
@@ -101,7 +101,7 @@ export default function App() {
         return <div>Service Bond page has been removed.</div>;
       case 'instructions':
         return <Instructions />;
-      
+
       // Nursing Department pages
       case 'department-fundamentals':
         return <GenericDepartment slug="fundamentals" category="Nursing Department" />;
@@ -115,7 +115,7 @@ export default function App() {
         return <GenericDepartment slug="community" category="Nursing Department" />;
       case 'department-mental-health':
         return <GenericDepartment slug="mental-health" category="Nursing Department" />;
-      
+
       // Photo Gallery pages
       case 'college-photos':
         return <CollegePhotos />;
@@ -123,7 +123,7 @@ export default function App() {
         return <HospitalPhotos />;
       case 'events-photos':
         return <EventsPhotos />;
-      
+
       // Other pages
       case 'affiliated-institutes':
         return <AffiliatedInstitutes />;
@@ -141,9 +141,9 @@ export default function App() {
           setIsLoggedIn(true);
           localStorage.setItem('adminAuthenticated', 'true');
         }} />;
-      
+
       default:
-        return <HomePage onNavigate={handleNavigation}/>;
+        return <HomePage onNavigate={handleNavigation} />;
     }
   };
 
@@ -239,11 +239,24 @@ export default function App() {
                       </div>
                       <span className="text-sm">+91-79-2268-0000</span>
                     </div>
-                    <div className="flex items-center space-x-3">
-                      <div className="w-5 h-5 rounded flex items-center justify-center" style={{ backgroundColor: '#F59E0B' }}>
+                    <div className="flex items-start space-x-3">
+                      <div className="w-5 h-5 rounded flex items-center justify-center flex-shrink-0 mt-0.5" style={{ backgroundColor: '#F59E0B' }}>
                         <span className="text-white text-xs">✉️</span>
                       </div>
-                      <span className="text-sm">info@nursingcollege.edu</span>
+                      <div className="flex flex-col text-sm space-y-1.5">
+                        <div>
+                          <span className="text-xs text-gray-400 block font-medium">College of Nursing :</span>
+                          <span className="text-white">prin-gcona-adm@gujarat.gov.in</span>
+                        </div>
+                        <div>
+                          <span className="text-xs text-gray-400 block font-medium">College of Nursing :</span>
+                          <span className="text-white">principalgcona@gmail.com</span>
+                        </div>
+                        <div>
+                          <span className="text-xs text-gray-400 block font-medium">School of Nursing:</span>
+                          <span className="text-white">principalgsona@gmail.com</span>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
