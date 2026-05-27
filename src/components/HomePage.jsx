@@ -1351,7 +1351,7 @@ const HomePage=({ onNavigate }) => {
                           <ArrowRight size={12} style={{ transform: isExpanded ? "rotate(90deg)" : "none", transition: "transform 0.2s" }} />
                         </button>
                       )}
-                      <LearnMoreButton onClick={() => console.log(`Learn more: ${prog.title}`)} />
+                      <LearnMoreButton onClick={() => onNavigate('courses')} />
                     </div>
                   </motion.div>
                 );
@@ -1364,7 +1364,7 @@ const HomePage=({ onNavigate }) => {
               animate={programsVisible ? "visible" : "hidden"}
               style={{ textAlign: "center", marginTop: 32 }}
             >
-              <ViewAllButton onClick={() => console.log("View All Programs")} />
+              <ViewAllButton onClick={() => onNavigate('courses')} />
               <p style={{ marginTop: 20, color: "#6b7280", fontSize: 16 }}>
                 10,000+ successful alumni in the field of Nursing
               </p>

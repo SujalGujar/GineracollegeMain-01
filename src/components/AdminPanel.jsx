@@ -855,7 +855,7 @@ const AboutTab = ({ aboutSub, setAboutSub, collegeLogo, setCollegeLogo, logoFile
                 <input type="file" className="hidden" accept="image/*" onChange={e=>setDeanPhotoFile(e.target.files[0])}/>
               </label>
             </div>
-            <button onClick={async()=>{ const fd=new FormData(); ["name","title","greeting","highlight"].forEach(k=>fd.append(k,deanMessage[k]||"")); fd.append("paragraphs",JSON.stringify(deanMessage.paragraphs||[])); fd.append("stats",JSON.stringify(deanMessage.stats||[])); if(deanPhotoFile) fd.append("photo",deanPhotoFile); try{const r=await axiosInstance.put("/about/dean",fd); setDeanMessage(r.data); setDeanPhotoFile(null); notify("Message Updated Successfully");}catch{notify("Update failed","error");}}}
+            <button onClick={async()=>{ const fd=new FormData(); ["name","title","greeting","highlight"].forEach(k=>fd.append(k,deanMessage[k]||"")); fd.append("paragraphs",JSON.stringify((deanMessage.paragraphs||[]).filter(p=>p&&p.trim()!==""))); fd.append("stats",JSON.stringify(deanMessage.stats||[])); if(deanPhotoFile) fd.append("photo",deanPhotoFile); try{const r=await axiosInstance.put("/about/dean",fd); setDeanMessage(r.data); setDeanPhotoFile(null); notify("Message Updated Successfully");}catch{notify("Update failed","error");}}}
               className="w-full sm:w-auto px-10 py-3.5 rounded-xl text-sm font-bold text-white shadow-xl active:scale-95 transition-all" style={{ background: C.brand }}>Publish Message</button>
           </div>
         )}

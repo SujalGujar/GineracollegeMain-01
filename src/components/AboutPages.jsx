@@ -28,7 +28,65 @@ import campusLocationImg from "../images/coll.jpeg";
 // import collegeImage5 from "../images/collegeimage5.jpg";
 // import collegeImage6 from "../images/collegeimage6.jpg";
 
-export function AboutLogo() {
+function MissionStatementItem({ text, index, direction = 1 }) {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const isLongText = text && text.length > 90;
+
+  return (
+    <motion.div
+      initial={{ x: direction * -30, opacity: 0 }}
+      whileInView={{ x: 0, opacity: 1 }}
+      viewport={{ once: true }}
+      transition={{
+        duration: 0.5,
+        delay: index * 0.15,
+        ease: "easeOut",
+      }}
+      className="flex items-center min-h-[96px] w-full"
+    >
+      <motion.div
+        whileHover={{
+          scale: 1.01,
+          boxShadow: "0 20px 40px rgba(245, 158, 11, 0.15)",
+          backgroundColor: "#fef3c7",
+          borderColor: "#f59e0b",
+        }}
+        transition={{ duration: 0.3, ease: "easeOut" }}
+        className="flex items-start space-x-4 p-4 border border-orange-200 rounded-xl bg-white shadow-sm cursor-pointer w-full h-auto"
+      >
+        <motion.div
+          whileHover={{ scale: 1.2, rotate: 45 }}
+          transition={{ duration: 0.3 }}
+          className="flex-shrink-0 mt-1"
+        >
+          <IoMdArrowForward
+            className="text-amber-600 group-hover:text-orange-600"
+            size={20}
+          />
+        </motion.div>
+        <div className="flex-1 min-w-0">
+          <p className={`text-gray-700 text-sm leading-relaxed group-hover:text-amber-900 transition-colors ${!isExpanded && isLongText ? 'line-clamp-3' : ''}`}>
+            {text}
+          </p>
+          {isLongText && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsExpanded(!isExpanded);
+              }}
+              className="text-orange-600 hover:text-orange-800 font-semibold text-xs mt-1.5 focus:outline-none flex items-center gap-1 transition-all"
+            >
+              {isExpanded ? "Read Less" : "Read More"}
+              <span style={{ fontSize: '9px', display: 'inline-block', transform: isExpanded ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>▼</span>
+            </button>
+          )}
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+}
+
+export function AboutLogo({ onNavigate }) {
   const [collegeBranding, setCollegeBranding] = useState(null);
 
   useEffect(() => {
@@ -192,43 +250,7 @@ export function AboutLogo() {
 
                 <div className="space-y-4 flex-1 overflow-y-auto">
                   {items.map((text, i) => (
-                    <motion.div
-                      key={i}
-                      initial={{ x: -30, opacity: 0 }}
-                      whileInView={{ x: 0, opacity: 1 }}
-                      viewport={{ once: true }}
-                      transition={{
-                        duration: 0.5,
-                        delay: i * 0.15,
-                        ease: "easeOut",
-                      }}
-                      className="h-24 flex items-center"
-                    >
-                      <motion.div
-                        whileHover={{
-                          scale: 1.02,
-                          boxShadow: "0 20px 40px rgba(245, 158, 11, 0.15)",
-                          backgroundColor: "#fef3c7",
-                          borderColor: "#f59e0b",
-                        }}
-                        transition={{ duration: 0.3, ease: "easeOut" }}
-                        className="flex items-start space-x-4 p-4 border border-orange-200 rounded-xl bg-white shadow-sm cursor-pointer w-full h-full"
-                      >
-                        <motion.div
-                          whileHover={{ scale: 1.2, rotate: 45 }}
-                          transition={{ duration: 0.3 }}
-                          className="flex-shrink-0 mt-1"
-                        >
-                          <IoMdArrowForward
-                            className="text-amber-600 group-hover:text-orange-600"
-                            size={20}
-                          />
-                        </motion.div>
-                        <p className="text-gray-700 text-sm leading-relaxed flex-1 group-hover:text-amber-900 transition-colors line-clamp-3">
-                          {text}
-                        </p>
-                      </motion.div>
-                    </motion.div>
+                    <MissionStatementItem key={i} text={text} index={i} direction={-1} />
                   ))}
                 </div>
               </div>
@@ -291,43 +313,7 @@ export function AboutLogo() {
 
                 <div className="space-y-4 flex-1 overflow-y-auto">
                   {items2.map((text, i) => (
-                    <motion.div
-                      key={i}
-                      initial={{ x: 30, opacity: 0 }}
-                      whileInView={{ x: 0, opacity: 1 }}
-                      viewport={{ once: true }}
-                      transition={{
-                        duration: 0.5,
-                        delay: i * 0.15,
-                        ease: "easeOut",
-                      }}
-                      className="h-24 flex items-center"
-                    >
-                      <motion.div
-                        whileHover={{
-                          scale: 1.02,
-                          boxShadow: "0 20px 40px rgba(245, 158, 11, 0.15)",
-                          backgroundColor: "#fef3c7",
-                          borderColor: "#f59e0b",
-                        }}
-                        transition={{ duration: 0.3, ease: "easeOut" }}
-                        className="flex items-start space-x-4 p-4 border border-orange-200 rounded-xl bg-white shadow-sm cursor-pointer w-full h-full"
-                      >
-                        <motion.div
-                          whileHover={{ scale: 1.2, rotate: 45 }}
-                          transition={{ duration: 0.3 }}
-                          className="flex-shrink-0 mt-1"
-                        >
-                          <IoMdArrowForward
-                            className="text-amber-600 group-hover:text-orange-600"
-                            size={20}
-                          />
-                        </motion.div>
-                        <p className="text-gray-700 text-sm leading-relaxed flex-1 group-hover:text-amber-900 transition-colors line-clamp-3">
-                          {text}
-                        </p>
-                      </motion.div>
-                    </motion.div>
+                    <MissionStatementItem key={i} text={text} index={i} direction={1} />
                   ))}
                 </div>
               </div>
@@ -353,7 +339,7 @@ export function AboutLogo() {
                 shadow-lg shadow-[#5a280a]/40 "
               >
                 <ViewAllProgramsButton
-                  onClick={() => console.log("View All Programs")}
+                  onClick={() => onNavigate && onNavigate('courses')}
                 />
               </motion.button>
             </motion.div>
@@ -500,7 +486,7 @@ export function DeanMessage() {
               className="flex-1 flex justify-center lg:justify-start"
               variants={imageVariants}
             >
-              <div style={{ height: '285px' }} className="relative w-80 md:h-16 rounded-full shadow-2xl border-8 border-white overflow-hidden bg-gradient-to-br from-[#A2632E] to-[#804C22]">
+              <div style={{ height: '285px' }} className="relative w-80 rounded-full shadow-2xl border-8 border-white overflow-hidden bg-gradient-to-br from-[#A2632E] to-[#804C22]">
                 <img
                   src={deanPhoto}
                   className="w-full h-full object-cover relative z-10 rounded-full"
@@ -577,7 +563,7 @@ export function DeanMessage() {
                   initial="hidden"
                   whileInView="visible"
                 >
-                  {deanParagraphs.map((text, i) => (
+                  {deanParagraphs.filter(p => p && p.trim() !== "").map((text, i) => (
                     <motion.p key={i} className="text-gray-700 leading-relaxed text-lg text-justify" variants={textVariants}>
                       {text}
                     </motion.p>

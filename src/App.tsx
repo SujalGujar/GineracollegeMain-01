@@ -78,7 +78,7 @@ export default function App() {
       
       // About Us pages
       case 'about-logo':
-        return <AboutLogo />;
+        return <AboutLogo onNavigate={handleNavigation} />;
       case 'dean-message':
         return <DeanMessage />;
       case 'history':
