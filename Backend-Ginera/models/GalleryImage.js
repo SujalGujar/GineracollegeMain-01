@@ -10,9 +10,18 @@ const galleryImageSchema = new mongoose.Schema({
     type: String,
     required: false
   },
+  mediaType: {
+    type: String,
+    enum: ['image', 'video'],
+    default: 'image'
+  },
   imageUrl: {
     type: String,
-    required: true
+    required: false
+  },
+  videoUrl: {
+    type: String,
+    required: false
   },
   category: {
     type: String,

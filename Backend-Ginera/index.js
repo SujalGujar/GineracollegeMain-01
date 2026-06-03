@@ -86,6 +86,21 @@ app.get('/', (req, res) => {
   res.send('Ginera College Backend is running');
 });
 
+// Global Error Handler
+app.use((err, req, res, next) => {
+  if (err.name === 'MulterError') {
+    if (err.code === 'LIMIT_FILE_SIZE') {
+      return res.status(400).json({ 
+        message: 'File too large. Maximum size allowed is 100MB.' 
+      });
+    }
+    return res.status(400).json({ message: err.message });
+  }
+  res.status(err.status || 500).json({
+    message: err.message || 'Internal Server Error'
+  });
+});
+
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });

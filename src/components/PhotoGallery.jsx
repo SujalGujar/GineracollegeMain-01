@@ -66,11 +66,20 @@ export function CollegePhotos() {
               className="rounded-lg overflow-hidden cursor-pointer bg-white shadow-md"
             >
               <div className="aspect-video overflow-hidden">
-                <ImageWithFallback
-                  src={image.imageUrl.startsWith('http') ? image.imageUrl : `${window.location.hostname === 'localhost' ? `${window.location.hostname === 'localhost' ? 'http://localhost:8080' : 'https://gineracollegemain-01.onrender.com'}` + '' : 'https://gineracollegemain-01.onrender.com'}${image.imageUrl}`}
-                  alt={image.title}
-                  className="w-full h-full object-cover transition-transform duration-300 ease-in-out hover:scale-105"
-                />
+                {image.mediaType === 'video' ? (
+                  <video
+                    src={image.videoUrl?.startsWith('http') ? image.videoUrl : `${window.location.hostname === 'localhost' ? 'http://localhost:8080' : 'https://gineracollegemain-01.onrender.com'}${image.videoUrl}`}
+                    controls
+                    muted
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <ImageWithFallback
+                    src={image.imageUrl?.startsWith('http') ? image.imageUrl : `${window.location.hostname === 'localhost' ? 'http://localhost:8080' : 'https://gineracollegemain-01.onrender.com'}${image.imageUrl}`}
+                    alt={image.title}
+                    className="w-full h-full object-cover transition-transform duration-300 ease-in-out hover:scale-105"
+                  />
+                )}
               </div>
               <CardContent className="p-5">
                 <h3 className="font-semibold text-lg mb-2 text-gray-900">
@@ -98,9 +107,16 @@ export function CollegePhotos() {
               className="rounded-lg overflow-hidden cursor-pointer bg-white shadow-sm flex flex-col"
             >
               <div className="aspect-video overflow-hidden bg-gray-100 flex items-center justify-center relative group">
-                {image.imageUrl ? (
+                {image.mediaType === 'video' ? (
+                  <video
+                    src={image.videoUrl?.startsWith('http') ? image.videoUrl : `${window.location.hostname === 'localhost' ? 'http://localhost:8080' : 'https://gineracollegemain-01.onrender.com'}${image.videoUrl}`}
+                    controls
+                    muted
+                    className="absolute inset-0 w-full h-full object-cover"
+                  />
+                ) : image.imageUrl ? (
                   <img
-                    src={image.imageUrl.startsWith('http') ? image.imageUrl : `${window.location.hostname === 'localhost' ? `${window.location.hostname === 'localhost' ? 'http://localhost:8080' : 'https://gineracollegemain-01.onrender.com'}` + '' : 'https://gineracollegemain-01.onrender.com'}${image.imageUrl}`}
+                    src={image.imageUrl.startsWith('http') ? image.imageUrl : `${window.location.hostname === 'localhost' ? 'http://localhost:8080' : 'https://gineracollegemain-01.onrender.com'}${image.imageUrl}`}
                     alt={image.title}
                     className="absolute inset-0 w-full h-full object-cover transition-transform duration-300 ease-in-out group-hover:scale-105"
                   />
@@ -200,11 +216,19 @@ export function HospitalPhotos() {
           className="max-w-3xl mx-auto rounded-lg overflow-hidden shadow-lg cursor-pointer"
         >
           <div className="aspect-video overflow-hidden rounded-t-lg">
-            <ImageWithFallback
-              src={hospitalImages[0].imageUrl.startsWith('http') ? hospitalImages[0].imageUrl : `${window.location.hostname === 'localhost' ? `${window.location.hostname === 'localhost' ? 'http://localhost:8080' : 'https://gineracollegemain-01.onrender.com'}` + '' : 'https://gineracollegemain-01.onrender.com'}${hospitalImages[0].imageUrl}`}
-              alt={hospitalImages[0].title}
-              className="w-full h-full object-cover transition-transform duration-300 ease-in-out hover:scale-105"
-            />
+            {hospitalImages[0].mediaType === 'video' ? (
+              <video
+                src={hospitalImages[0].videoUrl?.startsWith('http') ? hospitalImages[0].videoUrl : `${window.location.hostname === 'localhost' ? 'http://localhost:8080' : 'https://gineracollegemain-01.onrender.com'}${hospitalImages[0].videoUrl}`}
+                controls muted
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <ImageWithFallback
+                src={hospitalImages[0].imageUrl?.startsWith('http') ? hospitalImages[0].imageUrl : `${window.location.hostname === 'localhost' ? 'http://localhost:8080' : 'https://gineracollegemain-01.onrender.com'}${hospitalImages[0].imageUrl}`}
+                alt={hospitalImages[0].title}
+                className="w-full h-full object-cover transition-transform duration-300 ease-in-out hover:scale-105"
+              />
+            )}
           </div>
           <CardContent className="p-6 bg-white rounded-b-lg">
             <h2 className="text-2xl font-semibold mb-3 text-gray-900">
@@ -240,11 +264,19 @@ export function HospitalPhotos() {
               className="rounded-lg overflow-hidden shadow-md cursor-pointer bg-white"
             >
               <div className="aspect-video overflow-hidden">
-                <ImageWithFallback
-                  src={image.imageUrl.startsWith('http') ? image.imageUrl : `${window.location.hostname === 'localhost' ? `${window.location.hostname === 'localhost' ? 'http://localhost:8080' : 'https://gineracollegemain-01.onrender.com'}` + '' : 'https://gineracollegemain-01.onrender.com'}${image.imageUrl}`}
-                  alt={image.title}
-                  className="w-full h-full object-cover transition-transform duration-300 ease-in-out hover:scale-105"
-                />
+                {image.mediaType === 'video' ? (
+                  <video
+                    src={image.videoUrl?.startsWith('http') ? image.videoUrl : `${window.location.hostname === 'localhost' ? 'http://localhost:8080' : 'https://gineracollegemain-01.onrender.com'}${image.videoUrl}`}
+                    controls muted
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <ImageWithFallback
+                    src={image.imageUrl?.startsWith('http') ? image.imageUrl : `${window.location.hostname === 'localhost' ? 'http://localhost:8080' : 'https://gineracollegemain-01.onrender.com'}${image.imageUrl}`}
+                    alt={image.title}
+                    className="w-full h-full object-cover transition-transform duration-300 ease-in-out hover:scale-105"
+                  />
+                )}
               </div>
               <CardContent className="p-4">
                 <h3 className="font-semibold mb-2 text-gray-900">{image.title}</h3>
@@ -273,9 +305,15 @@ export function HospitalPhotos() {
               className="rounded-lg shadow-sm bg-white cursor-pointer text-center flex flex-col items-center overflow-hidden border"
             >
               <div className="w-full aspect-video bg-gray-100 flex items-center justify-center overflow-hidden">
-                {facility.imageUrl ? (
+                {facility.mediaType === 'video' ? (
+                  <video
+                    src={facility.videoUrl?.startsWith('http') ? facility.videoUrl : `${window.location.hostname === 'localhost' ? 'http://localhost:8080' : 'https://gineracollegemain-01.onrender.com'}${facility.videoUrl}`}
+                    controls muted
+                    className="w-full h-full object-cover"
+                  />
+                ) : facility.imageUrl ? (
                   <img
-                    src={facility.imageUrl.startsWith('http') ? facility.imageUrl : `${window.location.hostname === 'localhost' ? `${window.location.hostname === 'localhost' ? 'http://localhost:8080' : 'https://gineracollegemain-01.onrender.com'}` + '' : 'https://gineracollegemain-01.onrender.com'}${facility.imageUrl}`}
+                    src={facility.imageUrl.startsWith('http') ? facility.imageUrl : `${window.location.hostname === 'localhost' ? 'http://localhost:8080' : 'https://gineracollegemain-01.onrender.com'}${facility.imageUrl}`}
                     alt={facility.title}
                     className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
                   />
@@ -360,7 +398,9 @@ export function EventsPhotos() {
               name: img.title,
               date: new Date(img.createdAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
               description: img.description,
-              imageUrl: img.imageUrl
+              mediaType: img.mediaType || 'image',
+              imageUrl: img.imageUrl,
+              videoUrl: img.videoUrl,
             });
           }
         });
@@ -394,11 +434,19 @@ export function EventsPhotos() {
           className="max-w-3xl mx-auto rounded-lg overflow-hidden shadow-lg cursor-pointer"
         >
           <div className="aspect-video overflow-hidden rounded-t-lg">
-            <ImageWithFallback
-              src={eventImages[0].imageUrl.startsWith('http') ? eventImages[0].imageUrl : `${window.location.hostname === 'localhost' ? `${window.location.hostname === 'localhost' ? 'http://localhost:8080' : 'https://gineracollegemain-01.onrender.com'}` + '' : 'https://gineracollegemain-01.onrender.com'}${eventImages[0].imageUrl}`}
-              alt={eventImages[0].title}
-              className="w-full h-full object-cover transition-transform duration-300 ease-in-out hover:scale-105"
-            />
+            {eventImages[0].mediaType === 'video' ? (
+              <video
+                src={eventImages[0].videoUrl?.startsWith('http') ? eventImages[0].videoUrl : `${window.location.hostname === 'localhost' ? 'http://localhost:8080' : 'https://gineracollegemain-01.onrender.com'}${eventImages[0].videoUrl}`}
+                controls muted
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <ImageWithFallback
+                src={eventImages[0].imageUrl?.startsWith('http') ? eventImages[0].imageUrl : `${window.location.hostname === 'localhost' ? 'http://localhost:8080' : 'https://gineracollegemain-01.onrender.com'}${eventImages[0].imageUrl}`}
+                alt={eventImages[0].title}
+                className="w-full h-full object-cover transition-transform duration-300 ease-in-out hover:scale-105"
+              />
+            )}
           </div>
           <CardContent className="p-6 bg-white rounded-b-lg">
             <div className="flex items-center justify-between mb-3">
@@ -431,11 +479,19 @@ export function EventsPhotos() {
               className="rounded-lg overflow-hidden shadow-md cursor-pointer bg-white"
             >
               <div className="aspect-video overflow-hidden">
-                <ImageWithFallback
-                  src={image.imageUrl.startsWith('http') ? image.imageUrl : `${window.location.hostname === 'localhost' ? `${window.location.hostname === 'localhost' ? 'http://localhost:8080' : 'https://gineracollegemain-01.onrender.com'}` + '' : 'https://gineracollegemain-01.onrender.com'}${image.imageUrl}`}
-                  alt={image.title}
-                  className="w-full h-full object-cover transition-transform duration-300 ease-in-out hover:scale-105"
-                />
+                {image.mediaType === 'video' ? (
+                  <video
+                    src={image.videoUrl?.startsWith('http') ? image.videoUrl : `${window.location.hostname === 'localhost' ? 'http://localhost:8080' : 'https://gineracollegemain-01.onrender.com'}${image.videoUrl}`}
+                    controls muted
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <ImageWithFallback
+                    src={image.imageUrl?.startsWith('http') ? image.imageUrl : `${window.location.hostname === 'localhost' ? 'http://localhost:8080' : 'https://gineracollegemain-01.onrender.com'}${image.imageUrl}`}
+                    alt={image.title}
+                    className="w-full h-full object-cover transition-transform duration-300 ease-in-out hover:scale-105"
+                  />
+                )}
               </div>
               <CardContent className="p-4">
                 <h3 className="font-semibold mb-2 text-gray-900">{image.title}</h3>
@@ -469,9 +525,15 @@ export function EventsPhotos() {
                   <Card className="cursor-pointer rounded-lg shadow-sm bg-white">
                     <CardContent className="p-4">
                       <div className="aspect-video bg-gray-100 rounded-lg mb-3 flex items-center justify-center overflow-hidden">
-                        {event.imageUrl ? (
+                        {event.mediaType === 'video' ? (
+                          <video
+                            src={event.videoUrl?.startsWith('http') ? event.videoUrl : `${window.location.hostname === 'localhost' ? 'http://localhost:8080' : 'https://gineracollegemain-01.onrender.com'}${event.videoUrl}`}
+                            controls muted
+                            className="w-full h-full object-cover"
+                          />
+                        ) : event.imageUrl ? (
                           <img
-                            src={event.imageUrl.startsWith('http') ? event.imageUrl : `${window.location.hostname === 'localhost' ? `${window.location.hostname === 'localhost' ? 'http://localhost:8080' : 'https://gineracollegemain-01.onrender.com'}` + '' : 'https://gineracollegemain-01.onrender.com'}${event.imageUrl}`}
+                            src={event.imageUrl.startsWith('http') ? event.imageUrl : `${window.location.hostname === 'localhost' ? 'http://localhost:8080' : 'https://gineracollegemain-01.onrender.com'}${event.imageUrl}`}
                             alt={event.name}
                             className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
                           />

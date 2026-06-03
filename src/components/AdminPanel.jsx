@@ -84,14 +84,14 @@ const formBtnSecondary = "flex-1 py-3.5 rounded-xl border text-sm font-semibold 
 const Modal = ({ show, onClose, title, subtitle, children }) => (
   <AnimatePresence>
     {show && (
-      <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4">
+      <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
           onClick={onClose} className="absolute inset-0 bg-black/50 backdrop-blur-sm"/>
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }} 
           animate={{ opacity: 1, scale: 1 }} 
           exit={{ opacity: 0, scale: 0.95 }}
-          className="relative z-[101] w-full sm:w-[90%] md:w-[85%] lg:w-[75%] max-w-4xl max-h-[85vh] flex flex-col rounded-t-3xl sm:rounded-3xl overflow-hidden shadow-2xl"
+          className="relative z-[101] w-full sm:w-[90%] md:w-[80%] lg:w-[60%] max-w-2xl max-h-[90vh] flex flex-col rounded-3xl overflow-hidden shadow-2xl"
           style={{ background: C.surface }}>
           <div className="flex items-start justify-between p-6 border-b shrink-0" style={{ borderColor: C.border, background: C.bg }}>
             <div>
@@ -1282,22 +1282,47 @@ const DepartmentsTab = ({ selectedDept, setSelectedDept, departments, deptForm, 
 const GalleryForm = ({ editItem, formState, setFormState, closeModal, fetchData, notify, axiosInstance }) => (
   <form onSubmit={async e => { 
     e.preventDefault(); 
-    if (!editItem && !formState.image) {
-      return notify("Please select an image", "error");
+    if (!editItem && !formState.media) {
+      return notify(`Please select a ${formState.mediaType === 'video' ? 'video' : 'image'}`, "error");
     }
     const fd = new FormData(); 
-    if(formState.image instanceof File) fd.append("image", formState.image); 
+    if(formState.media instanceof File) fd.append("image", formState.media); 
     fd.append("title", formState.title || "");
     fd.append("description", formState.description || "");
     fd.append("category", formState.category || "college_campus_view");
+    fd.append("mediaType", formState.mediaType || "image");
     
     const url = editItem ? `/gallery/${editItem._id}` : "/gallery"; 
     try {
       if(editItem) await axiosInstance.put(url, fd); 
       else await axiosInstance.post(url, fd); 
       notify(editItem ? "Updated" : "Created"); closeModal(); fetchData();
-    } catch { notify("Failed", "error"); }
-  }} className="space-y-4">
+    } catch (error) { 
+      const errMsg = error.response?.data?.message || "Failed to save gallery item";
+      notify(errMsg, "error"); 
+    }
+  }} className="space-y-5">
+
+    {/* Media Type Toggle */}
+    <div className="flex gap-1 p-1 rounded-2xl" style={{ background: C.bg, border: `1px solid ${C.border}` }}>
+      {['image', 'video'].map(type => (
+        <button
+          key={type}
+          type="button"
+          onClick={() => setFormState({ ...formState, mediaType: type, media: null })}
+          className="flex-1 py-2.5 rounded-xl text-sm font-bold transition-all capitalize flex items-center justify-center gap-2"
+          style={{
+            background: formState.mediaType === type ? C.surface : 'transparent',
+            color: formState.mediaType === type ? C.text : C.muted,
+            boxShadow: formState.mediaType === type ? '0 1px 6px rgba(0,0,0,0.08)' : 'none',
+          }}
+        >
+          {type === 'image' ? <ImageIcon size={15}/> : <span style={{fontSize:'15px'}}>🎬</span>}
+          {type === 'image' ? 'Image' : 'Video'}
+        </button>
+      ))}
+    </div>
+
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
       <Field label="Title"><input required value={formState.title} onChange={e=>setFormState({...formState,title:e.target.value})} className={inputCls} style={inputStyle} placeholder="e.g. Main Academic Building"/></Field>
       <Field label="Category">
@@ -1305,7 +1330,7 @@ const GalleryForm = ({ editItem, formState, setFormState, closeModal, fetchData,
           <option value="college_campus_view">College Campus View</option>
           <option value="college_highlight">College Highlight</option>
           <option value="hospital">Hospital Main/Additional Images</option>
-          <option value="hospital_facility">Hospital Facility & Department</option>
+          <option value="hospital_facility">Hospital Facility &amp; Department</option>
           <option value="event">Main/Additional Event Images</option>
           <option value="event_academic">Academic Events</option>
           <option value="event_cultural">Cultural Events</option>
@@ -1315,15 +1340,48 @@ const GalleryForm = ({ editItem, formState, setFormState, closeModal, fetchData,
       </Field>
     </div>
     <Field label="Description"><textarea rows={3} value={formState.description} onChange={e=>setFormState({...formState,description:e.target.value})} className={`${inputCls} resize-none`} style={inputStyle}/></Field>
-    <Field label="Image">
-      <label className="flex items-center gap-2 px-4 py-2.5 rounded-xl border cursor-pointer hover:bg-gray-50 transition text-sm" style={{ borderColor: C.border, color: C.muted }}>
-        <ImageIcon size={16}/>{formState.image && typeof formState.image === 'object' ? formState.image.name : "Select image"}
-        <input type="file" className="hidden" onChange={e=>setFormState({...formState,image:e.target.files[0]})} />
+    
+    {/* File Upload Area */}
+    <Field label={formState.mediaType === 'video' ? 'Video File' : 'Image File'}>
+      <label className="flex items-center gap-3 px-4 py-3 rounded-xl border-2 border-dashed cursor-pointer hover:bg-gray-50 transition" style={{ borderColor: formState.media ? C.accent : C.border }}>
+        <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: C.accentSoft }}>
+          {formState.mediaType === 'video' ? <span>🎬</span> : <ImageIcon size={16} style={{ color: C.accent }}/>}
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold truncate" style={{ color: formState.media ? C.text : C.muted }}>
+            {formState.media && typeof formState.media === 'object' ? formState.media.name : `Select ${formState.mediaType === 'video' ? 'video' : 'image'} file`}
+          </p>
+          <p className="text-[11px]" style={{ color: C.muted }}>
+            {formState.mediaType === 'video' ? 'MP4, WebM, OGG, MOV · Max 100MB' : 'JPG, PNG, WEBP · Max 100MB'}
+          </p>
+        </div>
+        <input 
+          type="file" 
+          className="hidden" 
+          accept={formState.mediaType === 'video' ? 'video/mp4,video/webm,video/ogg,video/quicktime' : 'image/*'}
+          onChange={e=>setFormState({...formState, media: e.target.files[0]})} 
+        />
       </label>
+      {/* Preview */}
+      {formState.media && formState.media instanceof File && (
+        formState.mediaType === 'video' ? (
+          <video src={URL.createObjectURL(formState.media)} controls className="mt-2 w-full rounded-xl border shadow-sm" style={{ maxHeight: '180px' }}/>
+        ) : (
+          <img src={URL.createObjectURL(formState.media)} className="mt-2 h-20 w-20 object-cover rounded-xl border shadow-sm" alt="preview"/>
+        )
+      )}
+      {!formState.media && editItem && (
+        editItem.mediaType === 'video' && editItem.videoUrl ? (
+          <video src={imgUrl(editItem.videoUrl)} controls className="mt-2 w-full rounded-xl border shadow-sm" style={{ maxHeight: '150px' }}/>
+        ) : editItem.imageUrl ? (
+          <img src={imgUrl(editItem.imageUrl)} className="mt-2 h-16 w-16 object-cover rounded-xl border shadow-sm" alt="current"/>
+        ) : null
+      )}
     </Field>
+
     <div className="flex gap-3 pt-2">
       <button type="button" onClick={closeModal} className="flex-1 py-3 rounded-xl border font-bold text-sm transition hover:bg-gray-50" style={{ borderColor: C.border, color: C.muted }}>Cancel</button>
-      <button type="submit" className="flex-1 py-3 rounded-xl font-bold text-sm transition" style={{ background: C.accent, color: "#fff" }}>{editItem ? "Save Changes" : "Create Image"}</button>
+      <button type="submit" className="flex-1 py-3 rounded-xl font-bold text-sm transition" style={{ background: C.accent, color: "#fff" }}>{editItem ? "Save Changes" : formState.mediaType === 'video' ? 'Upload Video' : 'Create Image'}</button>
     </div>
   </form>
 );
@@ -1332,22 +1390,28 @@ const GalleryTab = ({ galleryImages, galleryForm, setGalleryForm, openModal, del
   <div className="space-y-6">
     <div className="flex items-center justify-between">
       <div>
-        <h2 className="text-2xl font-bold" style={{ color: C.text }}>Photo Gallery</h2>
-        <p className="text-sm mt-1" style={{ color: C.muted }}>Manage all photos in the gallery</p>
+        <h2 className="text-2xl font-bold" style={{ color: C.text }}>Photo &amp; Video Gallery</h2>
+        <p className="text-sm mt-1" style={{ color: C.muted }}>Manage all photos and videos in the gallery</p>
       </div>
-      <button onClick={() => { setGalleryForm({ title:"", description:"", category:"college_campus_view", image:null }); openModal("gallery"); }} className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition hover:opacity-90 shadow-sm" style={{ background: C.accent, color: "#fff" }}><Plus size={16}/>Add Photo</button>
+      <button onClick={() => { setGalleryForm({ title:"", description:"", category:"college_campus_view", mediaType:"image", media:null }); openModal("gallery"); }} className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition hover:opacity-90 shadow-sm" style={{ background: C.accent, color: "#fff" }}><Plus size={16}/>Add Media</button>
     </div>
     <div className="grid grid-cols-1 gap-3">
       {galleryImages.map(img => (
         <RowItem key={img._id}
-          left={<div className="w-16 h-12 rounded-xl overflow-hidden border-2 shrink-0 shadow-sm" style={{ borderColor: C.border }}>
-            <img src={imgUrl(img.imageUrl)} className="w-full h-full object-cover" alt=""/>
+          left={<div className="w-16 h-12 rounded-xl overflow-hidden border-2 shrink-0 shadow-sm relative" style={{ borderColor: C.border }}>
+            {img.mediaType === 'video' ? (
+              <div className="w-full h-full flex items-center justify-center" style={{ background: '#1a1a2e' }}>
+                <span style={{ fontSize: '20px' }}>🎬</span>
+              </div>
+            ) : (
+              <img src={imgUrl(img.imageUrl)} className="w-full h-full object-cover" alt=""/>
+            )}
           </div>}
-          badge={img.category.replace(/_/g, ' ')} title={img.title} sub={img.description?.substring(0, 50) + "..."}
-          onEdit={() => { setGalleryForm({ ...img, image: null }); openModal("gallery", img); }}
+          badge={`${img.mediaType === 'video' ? '🎬 VIDEO · ' : ''}${img.category.replace(/_/g, ' ')}`} title={img.title} sub={img.description?.substring(0, 50) + "..."}
+          onEdit={() => { setGalleryForm({ ...img, mediaType: img.mediaType || 'image', media: null }); openModal("gallery", img); }}
           onDelete={() => del(`/gallery/${img._id}`)}/>
       ))}
-      {galleryImages.length === 0 && <EmptyState icon={ImageIcon} text="No gallery photos yet. Add your first photo." />}
+      {galleryImages.length === 0 && <EmptyState icon={ImageIcon} text="No gallery media yet. Add your first photo or video." />}
     </div>
   </div>
 );

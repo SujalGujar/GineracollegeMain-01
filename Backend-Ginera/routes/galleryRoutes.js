@@ -14,9 +14,22 @@ const storage = multer.diskStorage({
   }
 });
 
+const fileFilter = (req, file, cb) => {
+  const allowedMime = [
+    'image/jpeg', 'image/png', 'image/webp', 'image/gif',
+    'video/mp4', 'video/webm', 'video/ogg', 'video/quicktime'
+  ];
+  if (allowedMime.includes(file.mimetype)) {
+    cb(null, true);
+  } else {
+    cb(new Error('Only image and video files are allowed'), false);
+  }
+};
+
 const upload = multer({ 
   storage: storage,
-  limits: { fileSize: 5 * 1024 * 1024 } // 5MB limit
+  fileFilter,
+  limits: { fileSize: 100 * 1024 * 1024 } // 100MB limit for videos
 });
 
 router.get('/', galleryController.getGalleryImages);
