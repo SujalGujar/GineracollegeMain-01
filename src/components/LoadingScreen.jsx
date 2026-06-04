@@ -31,7 +31,7 @@ const LoadingScreen = () => {
           <img 
             src={gineraLogo2} 
             alt="Logo" 
-            className="relative w-24 h-24 object-contain z-10"
+            className="relative w-16 h-16 object-contain z-10"
           />
         </div>
 

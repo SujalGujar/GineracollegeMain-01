@@ -36,13 +36,21 @@ export default function App() {
   });
 
   const [isLoading, setIsLoading] = useState(true);
+  const [pageLoading, setPageLoading] = useState(false);
+  const navTimerRef = React.useRef(null);
 
   useEffect(() => {
     // Artificial delay to ensure a smooth transition and allow resources to settle
     const timer = setTimeout(() => {
       setIsLoading(false);
-    }, 1500);
+    }, 4000);
     return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (navTimerRef.current) clearTimeout(navTimerRef.current);
+    };
   }, []);
 
   useEffect(() => {
@@ -61,8 +69,17 @@ export default function App() {
   }, []);
 
   const handleNavigation = (page) => {
-    setCurrentPage(page);
-    window.scrollTo(0, 0);
+    if (page !== currentPage) {
+      if (navTimerRef.current) {
+        clearTimeout(navTimerRef.current);
+      }
+      setPageLoading(true);
+      setCurrentPage(page);
+      window.scrollTo(0, 0);
+      navTimerRef.current = setTimeout(() => {
+        setPageLoading(false);
+      }, 1200);
+    }
     // Update URL hash to match state for safe reloading
     if (page === 'home') {
       window.history.pushState(null, '', window.location.pathname);
@@ -149,132 +166,140 @@ export default function App() {
 
   // For admin page: use a fully isolated full-screen layout
   const isAdmin = currentPage === 'admin';
+  const showLoader = isLoading || pageLoading;
 
   return (
     <ThemeProvider>
       {isAdmin ? (
         // Admin layout: completely isolated 100dvh container — no header/footer interference
-        <div style={{ display: 'flex', flexDirection: 'column', height: '100dvh', width: '100%', overflow: 'hidden' }}>
-          {isLoading && <LoadingScreen />}
-          <main style={{ flex: 1, minHeight: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-            {renderCurrentPage()}
-          </main>
-          <Toaster />
-        </div>
+        <>
+          {showLoader && <LoadingScreen />}
+          <div style={{ display: showLoader ? 'none' : 'flex', flexDirection: 'column', height: '100dvh', width: '100%', overflow: 'hidden' }}>
+            <main style={{ flex: 1, minHeight: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+              {renderCurrentPage()}
+            </main>
+            <Toaster />
+          </div>
+        </>
       ) : (
-        <div className="min-h-screen bg-background flex flex-col">
-          {isLoading && <LoadingScreen />}
-          <Header currentPage={currentPage} onNavigate={handleNavigation} />
-          <main className="flex-1">
-            {currentPage.startsWith('department-') && (
-              <HeroSection
-                departmentName={currentPage.replace('department-', '')}
-              />
-            )}
-            {renderCurrentPage()}
-          </main>
+        <>
+          {showLoader && <LoadingScreen />}
+          <div 
+            className="min-h-screen bg-background flex flex-col"
+            style={{ display: showLoader ? 'none' : 'flex' }}
+          >
+            <Header currentPage={currentPage} onNavigate={handleNavigation} />
+            <main className="flex-1">
+              {currentPage.startsWith('department-') && (
+                <HeroSection
+                  departmentName={currentPage.replace('department-', '')}
+                />
+              )}
+              {renderCurrentPage()}
+            </main>
 
-          {/* Footer */}
-          <footer className="bg-gray-900 dark:bg-gray-950 text-white py-12">
-            <div className="container mx-auto px-4">
-              <div className="grid md:grid-cols-4 gap-8">
-                <div>
-                  <div className="flex items-center space-x-3 mb-4">
-                    <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#F59E0B' }}>
-                      <img src={gineraLogo2} alt="College Logo" className="w-8 h-8 object-contain" />
+            {/* Footer */}
+            <footer className="bg-gray-900 dark:bg-gray-950 text-white py-12">
+              <div className="container mx-auto px-4">
+                <div className="grid md:grid-cols-4 gap-8">
+                  <div>
+                    <div className="flex items-center space-x-3 mb-4">
+                      <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#F59E0B' }}>
+                        <img src={gineraLogo2} alt="College Logo" className="w-8 h-8 object-contain" />
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-lg">Nursing College</h3>
+                        <p className="text-xs text-gray-400">Estd. 1960</p>
+                      </div>
                     </div>
-                    <div>
-                      <h3 className="font-bold text-lg">Nursing College</h3>
-                      <p className="text-xs text-gray-400">Estd. 1960</p>
+                    <p className="text-gray-300 leading-relaxed text-sm mb-4">
+                      Excellence in Nursing Education & Healthcare Services. NAAC 'A+' Accredited institution committed to producing competent nursing professionals.
+                    </p>
+                    <div className="flex space-x-3">
+                      <div className="w-8 h-8 bg-gray-800 rounded-lg flex items-center justify-center hover:bg-gray-700 transition-colors cursor-pointer">
+                        <span className="text-sm">📘</span>
+                      </div>
+                      <div className="w-8 h-8 bg-gray-800 rounded-lg flex items-center justify-center hover:bg-gray-700 transition-colors cursor-pointer">
+                        <span className="text-sm">🐦</span>
+                      </div>
+                      <div className="w-8 h-8 bg-gray-800 rounded-lg flex items-center justify-center hover:bg-gray-700 transition-colors cursor-pointer">
+                        <span className="text-sm">📷</span>
+                      </div>
                     </div>
                   </div>
-                  <p className="text-gray-300 leading-relaxed text-sm mb-4">
-                    Excellence in Nursing Education & Healthcare Services. NAAC 'A+' Accredited institution committed to producing competent nursing professionals.
+                  <div>
+                    <h4 className="font-semibold mb-4 text-lg">Quick Links</h4>
+                    <div className="space-y-3">
+                      <button onClick={() => handleNavigation('home')} className="block text-gray-300 hover:text-white hover:translate-x-1 transition-all text-sm">Home</button>
+                      <button onClick={() => handleNavigation('dean-message')} className="block text-gray-300 hover:text-white hover:translate-x-1 transition-all text-sm">Dean's Message</button>
+                      <button onClick={() => handleNavigation('admission-procedure')} className="block text-gray-300 hover:text-white hover:translate-x-1 transition-all text-sm">Admissions</button>
+                      <button onClick={() => handleNavigation('courses')} className="block text-gray-300 hover:text-white hover:translate-x-1 transition-all text-sm">Courses</button>
+                      <button onClick={() => handleNavigation('achievements')} className="block text-gray-300 hover:text-white hover:translate-x-1 transition-all text-sm">Achievements</button>
+                    </div>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold mb-4 text-lg">Nursing Departments</h4>
+                    <div className="space-y-3">
+                      <button onClick={() => handleNavigation('department-fundamentals')} className="block text-gray-300 hover:text-white hover:translate-x-1 transition-all text-sm">Fundamentals of Nursing</button>
+                      <button onClick={() => handleNavigation('department-medical-surgical')} className="block text-gray-300 hover:text-white hover:translate-x-1 transition-all text-sm">Medical Surgical Nursing</button>
+                      <button onClick={() => handleNavigation('department-obstetric')} className="block text-gray-300 hover:text-white hover:translate-x-1 transition-all text-sm">Obstetric & Gynaecological Nursing</button>
+                      <button onClick={() => handleNavigation('department-child-health')} className="block text-gray-300 hover:text-white hover:translate-x-1 transition-all text-sm">Child Health Nursing</button>
+                      <button onClick={() => handleNavigation('department-community')} className="block text-gray-300 hover:text-white hover:translate-x-1 transition-all text-sm">Community Health Nursing</button>
+                      <button onClick={() => handleNavigation('department-mental-health')} className="block text-gray-300 hover:text-white hover:translate-x-1 transition-all text-sm">Mental Health Nursing</button>
+                    </div>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold mb-4 text-lg">Contact Information</h4>
+                    <div className="space-y-3 text-gray-300">
+                      <div className="flex items-start space-x-3">
+                        <div className="w-5 h-5 rounded flex items-center justify-center flex-shrink-0 mt-0.5" style={{ backgroundColor: '#F59E0B' }}>
+                          <span className="text-white text-xs">🏢</span>
+                        </div>
+                        <span className="text-sm">Nursing College Campus, Ahmedabad - 380016, Gujarat, India</span>
+                      </div>
+                      <div className="flex items-center space-x-3">
+                        <div className="w-5 h-5 rounded flex items-center justify-center" style={{ backgroundColor: '#F59E0B' }}>
+                          <span className="text-white text-xs">📞</span>
+                        </div>
+                        <span className="text-sm">+91-79-2268-0000</span>
+                      </div>
+                      <div className="flex items-start space-x-3">
+                        <div className="w-5 h-5 rounded flex items-center justify-center flex-shrink-0 mt-0.5" style={{ backgroundColor: '#F59E0B' }}>
+                          <span className="text-white text-xs">✉️</span>
+                        </div>
+                        <div className="flex flex-col text-sm space-y-1.5">
+                          <div>
+                            <span className="text-xs text-gray-400 block font-medium">College of Nursing :</span>
+                            <span className="text-white">prin-gcona-adm@gujarat.gov.in</span>
+                          </div>
+                          <div>
+                            <span className="text-xs text-gray-400 block font-medium">College of Nursing :</span>
+                            <span className="text-white">principalgcona@gmail.com</span>
+                          </div>
+                          <div>
+                            <span className="text-xs text-gray-400 block font-medium">School of Nursing:</span>
+                            <span className="text-white">principalgsona@gmail.com</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="border-t border-gray-700 mt-8 pt-8 flex flex-col md:flex-row justify-between items-center">
+                  <p className="text-gray-400 text-center md:text-left text-sm">
+                    &copy; 2024 Nursing College, Ahmedabad. All rights reserved.
                   </p>
-                  <div className="flex space-x-3">
-                    <div className="w-8 h-8 bg-gray-800 rounded-lg flex items-center justify-center hover:bg-gray-700 transition-colors cursor-pointer">
-                      <span className="text-sm">📘</span>
-                    </div>
-                    <div className="w-8 h-8 bg-gray-800 rounded-lg flex items-center justify-center hover:bg-gray-700 transition-colors cursor-pointer">
-                      <span className="text-sm">🐦</span>
-                    </div>
-                    <div className="w-8 h-8 bg-gray-800 rounded-lg flex items-center justify-center hover:bg-gray-700 transition-colors cursor-pointer">
-                      <span className="text-sm">📷</span>
-                    </div>
-                  </div>
-                </div>
-                <div>
-                  <h4 className="font-semibold mb-4 text-lg">Quick Links</h4>
-                  <div className="space-y-3">
-                    <button onClick={() => handleNavigation('home')} className="block text-gray-300 hover:text-white hover:translate-x-1 transition-all text-sm">Home</button>
-                    <button onClick={() => handleNavigation('dean-message')} className="block text-gray-300 hover:text-white hover:translate-x-1 transition-all text-sm">Dean's Message</button>
-                    <button onClick={() => handleNavigation('admission-procedure')} className="block text-gray-300 hover:text-white hover:translate-x-1 transition-all text-sm">Admissions</button>
-                    <button onClick={() => handleNavigation('courses')} className="block text-gray-300 hover:text-white hover:translate-x-1 transition-all text-sm">Courses</button>
-                    <button onClick={() => handleNavigation('achievements')} className="block text-gray-300 hover:text-white hover:translate-x-1 transition-all text-sm">Achievements</button>
-                  </div>
-                </div>
-                <div>
-                  <h4 className="font-semibold mb-4 text-lg">Nursing Departments</h4>
-                  <div className="space-y-3">
-                    <button onClick={() => handleNavigation('department-fundamentals')} className="block text-gray-300 hover:text-white hover:translate-x-1 transition-all text-sm">Fundamentals of Nursing</button>
-                    <button onClick={() => handleNavigation('department-medical-surgical')} className="block text-gray-300 hover:text-white hover:translate-x-1 transition-all text-sm">Medical Surgical Nursing</button>
-                    <button onClick={() => handleNavigation('department-obstetric')} className="block text-gray-300 hover:text-white hover:translate-x-1 transition-all text-sm">Obstetric & Gynaecological Nursing</button>
-                    <button onClick={() => handleNavigation('department-child-health')} className="block text-gray-300 hover:text-white hover:translate-x-1 transition-all text-sm">Child Health Nursing</button>
-                    <button onClick={() => handleNavigation('department-community')} className="block text-gray-300 hover:text-white hover:translate-x-1 transition-all text-sm">Community Health Nursing</button>
-                    <button onClick={() => handleNavigation('department-mental-health')} className="block text-gray-300 hover:text-white hover:translate-x-1 transition-all text-sm">Mental Health Nursing</button>
-                  </div>
-                </div>
-                <div>
-                  <h4 className="font-semibold mb-4 text-lg">Contact Information</h4>
-                  <div className="space-y-3 text-gray-300">
-                    <div className="flex items-start space-x-3">
-                      <div className="w-5 h-5 rounded flex items-center justify-center flex-shrink-0 mt-0.5" style={{ backgroundColor: '#F59E0B' }}>
-                        <span className="text-white text-xs">🏢</span>
-                      </div>
-                      <span className="text-sm">Nursing College Campus, Ahmedabad - 380016, Gujarat, India</span>
-                    </div>
-                    <div className="flex items-center space-x-3">
-                      <div className="w-5 h-5 rounded flex items-center justify-center" style={{ backgroundColor: '#F59E0B' }}>
-                        <span className="text-white text-xs">📞</span>
-                      </div>
-                      <span className="text-sm">+91-79-2268-0000</span>
-                    </div>
-                    <div className="flex items-start space-x-3">
-                      <div className="w-5 h-5 rounded flex items-center justify-center flex-shrink-0 mt-0.5" style={{ backgroundColor: '#F59E0B' }}>
-                        <span className="text-white text-xs">✉️</span>
-                      </div>
-                      <div className="flex flex-col text-sm space-y-1.5">
-                        <div>
-                          <span className="text-xs text-gray-400 block font-medium">College of Nursing :</span>
-                          <span className="text-white">prin-gcona-adm@gujarat.gov.in</span>
-                        </div>
-                        <div>
-                          <span className="text-xs text-gray-400 block font-medium">College of Nursing :</span>
-                          <span className="text-white">principalgcona@gmail.com</span>
-                        </div>
-                        <div>
-                          <span className="text-xs text-gray-400 block font-medium">School of Nursing:</span>
-                          <span className="text-white">principalgsona@gmail.com</span>
-                        </div>
-                      </div>
-                    </div>
+                  <div className="flex space-x-6 mt-4 md:mt-0 text-gray-400 text-sm">
+                    <button className="hover:text-white transition-colors">Privacy Policy</button>
+                    <button className="hover:text-white transition-colors">Terms of Service</button>
+                    <button className="hover:text-white transition-colors">Academic Calendar</button>
                   </div>
                 </div>
               </div>
-              <div className="border-t border-gray-700 mt-8 pt-8 flex flex-col md:flex-row justify-between items-center">
-                <p className="text-gray-400 text-center md:text-left text-sm">
-                  &copy; 2024 Nursing College, Ahmedabad. All rights reserved.
-                </p>
-                <div className="flex space-x-6 mt-4 md:mt-0 text-gray-400 text-sm">
-                  <button className="hover:text-white transition-colors">Privacy Policy</button>
-                  <button className="hover:text-white transition-colors">Terms of Service</button>
-                  <button className="hover:text-white transition-colors">Academic Calendar</button>
-                </div>
-              </div>
-            </div>
-          </footer>
-          <Toaster />
-        </div>
+            </footer>
+            <Toaster />
+          </div>
+        </>
       )}
     </ThemeProvider>
   );
