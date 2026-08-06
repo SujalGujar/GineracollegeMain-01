@@ -5,10 +5,11 @@ import {
   LayoutDashboard, Image as ImageIcon, BookOpen, Users, Settings,
   LogOut, Plus, Trash2, Edit3, ChevronRight, Upload, FileText,
   X, Menu, Save, CheckCircle2, AlertCircle, Layers, Info,
-  ArrowLeft, Building2, Zap, ChevronDown, ChevronUp, Eye,
-  GraduationCap, Phone, MapPin
+  ArrowLeft, Building2, Zap, ChevronDown, ChevronUp, Eye, EyeOff,
+  GraduationCap, Phone, MapPin, Sliders, Search, Clock
 } from "lucide-react";
 import axiosInstance, { getMediaUrl } from "../api/axiosInstance";
+import { useSectionVisibility } from "../context/SectionVisibilityContext";
 
 /* ─── Design Tokens ─────────────────────────────────────── */
 const C = {
@@ -68,434 +69,583 @@ const Toast = ({ note }) => (
   </AnimatePresence>
 );
 
-const Field = ({ label, hint, children }) => (
-  <div className="flex flex-col gap-1">
-    <label className="text-[13px] font-semibold text-gray-700 leading-tight">{label}</label>
-    {hint && <p className="text-[11px] text-gray-400 -mt-0.5">{hint}</p>}
+const Field = ({ label, hint, required, children }) => (
+  <div className="flex flex-col gap-1.5">
+    <div className="flex items-center gap-1.5">
+      <label className="text-[13px] font-bold tracking-wide" style={{ color: C.text }}>{label}</label>
+      {required && <span className="text-red-500 text-xs font-bold">*</span>}
+    </div>
+    {hint && <p className="text-[11px] leading-relaxed" style={{ color: C.muted }}>{hint}</p>}
     {children}
   </div>
 );
 
-const inputCls = "w-full px-4 py-3 rounded-xl border bg-white text-sm text-gray-800 outline-none transition-all placeholder:text-gray-400 focus:border-gray-400 focus:ring-2 focus:ring-gray-200";
-const inputStyle = { borderColor: "#E2E8F0" };
-const formBtnPrimary = "w-full py-3.5 rounded-xl text-sm font-bold text-white tracking-wide shadow-md hover:opacity-90 active:scale-[0.98] transition-all flex items-center justify-center gap-2";
-const formBtnSecondary = "flex-1 py-3.5 rounded-xl border text-sm font-semibold text-gray-600 bg-white hover:bg-gray-50 transition-all";
-
-const Modal = ({ show, onClose, title, subtitle, children }) => (
-  <AnimatePresence>
-    {show && (
-      <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-          onClick={onClose} className="absolute inset-0 bg-black/50 backdrop-blur-sm"/>
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }} 
-          animate={{ opacity: 1, scale: 1 }} 
-          exit={{ opacity: 0, scale: 0.95 }}
-          className="relative z-[101] w-full sm:w-[90%] md:w-[80%] lg:w-[60%] max-w-2xl max-h-[90vh] flex flex-col rounded-3xl overflow-hidden shadow-2xl"
-          style={{ background: C.surface }}>
-          <div className="flex items-start justify-between p-6 border-b shrink-0" style={{ borderColor: C.border, background: C.bg }}>
-            <div>
-              <h3 className="text-xl font-bold" style={{ color: C.text }}>{title}</h3>
-              {subtitle && <p className="text-sm mt-0.5" style={{ color: C.muted }}>{subtitle}</p>}
-            </div>
-            <button onClick={onClose}
-              className="p-2 rounded-full border transition hover:bg-gray-100 shrink-0 ml-4"
-              style={{ borderColor: C.border }}>
-              <X size={18} style={{ color: C.muted }}/>
-            </button>
-          </div>
-          <div className="overflow-y-auto admin-scroll flex-1 p-6 sm:p-8 space-y-5 bg-gray-50">
-            {children}
-          </div>
-        </motion.div>
+// Form section wrapper for visual grouping
+const FormSection = ({ title, children }) => (
+  <div className="space-y-4">
+    {title && (
+      <div className="flex items-center gap-3">
+        <div className="h-px flex-1" style={{ background: C.border }}/>
+        <span className="text-[10px] font-extrabold uppercase tracking-[0.18em]" style={{ color: C.muted }}>{title}</span>
+        <div className="h-px flex-1" style={{ background: C.border }}/>
       </div>
     )}
-  </AnimatePresence>
+    {children}
+  </div>
 );
 
-// ── MODAL FORM COMPONENTS ───────────────────────────────
+const inputCls = "w-full px-4 py-3 rounded-xl border-2 bg-white text-sm text-gray-800 outline-none transition-all placeholder:text-gray-400";
+const inputStyle = { borderColor: "#E8E4DF" };
+const inputFocusStyle = { borderColor: C.accent };
+const formBtnPrimary = "w-full py-3.5 rounded-xl text-sm font-bold text-white tracking-wide shadow-lg hover:opacity-90 active:scale-[0.98] transition-all flex items-center justify-center gap-2";
+const formBtnSecondary = "flex-1 py-3.5 rounded-xl border-2 text-sm font-semibold text-gray-600 bg-white hover:bg-gray-50 transition-all";
 
+// Styled input with built-in focus state
+const FInput = ({ className = '', style = {}, ...props }) => (
+  <input
+    {...props}
+    className={`${inputCls} ${className} focus:border-amber-500 focus:ring-0`}
+    style={{ ...inputStyle, ...style }}
+  />
+);
+const FTextarea = ({ className = '', style = {}, ...props }) => (
+  <textarea
+    {...props}
+    className={`${inputCls} resize-none ${className} focus:border-amber-500 focus:ring-0`}
+    style={{ ...inputStyle, ...style }}
+  />
+);
+const FSelect = ({ className = '', style = {}, ...props }) => (
+  <select
+    {...props}
+    className={`${inputCls} ${className} focus:border-amber-500 focus:ring-0 cursor-pointer`}
+    style={{ ...inputStyle, ...style }}
+  />
+);
+
+const Modal = ({ show, onClose, title, subtitle, children }) => {
+  if (typeof document === 'undefined') return null;
+  return createPortal(
+    <AnimatePresence>
+      {show && (
+        <div
+          className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6"
+          style={{ fontFamily: "'DM Sans', sans-serif" }}>
+          {/* Custom style for Modal Form Scrollbar */}
+          <style>{`
+            .form-scroll-container::-webkit-scrollbar {
+              width: 8px !important;
+              display: block !important;
+            }
+            .form-scroll-container::-webkit-scrollbar-track {
+              background: #F0ECE7 !important;
+              border-radius: 8px !important;
+            }
+            .form-scroll-container::-webkit-scrollbar-thumb {
+              background: #6B3F1D !important;
+              border-radius: 8px !important;
+              border: 2px solid #F0ECE7 !important;
+            }
+            .form-scroll-container::-webkit-scrollbar-thumb:hover {
+              background: #4A2B14 !important;
+            }
+            .form-scroll-container {
+              scrollbar-width: thin !important;
+              scrollbar-color: #6B3F1D #F0ECE7 !important;
+              -webkit-overflow-scrolling: touch;
+            }
+          `}</style>
+          {/* Backdrop */}
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            onClick={onClose}
+            className="fixed inset-0 bg-black/60 backdrop-blur-[3px]"
+            style={{ zIndex: 0 }}
+          />
+          {/* Modal Card */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.94, y: -20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.94, y: -20 }}
+            transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+            className="relative w-full rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[82vh]"
+            style={{ background: '#fff', zIndex: 1, maxWidth: '680px' }}>
+            {/* Header (Fixed at top) */}
+            <div
+              className="flex items-start justify-between px-7 py-5 border-b shrink-0"
+              style={{ borderColor: '#EDE9E4', background: 'linear-gradient(135deg, #6B3F1D 0%, #8B5E3C 100%)' }}>
+              <div>
+                <h3 className="text-[17px] font-bold text-white leading-tight">{title}</h3>
+                {subtitle && <p className="text-sm mt-1 text-white/70">{subtitle}</p>}
+              </div>
+              <button onClick={onClose}
+                className="p-2 rounded-xl border border-white/20 hover:bg-white/10 transition shrink-0 ml-4 mt-0.5">
+                <X size={18} className="text-white"/>
+              </button>
+            </div>
+            {/* Scrollable Form Body (Internal scroll forced) */}
+            <div className="px-6 sm:px-7 py-6 overflow-y-scroll form-scroll-container flex-1" style={{ background: '#FAFAF9' }}>
+              {children}
+            </div>
+          </motion.div>
+        </div>
+      )}
+    </AnimatePresence>,
+    document.body
+  );
+};
+
+// ── MODAL FORM COMPONENTS ───────────────────────────────
+// ── shared file-upload label style ──────────────────────
+const fileLabelCls = "flex items-center gap-2 px-4 py-3 rounded-xl border-2 border-dashed bg-white cursor-pointer hover:bg-amber-50 hover:border-amber-400 transition-all text-sm font-medium";
+
+const FormActions = ({ onCancel, submitLabel = "Save Changes" }) => (
+  <div className="flex gap-3 pt-5 mt-1 border-t" style={{ borderColor: '#EDE9E4' }}>
+    <button type="button" onClick={onCancel}
+      className={formBtnSecondary} style={{ borderColor: '#D1C7BC', minWidth: '110px' }}>
+      Cancel
+    </button>
+    <button type="submit" className={`${formBtnPrimary} flex-[2]`}
+      style={{ background: 'linear-gradient(135deg, #6B3F1D 0%, #9B6A43 100%)' }}>
+      <Save size={16}/>{submitLabel}
+    </button>
+  </div>
+);
+
+// ── PROGRAM FORM ─────────────────────────────────────────
 const ProgramForm = ({ editItem, programForm, setProgramForm, closeModal, fetchData, notify }) => (
-  <form onSubmit={async e => { 
-    e.preventDefault(); 
-    if (!editItem && !programForm.image) {
-      return notify("Please select a cover image", "error");
-    }
+  <form onSubmit={async e => {
+    e.preventDefault();
+    if (!editItem && !programForm.image) return notify("Please select a cover image", "error");
     const fd = new FormData();
     fd.append("title", programForm.title || "");
     fd.append("description", programForm.description || "");
     fd.append("duration", programForm.duration || "");
     fd.append("category", programForm.category || "Undergraduate");
-    fd.append("courses", JSON.stringify(
-      typeof programForm.courses === 'string'
-        ? programForm.courses.split(",").map(c => c.trim()).filter(Boolean)
-        : (programForm.courses || [])
-    ));
-    if (programForm.image) {
-      fd.append("image", programForm.image);
-    }
+    fd.append("courses", JSON.stringify(typeof programForm.courses === 'string'
+      ? programForm.courses.split(",").map(c => c.trim()).filter(Boolean)
+      : (programForm.courses || [])));
+    if (programForm.image instanceof File) fd.append("image", programForm.image);
     const url = editItem ? `/programs/${editItem._id}` : "/programs";
     try {
       if (editItem) await axiosInstance.put(url, fd);
       else await axiosInstance.post(url, fd);
       notify(editItem ? "Updated" : "Created"); closeModal(); fetchData();
     } catch { notify("Failed", "error"); }
-  }} className="space-y-4">
+  }} className="space-y-5">
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-      <Field label="Program Title"><input required value={programForm.title} onChange={e=>setProgramForm({...programForm,title:e.target.value})} className={inputCls} style={inputStyle} placeholder="e.g. B.Sc. Nursing"/></Field>
+      <Field label="Program Title" required>
+        <FInput required value={programForm.title} onChange={e=>setProgramForm({...programForm,title:e.target.value})} placeholder="e.g. B.Sc. Nursing"/>
+      </Field>
       <Field label="Category">
-        <select value={programForm.category} onChange={e=>setProgramForm({...programForm,category:e.target.value})} className={inputCls} style={inputStyle}>
+        <FSelect value={programForm.category} onChange={e=>setProgramForm({...programForm,category:e.target.value})}>
           <option>Undergraduate</option><option>Postgraduate</option><option>Diploma</option>
-        </select>
+        </FSelect>
       </Field>
     </div>
-    <Field label="Description"><textarea required rows={3} value={programForm.description} onChange={e=>setProgramForm({...programForm,description:e.target.value})} className={`${inputCls} resize-none`} style={inputStyle}/></Field>
+    <Field label="Description" required>
+      <FTextarea required rows={3} value={programForm.description} onChange={e=>setProgramForm({...programForm,description:e.target.value})} placeholder="Describe the program objectives, curriculum overview…"/>
+    </Field>
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-      <Field label="Duration"><input value={programForm.duration} onChange={e=>setProgramForm({...programForm,duration:e.target.value})} className={inputCls} style={inputStyle} placeholder="e.g. 4 Years"/></Field>
+      <Field label="Duration">
+        <FInput value={programForm.duration} onChange={e=>setProgramForm({...programForm,duration:e.target.value})} placeholder="e.g. 4 Years"/>
+      </Field>
       <Field label="Cover Image">
-        <label className="flex items-center gap-2 px-4 py-3 rounded-xl border bg-white cursor-pointer hover:bg-gray-50 transition text-sm text-gray-500" style={{ borderColor: "#E2E8F0" }}>
-          <ImageIcon size={16}/>{programForm.image && typeof programForm.image === 'object' ? programForm.image.name : "Select image"}
-          <input type="file" className="hidden" onChange={e=>setProgramForm({...programForm,image:e.target.files[0]})} />
+        <label className={fileLabelCls} style={{ color: '#6B7280' }}>
+          <ImageIcon size={16} style={{ color: C.accent }}/>
+          <span>{programForm.image instanceof File ? programForm.image.name : "Choose image file"}</span>
+          <input type="file" className="hidden" onChange={e=>setProgramForm({...programForm,image:e.target.files[0]})}/>
         </label>
-        {programForm.image && typeof programForm.image === 'object' ? (
-          <img src={URL.createObjectURL(programForm.image)} className="mt-2 h-14 w-14 object-cover rounded-xl border shadow-sm" alt="preview"/>
-        ) : editItem?.imageUrl ? (
-          <img src={imgUrl(editItem.imageUrl)} className="mt-2 h-14 w-14 object-cover rounded-xl border shadow-sm" alt="current image"/>
-        ) : null}
+        {programForm.image instanceof File
+          ? <img src={URL.createObjectURL(programForm.image)} className="mt-2 h-16 w-16 object-cover rounded-xl border-2 shadow-sm" alt="preview"/>
+          : editItem?.imageUrl ? <img src={imgUrl(editItem.imageUrl)} className="mt-2 h-16 w-16 object-cover rounded-xl border-2 shadow-sm" alt="current"/> : null}
       </Field>
     </div>
-    <Field label="Courses (comma separated)"><textarea rows={2} value={programForm.courses} onChange={e=>setProgramForm({...programForm,courses:e.target.value})} className={`${inputCls} resize-none`} style={inputStyle}/></Field>
-    <div className="flex gap-3 pt-2">
-      <button type="button" onClick={closeModal} className={formBtnSecondary}>Cancel</button>
-      <button type="submit" className={`${formBtnPrimary} flex-[2]`} style={{ background: C.brand }}><Save size={16}/>{editItem?"Save Changes":"Create"}</button>
-    </div>
+    <Field label="Courses (comma separated)" hint="e.g.  Anatomy, Physiology, Microbiology">
+      <FTextarea rows={2} value={programForm.courses} onChange={e=>setProgramForm({...programForm,courses:e.target.value})}/>
+    </Field>
+    <FormActions onCancel={closeModal} submitLabel={editItem ? "Save Changes" : "Create Program"}/>
   </form>
 );
 
+// ── TESTIMONIAL FORM ─────────────────────────────────────
 const TestimonialForm = ({ editItem, testimonialForm, setTestimonialForm, closeModal, fetchData, notify }) => (
-  <form onSubmit={async e => { 
-    e.preventDefault(); 
-    if (!editItem && !testimonialForm.image) {
-      return notify("Please select a photo", "error");
-    }
-    const fd=new FormData(); 
-    Object.entries(testimonialForm).forEach(([k,v]) => { 
-      if(k==="image"&&v instanceof File) fd.append("image",v); 
-      else if(k!=="image") fd.append(k,v); 
-    }); 
-    const url=editItem?`/testimonials/${editItem._id}`:"/testimonials"; 
-    try{
-      if(editItem) await axiosInstance.put(url,fd); 
-      else await axiosInstance.post(url,fd); 
+  <form onSubmit={async e => {
+    e.preventDefault();
+    if (!editItem && !testimonialForm.image) return notify("Please select a photo", "error");
+    const fd = new FormData();
+    Object.entries(testimonialForm).forEach(([k,v]) => {
+      if (k==="image" && v instanceof File) fd.append("image",v);
+      else if (k!=="image") fd.append(k,v);
+    });
+    const url = editItem ? `/testimonials/${editItem._id}` : "/testimonials";
+    try {
+      if (editItem) await axiosInstance.put(url,fd);
+      else await axiosInstance.post(url,fd);
       notify(editItem?"Updated":"Created"); closeModal(); fetchData();
     } catch { notify("Failed","error"); }
-  }} className="space-y-4">
+  }} className="space-y-5">
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-      <Field label="Student Name"><input required value={testimonialForm.name} onChange={e=>setTestimonialForm({...testimonialForm,name:e.target.value})} className={inputCls} style={inputStyle}/></Field>
-      <Field label="Role / Batch"><input required value={testimonialForm.role} onChange={e=>setTestimonialForm({...testimonialForm,role:e.target.value})} className={inputCls} style={inputStyle}/></Field>
+      <Field label="Student Name" required>
+        <FInput required value={testimonialForm.name} onChange={e=>setTestimonialForm({...testimonialForm,name:e.target.value})} placeholder="Full name"/>
+      </Field>
+      <Field label="Role / Batch" required>
+        <FInput required value={testimonialForm.role} onChange={e=>setTestimonialForm({...testimonialForm,role:e.target.value})} placeholder="e.g. B.Sc. Nursing 2023"/>
+      </Field>
     </div>
-    <Field label="Testimonial"><textarea required rows={4} value={testimonialForm.content} onChange={e=>setTestimonialForm({...testimonialForm,content:e.target.value})} className={`${inputCls} resize-none`} style={inputStyle}/></Field>
+    <Field label="Testimonial" required>
+      <FTextarea required rows={4} value={testimonialForm.content} onChange={e=>setTestimonialForm({...testimonialForm,content:e.target.value})} placeholder="Student's review about the college…"/>
+    </Field>
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-      <Field label="Rating (1–5)"><input type="number" min={1} max={5} value={testimonialForm.rating} onChange={e=>setTestimonialForm({...testimonialForm,rating:parseInt(e.target.value)})} className={inputCls} style={inputStyle}/></Field>
-      <Field label="Photo">
-        <label className="flex items-center gap-2 px-4 py-3 rounded-xl border bg-white cursor-pointer hover:bg-gray-50 text-sm transition text-gray-500" style={{ borderColor: "#E2E8F0" }}>
-          <ImageIcon size={16}/>{testimonialForm.image && typeof testimonialForm.image === 'object' ? testimonialForm.image.name : "Select photo"}
-          <input type="file" className="hidden" onChange={e=>setTestimonialForm({...testimonialForm,image:e.target.files[0]})} />
+      <Field label="Rating (1–5)">
+        <FInput type="number" min={1} max={5} value={testimonialForm.rating} onChange={e=>setTestimonialForm({...testimonialForm,rating:parseInt(e.target.value)})}/>
+      </Field>
+      <Field label="Student Photo">
+        <label className={fileLabelCls} style={{ color: '#6B7280' }}>
+          <ImageIcon size={16} style={{ color: C.accent }}/>
+          <span>{testimonialForm.image instanceof File ? testimonialForm.image.name : "Choose photo file"}</span>
+          <input type="file" className="hidden" onChange={e=>setTestimonialForm({...testimonialForm,image:e.target.files[0]})}/>
         </label>
       </Field>
     </div>
-    <div className="flex gap-3 pt-2">
-      <button type="button" onClick={closeModal} className={formBtnSecondary}>Cancel</button>
-      <button type="submit" className={`${formBtnPrimary} flex-[2]`} style={{ background: C.brand }}><Save size={16}/>{editItem?"Save Changes":"Create"}</button>
-    </div>
+    <FormActions onCancel={closeModal} submitLabel={editItem ? "Save Changes" : "Add Testimonial"}/>
   </form>
 );
 
+// ── MILESTONE FORM ───────────────────────────────────────
 const MilestoneForm = ({ editItem, milestoneForm, setMilestoneForm, closeModal, fetchData, notify }) => (
-  <form onSubmit={async e => { 
-    e.preventDefault(); 
-    const url=editItem?`/about/milestones/${editItem._id}`:"/about/milestones"; 
-    try{
-      if(editItem) await axiosInstance.put(url,milestoneForm); 
-      else await axiosInstance.post(url,milestoneForm); 
+  <form onSubmit={async e => {
+    e.preventDefault();
+    const url = editItem ? `/about/milestones/${editItem._id}` : "/about/milestones";
+    try {
+      if (editItem) await axiosInstance.put(url,milestoneForm);
+      else await axiosInstance.post(url,milestoneForm);
       notify("Saved"); closeModal(); fetchData();
     } catch { notify("Failed","error"); }
-  }} className="space-y-4">
+  }} className="space-y-5">
     <div className="grid grid-cols-3 gap-4">
-      <Field label="Year"><input required value={milestoneForm.year} onChange={e=>setMilestoneForm({...milestoneForm,year:e.target.value})} placeholder="1963" className={inputCls} style={inputStyle}/></Field>
-      <Field label="Icon (emoji)"><input value={milestoneForm.icon} onChange={e=>setMilestoneForm({...milestoneForm,icon:e.target.value})} className={inputCls} style={inputStyle}/></Field>
-      <Field label="Sort Order"><input type="number" required value={milestoneForm.order} onChange={e=>setMilestoneForm({...milestoneForm,order:parseInt(e.target.value)||0})} className={inputCls} style={inputStyle}/></Field>
+      <Field label="Year" required>
+        <FInput required value={milestoneForm.year} onChange={e=>setMilestoneForm({...milestoneForm,year:e.target.value})} placeholder="1963"/>
+      </Field>
+      <Field label="Icon (emoji)">
+        <FInput value={milestoneForm.icon} onChange={e=>setMilestoneForm({...milestoneForm,icon:e.target.value})}/>
+      </Field>
+      <Field label="Sort Order">
+        <FInput type="number" value={milestoneForm.order} onChange={e=>setMilestoneForm({...milestoneForm,order:parseInt(e.target.value)||0})}/>
+      </Field>
     </div>
-    <Field label="Event Title"><input required value={milestoneForm.event} onChange={e=>setMilestoneForm({...milestoneForm,event:e.target.value})} className={inputCls} style={inputStyle}/></Field>
+    <Field label="Event Title" required>
+      <FInput required value={milestoneForm.event} onChange={e=>setMilestoneForm({...milestoneForm,event:e.target.value})} placeholder="e.g. College Established"/>
+    </Field>
     <Field label="Accent Color">
       <div className="flex gap-3 items-center">
-        <input type="color" value={milestoneForm.color} onChange={e=>setMilestoneForm({...milestoneForm,color:e.target.value})} className="w-12 h-10 rounded-lg border cursor-pointer" style={{ borderColor: C.border }}/>
-        <input value={milestoneForm.color} onChange={e=>setMilestoneForm({...milestoneForm,color:e.target.value})} className={`${inputCls} flex-1`} style={inputStyle}/>
+        <input type="color" value={milestoneForm.color} onChange={e=>setMilestoneForm({...milestoneForm,color:e.target.value})} className="w-12 h-11 rounded-xl border-2 cursor-pointer shrink-0" style={{ borderColor: '#E8E4DF' }}/>
+        <FInput value={milestoneForm.color} onChange={e=>setMilestoneForm({...milestoneForm,color:e.target.value})}/>
       </div>
     </Field>
-    <Field label="Description"><textarea required rows={3} value={milestoneForm.description} onChange={e=>setMilestoneForm({...milestoneForm,description:e.target.value})} className={`${inputCls} resize-none`} style={inputStyle}/></Field>
-    <div className="flex gap-3 pt-2">
-      <button type="button" onClick={closeModal} className={formBtnSecondary}>Cancel</button>
-      <button type="submit" className={`${formBtnPrimary} flex-[2]`} style={{ background: C.brand }}>{editItem?"Save":"Add"}</button>
-    </div>
-  </form>
-);
-
-const VisionMissionForm = ({ editItem, vmForm, setVmForm, closeModal, fetchData, notify }) => (
-  <form onSubmit={async e => { 
-    e.preventDefault(); 
-    const url=editItem?`/about/vision-mission/${editItem._id}`:"/about/vision-mission"; 
-    try{
-      if(editItem) await axiosInstance.put(url,vmForm); 
-      else await axiosInstance.post(url,vmForm); 
-      notify("Saved"); closeModal(); fetchData();
-    } catch { notify("Failed","error"); }
-  }} className="space-y-4">
-    <Field label="Type">
-      <select value={vmForm.type} onChange={e=>setVmForm({...vmForm,type:e.target.value})} className={inputCls} style={inputStyle}>
-        <option value="vision">Vision</option><option value="mission">Mission</option>
-      </select>
+    <Field label="Description" required>
+      <FTextarea required rows={3} value={milestoneForm.description} onChange={e=>setMilestoneForm({...milestoneForm,description:e.target.value})} placeholder="Brief description of this milestone…"/>
     </Field>
-    <Field label="Content"><textarea required rows={4} value={vmForm.content} onChange={e=>setVmForm({...vmForm,content:e.target.value})} className={`${inputCls} resize-none`} style={inputStyle}/></Field>
-    <div className="flex gap-3 pt-2">
-      <button type="button" onClick={closeModal} className={formBtnSecondary}>Cancel</button>
-      <button type="submit" className={`${formBtnPrimary} flex-[2]`} style={{ background: C.brand }}>{editItem?"Update":"Add"}</button>
-    </div>
+    <FormActions onCancel={closeModal} submitLabel={editItem ? "Save Changes" : "Add Milestone"}/>
   </form>
 );
 
-const CoreValueForm = ({ editItem, cvForm, setCvForm, closeModal, fetchData, notify }) => (
-  <form onSubmit={async e => { 
-    e.preventDefault(); 
-    const url=editItem?`/about/core-values/${editItem._id}`:"/about/core-values"; 
-    try{
-      if(editItem) await axiosInstance.put(url,cvForm); 
-      else await axiosInstance.post(url,cvForm); 
+// ── VISION / MISSION FORM ────────────────────────────────
+const VisionMissionForm = ({ editItem, vmForm, setVmForm, closeModal, fetchData, notify }) => (
+  <form onSubmit={async e => {
+    e.preventDefault();
+    const url = editItem ? `/about/vision-mission/${editItem._id}` : "/about/vision-mission";
+    try {
+      if (editItem) await axiosInstance.put(url,vmForm);
+      else await axiosInstance.post(url,vmForm);
       notify("Saved"); closeModal(); fetchData();
     } catch { notify("Failed","error"); }
-  }} className="space-y-4">
+  }} className="space-y-5">
     <div className="grid grid-cols-2 gap-4">
-      <Field label="Title"><input required value={cvForm.title} onChange={e=>setCvForm({...cvForm,title:e.target.value})} className={inputCls} style={inputStyle}/></Field>
-      <Field label="Icon (emoji)"><input value={cvForm.icon} onChange={e=>setCvForm({...cvForm,icon:e.target.value})} className={inputCls} style={inputStyle}/></Field>
+      <Field label="Statement Type">
+        <FSelect value={vmForm.type} onChange={e=>setVmForm({...vmForm,type:e.target.value})}>
+          <option value="vision">🔭 Vision</option>
+          <option value="mission">🎯 Mission</option>
+        </FSelect>
+      </Field>
+      <Field label="Sort Order">
+        <FInput type="number" value={vmForm.order||0} onChange={e=>setVmForm({...vmForm,order:parseInt(e.target.value)||0})}/>
+      </Field>
     </div>
-    <Field label="Description"><textarea required rows={3} value={cvForm.description} onChange={e=>setCvForm({...cvForm,description:e.target.value})} className={`${inputCls} resize-none`} style={inputStyle}/></Field>
-    <Field label="Gradient (Tailwind classes)"><input value={cvForm.color} onChange={e=>setCvForm({...cvForm,color:e.target.value})} placeholder="from-amber-500 to-orange-500" className={inputCls} style={inputStyle}/></Field>
-    <div className="flex gap-3 pt-2">
-      <button type="button" onClick={closeModal} className={formBtnSecondary}>Cancel</button>
-      <button type="submit" className={`${formBtnPrimary} flex-[2]`} style={{ background: C.brand }}>{editItem?"Update":"Add"}</button>
-    </div>
+    <Field label="Content" required>
+      <FTextarea required rows={5} value={vmForm.content} onChange={e=>setVmForm({...vmForm,content:e.target.value})} placeholder="Enter the statement content…"/>
+    </Field>
+    <FormActions onCancel={closeModal} submitLabel={editItem ? "Save Changes" : "Add Statement"}/>
   </form>
 );
 
+// ── CORE VALUE FORM ──────────────────────────────────────
+const CoreValueForm = ({ editItem, cvForm, setCvForm, closeModal, fetchData, notify }) => (
+  <form onSubmit={async e => {
+    e.preventDefault();
+    const url = editItem ? `/about/core-values/${editItem._id}` : "/about/core-values";
+    try {
+      if (editItem) await axiosInstance.put(url,cvForm);
+      else await axiosInstance.post(url,cvForm);
+      notify("Saved"); closeModal(); fetchData();
+    } catch { notify("Failed","error"); }
+  }} className="space-y-5">
+    <div className="grid grid-cols-2 gap-4">
+      <Field label="Value Title" required>
+        <FInput required value={cvForm.title} onChange={e=>setCvForm({...cvForm,title:e.target.value})} placeholder="e.g. Excellence"/>
+      </Field>
+      <Field label="Icon (emoji)">
+        <FInput value={cvForm.icon} onChange={e=>setCvForm({...cvForm,icon:e.target.value})}/>
+      </Field>
+    </div>
+    <Field label="Description" required>
+      <FTextarea required rows={3} value={cvForm.description} onChange={e=>setCvForm({...cvForm,description:e.target.value})} placeholder="Brief description of this value…"/>
+    </Field>
+    <Field label="Gradient" hint="Tailwind gradient classes, e.g. from-amber-500 to-orange-500">
+      <FInput value={cvForm.color} onChange={e=>setCvForm({...cvForm,color:e.target.value})} placeholder="from-amber-500 to-orange-500"/>
+    </Field>
+    <FormActions onCancel={closeModal} submitLabel={editItem ? "Save Changes" : "Add Core Value"}/>
+  </form>
+);
+
+// ── COURSE FORM ──────────────────────────────────────────
 const CourseForm = ({ editItem, courseForm, setCourseForm, closeModal, fetchData, notify }) => (
-  <form onSubmit={async e => { 
-    e.preventDefault(); 
-    const url=editItem?`/courses/${editItem._id}`:"/courses"; 
+  <form onSubmit={async e => {
+    e.preventDefault();
+    const url = editItem ? `/courses/${editItem._id}` : "/courses";
     const formattedForm = {
       ...courseForm,
-      highlights: typeof courseForm.highlights === "string" 
-        ? courseForm.highlights.split(",").map(h => h.trim()).filter(h => h !== "")
+      highlights: typeof courseForm.highlights === "string"
+        ? courseForm.highlights.split(",").map(h => h.trim()).filter(Boolean)
         : courseForm.highlights
     };
-    try{
-      if(editItem) await axiosInstance.put(url,formattedForm); 
-      else await axiosInstance.post(url,formattedForm); 
+    try {
+      if (editItem) await axiosInstance.put(url,formattedForm);
+      else await axiosInstance.post(url,formattedForm);
       notify("Saved"); closeModal(); fetchData();
     } catch { notify("Failed","error"); }
-  }} className="space-y-4">
-    {/* Compact Basic Fields Grid */}
-    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+  }} className="space-y-5">
+    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
       <div className="sm:col-span-2">
-        <Field label="Name"><input required value={courseForm.name} onChange={e=>setCourseForm({...courseForm,name:e.target.value})} className={inputCls} style={inputStyle}/></Field>
-      </div>
-      <div>
-        <Field label="Category">
-          <select value={courseForm.category} onChange={e=>setCourseForm({...courseForm,category:e.target.value})} className={inputCls} style={inputStyle}>
-            <option>Undergraduate Programs</option><option>Postgraduate Programs</option><option>Diploma Programs</option>
-          </select>
+        <Field label="Course Name" required>
+          <FInput required value={courseForm.name} onChange={e=>setCourseForm({...courseForm,name:e.target.value})} placeholder="e.g. B.Sc. Nursing"/>
         </Field>
       </div>
-      <div>
-        <Field label="Duration"><input value={courseForm.duration} onChange={e=>setCourseForm({...courseForm,duration:e.target.value})} className={inputCls} style={inputStyle}/></Field>
-      </div>
-      <div>
-        <Field label="Seats"><input value={courseForm.seats} onChange={e=>setCourseForm({...courseForm,seats:e.target.value})} className={inputCls} style={inputStyle}/></Field>
-      </div>
-      <div>
-        <Field label="Icon (emoji)"><input value={courseForm.icon} onChange={e=>setCourseForm({...courseForm,icon:e.target.value})} className={inputCls} style={inputStyle}/></Field>
-      </div>
-      <div>
-        <Field label="Annual Fees"><input value={courseForm.fees} onChange={e=>setCourseForm({...courseForm,fees:e.target.value})} placeholder="e.g. ₹50,000" className={inputCls} style={inputStyle}/></Field>
-      </div>
-      <div className="sm:col-span-2">
-        <Field label="Official Link"><input value={courseForm.websiteLink} onChange={e=>setCourseForm({...courseForm,websiteLink:e.target.value})} placeholder="e.g. https://www.medadmgujarat.org" className={inputCls} style={inputStyle}/></Field>
-      </div>
+      <Field label="Icon">
+        <FInput value={courseForm.icon} onChange={e=>setCourseForm({...courseForm,icon:e.target.value})}/>
+      </Field>
     </div>
-    
-    {/* Compact Textareas 2x2 Grid */}
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-      <Field label="Brief Description"><textarea rows={2} value={courseForm.description||""} onChange={e=>setCourseForm({...courseForm,description:e.target.value})} className={`${inputCls} resize-none`} style={inputStyle}/></Field>
-      <Field label="Eligibility"><textarea rows={2} value={courseForm.eligibility} onChange={e=>setCourseForm({...courseForm,eligibility:e.target.value})} className={`${inputCls} resize-none`} style={inputStyle}/></Field>
-      <Field label="Highlights (comma separated)"><textarea rows={2} value={courseForm.highlights} onChange={e=>setCourseForm({...courseForm,highlights:e.target.value})} className={`${inputCls} resize-none`} style={inputStyle}/></Field>
-      <Field label="Admission Method"><textarea rows={2} value={courseForm.admission||""} onChange={e=>setCourseForm({...courseForm,admission:e.target.value})} className={`${inputCls} resize-none`} style={inputStyle}/></Field>
+    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <Field label="Category">
+        <FSelect value={courseForm.category} onChange={e=>setCourseForm({...courseForm,category:e.target.value})}>
+          <option>Undergraduate Programs</option>
+          <option>Postgraduate Programs</option>
+          <option>Diploma Programs</option>
+        </FSelect>
+      </Field>
+      <Field label="Duration">
+        <FInput value={courseForm.duration} onChange={e=>setCourseForm({...courseForm,duration:e.target.value})} placeholder="e.g. 4 Years"/>
+      </Field>
+      <Field label="Seats">
+        <FInput value={courseForm.seats} onChange={e=>setCourseForm({...courseForm,seats:e.target.value})} placeholder="e.g. 60"/>
+      </Field>
     </div>
-
-    <div className="flex gap-3 pt-2">
-      <button type="button" onClick={closeModal} className={formBtnSecondary}>Cancel</button>
-      <button type="submit" className={`${formBtnPrimary} flex-[2]`} style={{ background: C.brand }}><Save size={16}/>{editItem?"Save Changes":"Create"}</button>
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <Field label="Annual Fees">
+        <FInput value={courseForm.fees} onChange={e=>setCourseForm({...courseForm,fees:e.target.value})} placeholder="e.g. ₹50,000"/>
+      </Field>
+      <Field label="Official Website Link">
+        <FInput value={courseForm.websiteLink} onChange={e=>setCourseForm({...courseForm,websiteLink:e.target.value})} placeholder="https://…"/>
+      </Field>
     </div>
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <Field label="Brief Description">
+        <FTextarea rows={3} value={courseForm.description||""} onChange={e=>setCourseForm({...courseForm,description:e.target.value})} placeholder="Short overview of the course…"/>
+      </Field>
+      <Field label="Eligibility">
+        <FTextarea rows={3} value={courseForm.eligibility} onChange={e=>setCourseForm({...courseForm,eligibility:e.target.value})} placeholder="Who can apply…"/>
+      </Field>
+    </div>
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <Field label="Highlights" hint="Comma separated">
+        <FTextarea rows={2} value={courseForm.highlights} onChange={e=>setCourseForm({...courseForm,highlights:e.target.value})}/>
+      </Field>
+      <Field label="Admission Method">
+        <FTextarea rows={2} value={courseForm.admission||""} onChange={e=>setCourseForm({...courseForm,admission:e.target.value})}/>
+      </Field>
+    </div>
+    <FormActions onCancel={closeModal} submitLabel={editItem ? "Save Changes" : "Add Course"}/>
   </form>
 );
 
+// ── STEP FORM ────────────────────────────────────────────
 const StepForm = ({ editItem, stepForm, setStepForm, closeModal, fetchData, notify }) => (
-  <form onSubmit={async e => { 
-    e.preventDefault(); 
-    const url=editItem?`/admission-steps/${editItem._id}`:"/admission-steps"; 
-    try{
-      if(editItem) await axiosInstance.put(url,stepForm); 
-      else await axiosInstance.post(url,stepForm); 
+  <form onSubmit={async e => {
+    e.preventDefault();
+    const url = editItem ? `/admission-steps/${editItem._id}` : "/admission-steps";
+    try {
+      if (editItem) await axiosInstance.put(url,stepForm);
+      else await axiosInstance.post(url,stepForm);
       notify("Saved"); closeModal(); fetchData();
     } catch { notify("Failed","error"); }
-  }} className="space-y-4">
+  }} className="space-y-5">
     <div className="grid grid-cols-2 gap-4">
-      <Field label="Step #"><input type="number" required value={stepForm.step} onChange={e=>setStepForm({...stepForm,step:parseInt(e.target.value)})} className={inputCls} style={inputStyle}/></Field>
+      <Field label="Step Number" required>
+        <FInput type="number" required value={stepForm.step} onChange={e=>setStepForm({...stepForm,step:parseInt(e.target.value)})}/>
+      </Field>
       <Field label="Icon">
-        <select value={stepForm.icon} onChange={e=>setStepForm({...stepForm,icon:e.target.value})} className={inputCls} style={inputStyle}>
+        <FSelect value={stepForm.icon} onChange={e=>setStepForm({...stepForm,icon:e.target.value})}>
           {["Calendar","Users","CheckCircle","GraduationCap","FileText","Download"].map(i=><option key={i}>{i}</option>)}
-        </select>
+        </FSelect>
       </Field>
     </div>
-    <Field label="Title"><input required value={stepForm.title} onChange={e=>setStepForm({...stepForm,title:e.target.value})} className={inputCls} style={inputStyle}/></Field>
-    <Field label="Description"><textarea required rows={3} value={stepForm.description} onChange={e=>setStepForm({...stepForm,description:e.target.value})} className={`${inputCls} resize-none`} style={inputStyle}/></Field>
-    <div className="flex gap-3 pt-2">
-      <button type="button" onClick={closeModal} className={formBtnSecondary}>Cancel</button>
-      <button type="submit" className={`${formBtnPrimary} flex-[2]`} style={{ background: C.brand }}>{editItem?"Save":"Add"} Step</button>
-    </div>
+    <Field label="Step Title" required>
+      <FInput required value={stepForm.title} onChange={e=>setStepForm({...stepForm,title:e.target.value})} placeholder="e.g. Submit Application Form"/>
+    </Field>
+    <Field label="Description" required>
+      <FTextarea required rows={4} value={stepForm.description} onChange={e=>setStepForm({...stepForm,description:e.target.value})} placeholder="Explain what the applicant needs to do in this step…"/>
+    </Field>
+    <FormActions onCancel={closeModal} submitLabel={editItem ? "Save Changes" : "Add Step"}/>
   </form>
 );
 
+// ── RULE FORM ────────────────────────────────────────────
 const RuleForm = ({ editItem, ruleForm, setRuleForm, closeModal, fetchData, notify }) => (
-  <form onSubmit={async e => { 
-    e.preventDefault(); 
-    const url=editItem?`/admission-rules/${editItem._id}`:"/admission-rules"; 
-    try{
-      if(editItem) await axiosInstance.put(url,ruleForm); 
-      else await axiosInstance.post(url,ruleForm); 
+  <form onSubmit={async e => {
+    e.preventDefault();
+    const url = editItem ? `/admission-rules/${editItem._id}` : "/admission-rules";
+    try {
+      if (editItem) await axiosInstance.put(url,ruleForm);
+      else await axiosInstance.post(url,ruleForm);
       notify("Saved"); closeModal(); fetchData();
     } catch { notify("Failed","error"); }
-  }} className="space-y-4">
+  }} className="space-y-5">
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
       <Field label="Category">
-        <select value={ruleForm.category} onChange={e=>setRuleForm({...ruleForm,category:e.target.value})} className={inputCls} style={inputStyle}>
-          <option>UnderGraduated Programs</option><option>PostGraduated Programs</option><option>General Rules</option>
-        </select>
+        <FSelect value={ruleForm.category} onChange={e=>setRuleForm({...ruleForm,category:e.target.value})}>
+          <option>UnderGraduated Programs</option>
+          <option>PostGraduated Programs</option>
+          <option>General Rules</option>
+        </FSelect>
       </Field>
       <Field label="Icon">
-        <select value={ruleForm.icon} onChange={e=>setRuleForm({...ruleForm,icon:e.target.value})} className={inputCls} style={inputStyle}>
+        <FSelect value={ruleForm.icon} onChange={e=>setRuleForm({...ruleForm,icon:e.target.value})}>
           {["CheckCircle","Calendar","Stethoscope","GraduationCap","Info"].map(i=><option key={i}>{i}</option>)}
-        </select>
+        </FSelect>
       </Field>
     </div>
-    <Field label="Title"><input required value={ruleForm.title} onChange={e=>setRuleForm({...ruleForm,title:e.target.value})} className={inputCls} style={inputStyle}/></Field>
-    <Field label="Description"><textarea required rows={4} value={ruleForm.description} onChange={e=>setRuleForm({...ruleForm,description:e.target.value})} className={`${inputCls} resize-none`} style={inputStyle}/></Field>
-    <div className="flex gap-3 pt-2">
-      <button type="button" onClick={closeModal} className={formBtnSecondary}>Cancel</button>
-      <button type="submit" className={`${formBtnPrimary} flex-[2]`} style={{ background: C.brand }}>{editItem?"Save":"Add"} Rule</button>
-    </div>
+    <Field label="Rule Title" required>
+      <FInput required value={ruleForm.title} onChange={e=>setRuleForm({...ruleForm,title:e.target.value})} placeholder="e.g. Minimum Percentage Required"/>
+    </Field>
+    <Field label="Description" required>
+      <FTextarea required rows={4} value={ruleForm.description} onChange={e=>setRuleForm({...ruleForm,description:e.target.value})} placeholder="Full explanation of this rule…"/>
+    </Field>
+    <FormActions onCancel={closeModal} submitLabel={editItem ? "Save Changes" : "Add Rule"}/>
   </form>
 );
 
+// ── BOND FORM ────────────────────────────────────────────
 const BondForm = ({ editItem, bondForm, setBondForm, closeModal, fetchData, notify }) => (
-  <form onSubmit={async e => { 
-    e.preventDefault(); 
-    const url=editItem?`/bonds/${editItem._id}`:"/bonds"; 
-    try{
-      if(editItem) await axiosInstance.put(url,bondForm); 
-      else await axiosInstance.post(url,bondForm); 
+  <form onSubmit={async e => {
+    e.preventDefault();
+    const url = editItem ? `/bonds/${editItem._id}` : "/bonds";
+    try {
+      if (editItem) await axiosInstance.put(url,bondForm);
+      else await axiosInstance.post(url,bondForm);
       notify("Saved"); closeModal(); fetchData();
     } catch { notify("Failed","error"); }
-  }} className="space-y-4">
-    <Field label="Title"><input required value={bondForm.title} onChange={e=>setBondForm({...bondForm,title:e.target.value})} className={inputCls} style={inputStyle}/></Field>
-    <Field label="Content"><textarea required rows={4} value={bondForm.content} onChange={e=>setBondForm({...bondForm,content:e.target.value})} className={`${inputCls} resize-none`} style={inputStyle}/></Field>
-    <Field label="Display Order"><input type="number" value={bondForm.order} onChange={e=>setBondForm({...bondForm,order:parseInt(e.target.value)})} className={inputCls} style={inputStyle}/></Field>
-    <div className="flex gap-3 pt-2">
-      <button type="button" onClick={closeModal} className={formBtnSecondary}>Cancel</button>
-      <button type="submit" className={`${formBtnPrimary} flex-[2]`} style={{ background: C.brand }}>{editItem?"Update":"Add"}</button>
-    </div>
+  }} className="space-y-5">
+    <Field label="Title" required>
+      <FInput required value={bondForm.title} onChange={e=>setBondForm({...bondForm,title:e.target.value})} placeholder="e.g. Government Bond Agreement"/>
+    </Field>
+    <Field label="Content" required>
+      <FTextarea required rows={5} value={bondForm.content} onChange={e=>setBondForm({...bondForm,content:e.target.value})} placeholder="Bond details and conditions…"/>
+    </Field>
+    <Field label="Display Order">
+      <FInput type="number" value={bondForm.order} onChange={e=>setBondForm({...bondForm,order:parseInt(e.target.value)||0})}/>
+    </Field>
+    <FormActions onCancel={closeModal} submitLabel={editItem ? "Save Changes" : "Add Bond"}/>
   </form>
 );
 
+// ── GUIDELINE FORM ───────────────────────────────────────
 const GuidelineForm = ({ editItem, guidelineForm, setGuidelineForm, closeModal, fetchData, notify }) => (
-  <form onSubmit={async e => { 
-    e.preventDefault(); 
-    const data={...guidelineForm,points:typeof guidelineForm.points==="string"?guidelineForm.points.split("\n").filter(p=>p.trim()):guidelineForm.points}; 
-    const url=editItem?`/guidelines/${editItem._id}`:"/guidelines"; 
-    try{
-      if(editItem) await axiosInstance.put(url,data); 
-      else await axiosInstance.post(url,data); 
+  <form onSubmit={async e => {
+    e.preventDefault();
+    const data = {...guidelineForm, points: typeof guidelineForm.points==="string"
+      ? guidelineForm.points.split("\n").map(p=>p.trim()).filter(Boolean)
+      : guidelineForm.points};
+    const url = editItem ? `/guidelines/${editItem._id}` : "/guidelines";
+    try {
+      if (editItem) await axiosInstance.put(url,data);
+      else await axiosInstance.post(url,data);
       notify("Saved"); closeModal(); fetchData();
     } catch { notify("Failed","error"); }
-  }} className="space-y-4">
+  }} className="space-y-5">
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
       <Field label="Category">
-        <select value={guidelineForm.category} onChange={e=>setGuidelineForm({...guidelineForm,category:e.target.value})} className={inputCls} style={inputStyle}>
+        <FSelect value={guidelineForm.category} onChange={e=>setGuidelineForm({...guidelineForm,category:e.target.value})}>
           {["General Guidelines","Code of Conduct","Academic Requirements","For Parents/Guardians","Contact Information"].map(c=><option key={c}>{c}</option>)}
-        </select>
+        </FSelect>
       </Field>
-      <Field label="Sub-Category / Title"><input required value={guidelineForm.subCategory} onChange={e=>setGuidelineForm({...guidelineForm,subCategory:e.target.value})} className={inputCls} style={inputStyle}/></Field>
+      <Field label="Sub-Category / Title" required>
+        <FInput required value={guidelineForm.subCategory} onChange={e=>setGuidelineForm({...guidelineForm,subCategory:e.target.value})} placeholder="e.g. Dress Code Policy"/>
+      </Field>
     </div>
-    <Field label="Points (one per line)"><textarea required rows={6} value={guidelineForm.points} onChange={e=>setGuidelineForm({...guidelineForm,points:e.target.value})} className={`${inputCls} resize-none`} style={inputStyle}/></Field>
-    <div className="flex gap-3 pt-2">
-      <button type="button" onClick={closeModal} className={formBtnSecondary}>Cancel</button>
-      <button type="submit" className={`${formBtnPrimary} flex-[2]`} style={{ background: C.brand }}>{editItem?"Update":"Add"}</button>
-    </div>
+    <Field label="Points" hint="Enter one point per line — each line becomes a separate bullet">
+      <FTextarea required rows={7} value={guidelineForm.points} onChange={e=>setGuidelineForm({...guidelineForm,points:e.target.value})} placeholder="Guideline point 1&#10;Guideline point 2&#10;Guideline point 3"/>
+    </Field>
+    <FormActions onCancel={closeModal} submitLabel={editItem ? "Save Changes" : "Add Guideline"}/>
   </form>
 );
 
+// ── DEPT FORM ─────────────────────────────────────────────
 const DeptForm = ({ editItem, deptForm, setDeptForm, closeModal, fetchData, notify }) => (
   <form onSubmit={async e => {
     e.preventDefault();
     const fd = new FormData();
-    fd.append("name", deptForm.name || "");
-    fd.append("slug", deptForm.slug || "");
-    fd.append("category", deptForm.category || "Nursing Department");
-    fd.append("description", deptForm.description || "");
+    fd.append("name", deptForm.name||"");
+    fd.append("slug", deptForm.slug||"");
+    fd.append("category", deptForm.category||"Nursing Department");
+    fd.append("description", deptForm.description||"");
     if (deptForm.logo instanceof File) fd.append("logo", deptForm.logo);
     const url = editItem ? `/departments/${editItem._id}` : "/departments";
     try {
       if (editItem) await axiosInstance.put(url, fd);
       else await axiosInstance.post(url, fd);
       notify("Saved"); closeModal(); fetchData();
-    } catch { notify("Failed", "error"); }
+    } catch { notify("Failed","error"); }
   }} className="space-y-5">
-
-    {/* Logo upload — full width, prominent */}
-    <div className="flex flex-col items-center gap-3 p-6 rounded-2xl border-2 border-dashed bg-white" style={{ borderColor: "#D1C7BC" }}>
-      {deptForm.logo instanceof File ? (
-        <img src={URL.createObjectURL(deptForm.logo)} style={{ width: '80px', height: '80px', objectFit: 'cover' }} className="rounded-2xl border-2 shadow-md" alt="preview"/>
-      ) : editItem?.logoUrl ? (
-        <img src={imgUrl(editItem.logoUrl)} style={{ width: '80px', height: '80px', objectFit: 'cover' }} className="rounded-2xl border-2 shadow-md" alt="current logo"/>
-      ) : (
-        <div style={{ width: '80px', height: '80px' }} className="rounded-2xl flex items-center justify-center text-4xl bg-[#FDF0E6]">🏥</div>
-      )}
-      <label className="flex items-center gap-2 px-5 py-2.5 rounded-xl cursor-pointer text-sm font-semibold text-white shadow hover:opacity-90 transition" style={{ background: "#6B3F1D" }}>
-        <ImageIcon size={15}/>
+    {/* Logo upload */}
+    <div className="flex flex-col items-center gap-3 py-5 px-6 rounded-2xl border-2 border-dashed" style={{ borderColor: '#D1C7BC', background: '#FDFCFB' }}>
+      {deptForm.logo instanceof File
+        ? <img src={URL.createObjectURL(deptForm.logo)} className="w-20 h-20 rounded-2xl object-cover border-2 shadow-md" alt="preview"/>
+        : editItem?.logoUrl
+          ? <img src={imgUrl(editItem.logoUrl)} className="w-20 h-20 rounded-2xl object-cover border-2 shadow-md" alt="logo"/>
+          : <div className="w-20 h-20 rounded-2xl flex items-center justify-center text-4xl" style={{ background: C.accentSoft }}>🏥</div>
+      }
+      <label className="flex items-center gap-2 px-5 py-2.5 rounded-xl cursor-pointer text-sm font-semibold text-white shadow hover:opacity-90 transition-all" style={{ background: C.brand }}>
+        <Upload size={15}/>
         {deptForm.logo instanceof File ? "Change Logo" : editItem?.logoUrl ? "Replace Logo" : "Upload Department Logo"}
-        <input type="file" accept="image/*" className="hidden" onChange={e => setDeptForm({...deptForm, logo: e.target.files[0]})}/>
+        <input type="file" accept="image/*" className="hidden" onChange={e=>setDeptForm({...deptForm,logo:e.target.files[0]})}/>
       </label>
-      <p className="text-xs text-gray-400">PNG, JPG or WEBP · Recommended 200×200px</p>
+      <p className="text-xs" style={{ color: C.muted }}>PNG, JPG or WEBP · Recommended 200×200px</p>
     </div>
-
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-      <Field label="Department Name"><input required value={deptForm.name} onChange={e=>setDeptForm({...deptForm,name:e.target.value})} className={inputCls} style={inputStyle} placeholder="e.g. Fundamentals of Nursing"/></Field>
-      <Field label="URL Slug" hint="Unique ID used in the URL, no spaces"><input required value={deptForm.slug} onChange={e=>setDeptForm({...deptForm,slug:e.target.value.toLowerCase().replace(/\s+/g,'-')})} className={inputCls} style={inputStyle} placeholder="e.g. fundamentals"/></Field>
-      <Field label="Category"><input required value={deptForm.category} onChange={e=>setDeptForm({...deptForm,category:e.target.value})} className={inputCls} style={inputStyle} placeholder="e.g. Nursing Department"/></Field>
+      <Field label="Department Name" required>
+        <FInput required value={deptForm.name} onChange={e=>setDeptForm({...deptForm,name:e.target.value})} placeholder="e.g. Fundamentals of Nursing"/>
+      </Field>
+      <Field label="URL Slug" hint="Unique ID — no spaces">
+        <FInput required value={deptForm.slug} onChange={e=>setDeptForm({...deptForm,slug:e.target.value.toLowerCase().replace(/\s+/g,'-')})} placeholder="e.g. fundamentals"/>
+      </Field>
     </div>
-    <Field label="Short Description"><input required value={deptForm.description} onChange={e=>setDeptForm({...deptForm,description:e.target.value})} className={inputCls} style={inputStyle} placeholder="Brief description of the department"/></Field>
-    <div className="flex gap-3 pt-2">
-      <button type="button" onClick={closeModal} className={formBtnSecondary}>Cancel</button>
-      <button type="submit" className={`${formBtnPrimary} flex-[2]`} style={{ background: C.brand }}>{editItem?"Update Department":"Create Department"}</button>
-    </div>
+    <Field label="Category">
+      <FInput required value={deptForm.category} onChange={e=>setDeptForm({...deptForm,category:e.target.value})} placeholder="e.g. Nursing Department"/>
+    </Field>
+    <Field label="Short Description">
+      <FInput value={deptForm.description} onChange={e=>setDeptForm({...deptForm,description:e.target.value})} placeholder="Brief description of the department"/>
+    </Field>
+    <FormActions onCancel={closeModal} submitLabel={editItem ? "Update Department" : "Create Department"}/>
   </form>
 );
 
@@ -635,7 +785,7 @@ const Sidebar = ({ isMobile, sidebarOpen, setSidebarOpen, ...props }) => (
   <>
     {/* Desktop Sidebar */}
     {!isMobile && (
-      <aside className="flex flex-col w-80 shrink-0 h-full border-r border-black/10"
+      <aside className="flex flex-col w-80 shrink-0 self-stretch border-r border-black/10"
              style={{ background: C.brand }}>
         <SidebarContent onClose={null} {...props} />
       </aside>
@@ -927,7 +1077,9 @@ const AboutImageCard = ({ slot, linkedKey, label, aboutImages, setAboutImages, a
     if (selectedFile) fd.append("image", selectedFile);
     try {
       const r = await axiosInstance.put(`/about/images/${slot.key}`, fd);
-      let updatedImages = aboutImages.map(item => item.key === slot.key ? r.data : item);
+      let updatedImages = aboutImages.some(item => item.key === slot.key)
+        ? aboutImages.map(item => item.key === slot.key ? r.data : item)
+        : [...aboutImages, r.data];
       if (linkedKey) {
         const fd2 = new FormData();
         fd2.append("title", slot.title || label);
@@ -935,7 +1087,9 @@ const AboutImageCard = ({ slot, linkedKey, label, aboutImages, setAboutImages, a
         if (selectedFile) fd2.append("image", selectedFile);
         try {
           const r2 = await axiosInstance.put(`/about/images/${linkedKey}`, fd2);
-          updatedImages = updatedImages.map(item => item.key === linkedKey ? r2.data : item);
+          updatedImages = updatedImages.some(item => item.key === linkedKey)
+            ? updatedImages.map(item => item.key === linkedKey ? r2.data : item)
+            : [...updatedImages, r2.data];
         } catch { }
       }
       setAboutImages(updatedImages);
@@ -950,11 +1104,15 @@ const AboutImageCard = ({ slot, linkedKey, label, aboutImages, setAboutImages, a
     if (!window.confirm(`Delete ${label} image? The website will use the default image.`)) return;
     try {
       const r = await axiosInstance.delete(`/about/images/${slot.key}`);
-      let updatedImages = aboutImages.map(item => item.key === slot.key ? r.data : item);
+      let updatedImages = aboutImages.some(item => item.key === slot.key)
+        ? aboutImages.map(item => item.key === slot.key ? r.data : item)
+        : [...aboutImages, r.data];
       if (linkedKey) {
         try {
           const r2 = await axiosInstance.delete(`/about/images/${linkedKey}`);
-          updatedImages = updatedImages.map(item => item.key === linkedKey ? r2.data : item);
+          updatedImages = updatedImages.some(item => item.key === linkedKey)
+            ? updatedImages.map(item => item.key === linkedKey ? r2.data : item)
+            : [...updatedImages, r2.data];
         } catch { }
       }
       setAboutImages(updatedImages);
@@ -998,7 +1156,7 @@ const AboutImageCard = ({ slot, linkedKey, label, aboutImages, setAboutImages, a
   );
 };
 
-const AboutTab = ({ aboutSub, setAboutSub, collegeLogo, setCollegeLogo, logoFile, setLogoFile, deanMessage, setDeanMessage, deanPhotoFile, setDeanPhotoFile, milestones, milestoneForm, setMilestoneForm, openModal, setMilestones, visionMission, setVmForm, coreValues, setCvForm, aboutImages, setAboutImages, aboutImageFiles, setAboutImageFiles, axiosInstance, notify, del }) => (
+const AboutTab = ({ aboutSub, setAboutSub, collegeLogo, setCollegeLogo, logoFile, setLogoFile, deanMessage, setDeanMessage, deanPhotoFile, setDeanPhotoFile, milestones, milestoneForm, setMilestoneForm, openModal, setMilestones, visionMission, setVmForm, coreValues, setCvForm, aboutImages, setAboutImages, aboutImageFiles, setAboutImageFiles, historyContent, setHistoryContent, axiosInstance, notify, del }) => (
   <div className="space-y-6">
     <SubTabs tabs={["Branding","Principal","Timeline","Vision & Mission","Core Values"]} active={aboutSub} onChange={setAboutSub}/>
     <AnimatePresence mode="wait">
@@ -1064,24 +1222,160 @@ const AboutTab = ({ aboutSub, setAboutSub, collegeLogo, setCollegeLogo, logoFile
         )}
 
         {aboutSub === "Timeline" && (
-          <div className="space-y-6">
-                    {milestones.map(m => (
-                <div key={m._id} className="p-5 rounded-2xl group relative transition-all hover:shadow-md" style={{ background: C.surface, border:`1px solid ${C.border}`, borderLeft:`5px solid ${m.color}` }}>
-                  <div className="flex items-start gap-4">
-                    <span className="text-3xl filter grayscale group-hover:grayscale-0 transition-all">{m.icon}</span>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[11px] font-extrabold uppercase tracking-[0.15em]" style={{ color: m.color }}>{m.year}</p>
-                      <p className="font-bold text-sm truncate mt-0.5" style={{ color: C.text }}>{m.event}</p>
-                      <p className="text-xs line-clamp-2 mt-1.5 leading-relaxed" style={{ color: C.muted }}>{m.description}</p>
+          <div className="space-y-8">
+            {/* History Images Section */}
+            <div className="p-6 rounded-3xl space-y-6 shadow-sm border" style={{ background: C.surface, borderColor: C.border }}>
+              <div className="flex items-center justify-between border-b pb-4" style={{ borderColor: C.border }}>
+                <div>
+                  <h3 className="font-bold text-base" style={{ color: C.text }}>History Page Images Management</h3>
+                  <p className="text-xs mt-0.5" style={{ color: C.muted }}>Upload, update, or delete images for Hero Banner, Institutional Timeline, and Legacy of Excellence sections</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {/* 1. History Hero Banner */}
+                <AboutImageCard
+                  slot={aboutImages.find(img => img.key === 'historyHero') || { key: 'historyHero', title: 'History Hero Banner Image', alt: 'Our History Banner' }}
+                  label="History Hero Banner"
+                  aboutImages={aboutImages}
+                  setAboutImages={setAboutImages}
+                  aboutImageFiles={aboutImageFiles}
+                  setAboutImageFiles={setAboutImageFiles}
+                  axiosInstance={axiosInstance}
+                  notify={notify}
+                />
+
+                {/* 2. Institutional Timeline Image */}
+                <AboutImageCard
+                  slot={aboutImages.find(img => img.key === 'historyTimeline') || { key: 'historyTimeline', title: 'Institutional Timeline Image', alt: 'Institutional Timeline' }}
+                  label="Institutional Timeline Section"
+                  aboutImages={aboutImages}
+                  setAboutImages={setAboutImages}
+                  aboutImageFiles={aboutImageFiles}
+                  setAboutImageFiles={setAboutImageFiles}
+                  axiosInstance={axiosInstance}
+                  notify={notify}
+                />
+
+                {/* 3. Legacy of Excellence Image */}
+                <AboutImageCard
+                  slot={aboutImages.find(img => img.key === 'historyLegacy') || { key: 'historyLegacy', title: 'Legacy of Excellence Image', alt: 'Legacy of Excellence' }}
+                  label="Legacy of Excellence Section"
+                  aboutImages={aboutImages}
+                  setAboutImages={setAboutImages}
+                  aboutImageFiles={aboutImageFiles}
+                  setAboutImageFiles={setAboutImageFiles}
+                  axiosInstance={axiosInstance}
+                  notify={notify}
+                />
+              </div>
+            </div>
+
+            {/* History Text Content Editor */}
+            <div className="p-6 rounded-3xl space-y-6 shadow-sm border" style={{ background: C.surface, borderColor: C.border }}>
+              <div className="flex items-center justify-between border-b pb-4" style={{ borderColor: C.border }}>
+                <div>
+                  <h3 className="font-bold text-base" style={{ color: C.text }}>History Page Content & Section Titles</h3>
+                  <p className="text-xs mt-0.5" style={{ color: C.muted }}>Edit main hero title, section headings, and history paragraphs</p>
+                </div>
+              </div>
+
+              <Field label="Hero Banner Title">
+                <FInput
+                  value={historyContent.heroTitle || ""}
+                  onChange={e => setHistoryContent({ ...historyContent, heroTitle: e.target.value })}
+                  placeholder="e.g. Our History"
+                />
+              </Field>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+                {/* Timeline Section */}
+                <div className="p-4 rounded-2xl bg-gray-50/80 border space-y-4" style={{ borderColor: C.border }}>
+                  <p className="text-xs font-extrabold uppercase tracking-wider text-amber-700">Institutional Timeline Section</p>
+                  <Field label="Section Title">
+                    <FInput
+                      value={historyContent.timelineTitle || ""}
+                      onChange={e => setHistoryContent({ ...historyContent, timelineTitle: e.target.value })}
+                      placeholder="e.g. Institutional Timeline"
+                    />
+                  </Field>
+                  <Field label="Paragraphs (One paragraph per line)">
+                    <FTextarea
+                      rows={6}
+                      value={Array.isArray(historyContent.timelineParagraphs) ? historyContent.timelineParagraphs.join("\n") : (historyContent.timelineParagraphs || "")}
+                      onChange={e => setHistoryContent({ ...historyContent, timelineParagraphs: e.target.value.split("\n") })}
+                      placeholder="Enter timeline history paragraphs..."
+                    />
+                  </Field>
+                </div>
+
+                {/* Legacy Section */}
+                <div className="p-4 rounded-2xl bg-gray-50/80 border space-y-4" style={{ borderColor: C.border }}>
+                  <p className="text-xs font-extrabold uppercase tracking-wider text-amber-700">Legacy of Excellence Section</p>
+                  <Field label="Section Title">
+                    <FInput
+                      value={historyContent.legacyTitle || ""}
+                      onChange={e => setHistoryContent({ ...historyContent, legacyTitle: e.target.value })}
+                      placeholder="e.g. Legacy of Excellence"
+                    />
+                  </Field>
+                  <Field label="Paragraphs (One paragraph per line)">
+                    <FTextarea
+                      rows={6}
+                      value={Array.isArray(historyContent.legacyParagraphs) ? historyContent.legacyParagraphs.join("\n") : (historyContent.legacyParagraphs || "")}
+                      onChange={e => setHistoryContent({ ...historyContent, legacyParagraphs: e.target.value.split("\n") })}
+                      placeholder="Enter legacy paragraphs..."
+                    />
+                  </Field>
+                </div>
+              </div>
+
+              <div className="flex justify-end pt-2">
+                <button
+                  onClick={async () => {
+                    try {
+                      const payload = {
+                        ...historyContent,
+                        timelineParagraphs: (Array.isArray(historyContent.timelineParagraphs) ? historyContent.timelineParagraphs : (historyContent.timelineParagraphs || "").split("\n")).filter(p => p && p.trim() !== ""),
+                        legacyParagraphs: (Array.isArray(historyContent.legacyParagraphs) ? historyContent.legacyParagraphs : (historyContent.legacyParagraphs || "").split("\n")).filter(p => p && p.trim() !== "")
+                      };
+                      const r = await axiosInstance.put("/about/history-content", payload);
+                      setHistoryContent(r.data);
+                      notify("History Page Content Updated Successfully!");
+                    } catch {
+                      notify("Failed to update history content", "error");
+                    }
+                  }}
+                  className="px-8 py-3 rounded-xl text-sm font-bold text-white shadow-lg active:scale-95 transition-all flex items-center gap-2"
+                  style={{ background: C.brand }}>
+                  <Save size={16}/> Save History Page Content
+                </button>
+              </div>
+            </div>
+
+            <div className="space-y-4 pt-4 border-t border-gray-200">
+              <SectionHeader icon={Clock} title="Institutional Milestones" subtitle="Timeline entries & historical achievements"
+                action={<AddBtn onClick={() => { setMilestoneForm({year:"",event:"",icon:"🎯",color:"#1e3a8a",description:"",order:0}); openModal("milestone"); }} label="Add Milestone"/>}/>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {milestones.map(m => (
+                  <div key={m._id} className="p-5 rounded-2xl group relative transition-all hover:shadow-md" style={{ background: C.surface, border:`1px solid ${C.border}`, borderLeft:`5px solid ${m.color}` }}>
+                    <div className="flex items-start gap-4">
+                      <span className="text-3xl filter grayscale group-hover:grayscale-0 transition-all">{m.icon}</span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[11px] font-extrabold uppercase tracking-[0.15em]" style={{ color: m.color }}>{m.year}</p>
+                        <p className="font-bold text-sm truncate mt-0.5" style={{ color: C.text }}>{m.event}</p>
+                        <p className="text-xs line-clamp-2 mt-1.5 leading-relaxed" style={{ color: C.muted }}>{m.description}</p>
+                      </div>
+                    </div>
+                    <div className="absolute top-3 right-3 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <IconBtn onClick={() => { setMilestoneForm({year:m.year,event:m.event,icon:m.icon,color:m.color,description:m.description,order:m.order||0}); openModal("milestone",m); }}><Edit3 size={13}/></IconBtn>
+                      <IconBtn danger onClick={async()=>{ try{await axiosInstance.delete(`/about/milestones/${m._id}`); setMilestones(milestones.filter(x=>x._id!==m._id)); notify("Milestone Removed");}catch{notify("Delete failed","error");}}}><Trash2 size={13}/></IconBtn>
                     </div>
                   </div>
-                  <div className="absolute top-3 right-3 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <IconBtn onClick={() => { setMilestoneForm({year:m.year,event:m.event,icon:m.icon,color:m.color,description:m.description,order:m.order||0}); openModal("milestone",m); }}><Edit3 size={13}/></IconBtn>
-                    <IconBtn danger onClick={async()=>{ try{await axiosInstance.delete(`/about/milestones/${m._id}`); setMilestones(milestones.filter(x=>x._id!==m._id)); notify("Milestone Removed");}catch{notify("Delete failed","error");}}}><Trash2 size={13}/></IconBtn>
-                  </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
+          </div>
         )}
 
         {aboutSub === "Vision & Mission" && (
@@ -1252,6 +1546,10 @@ const AdmissionTab = ({ admSub, setAdmSub, courses, openModal, setCourseForm, de
 );
 
 const DepartmentsTab = ({ selectedDept, setSelectedDept, departments, deptForm, setDeptForm, deptSub, setDeptSub, deptFacultyForm, setDeptFacultyForm, deptFacilityInput, setDeptFacilityInput, deptActivityInput, setDeptActivityInput, sliders, axiosInstance, fetchData, notify, openModal, del, handleSliderUpload }) => {
+  const [editingFacultyIdx, setEditingFacultyIdx] = useState(null);
+  const [editingFacilityIdx, setEditingFacilityIdx] = useState(null);
+  const [editingActivityIdx, setEditingActivityIdx] = useState(null);
+
   if (!selectedDept) return (
     <div className="space-y-6">
       <SectionHeader icon={Building2} title="Academic Departments" subtitle={`Managing ${departments.length} nursing specialties`}
@@ -1304,7 +1602,7 @@ const DepartmentsTab = ({ selectedDept, setSelectedDept, departments, deptForm, 
       <div className="flex flex-col lg:flex-row items-start lg:items-center gap-6 p-6 rounded-3xl shadow-sm border overflow-hidden"
            style={{ background: C.surface, borderColor: C.border }}>
         <div className="flex items-center gap-4 flex-1 min-w-0">
-          <button onClick={() => setSelectedDept(null)} className="p-3 rounded-2xl hover:bg-gray-50 transition-all shrink-0 border shadow-sm group" style={{ borderColor: C.border, color: C.muted }}>
+          <button onClick={() => { setSelectedDept(null); setEditingFacultyIdx(null); setEditingFacilityIdx(null); setEditingActivityIdx(null); }} className="p-3 rounded-2xl hover:bg-gray-50 transition-all shrink-0 border shadow-sm group" style={{ borderColor: C.border, color: C.muted }}>
             <ArrowLeft size={20} className="group-hover:-translate-x-1 transition-transform"/>
           </button>
           {deptForm.logoUrl || selectedDept.logoUrl ? (
@@ -1385,17 +1683,38 @@ const DepartmentsTab = ({ selectedDept, setSelectedDept, departments, deptForm, 
             <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 p-5 rounded-2xl shadow-inner border border-dashed" style={{ background: C.bg, borderColor: C.border }}>
                 {["name","designation","qualification"].map(k => (
-                  <input key={k} placeholder={k.charAt(0).toUpperCase()+k.slice(1)} value={deptFacultyForm[k]}
+                  <input key={k} placeholder={k.charAt(0).toUpperCase()+k.slice(1)} value={deptFacultyForm[k] || ""}
                     onChange={e=>setDeptFacultyForm({...deptFacultyForm,[k]:e.target.value})}
                     className={inputCls} style={inputStyle}/>
                 ))}
-                <button onClick={() => { if(!deptFacultyForm.name) return; setDeptForm({...deptForm,faculty:[...deptForm.faculty,deptFacultyForm]}); setDeptFacultyForm({name:"",designation:"",qualification:"",specialization:""}); }}
-                  className="px-4 py-2.5 rounded-xl text-sm font-bold text-white shadow hover:opacity-90 active:scale-95 transition-all" style={{ background: C.brand }}>Add Staff</button>
+                <div className="flex gap-2">
+                  <button onClick={() => {
+                    if(!deptFacultyForm.name) return;
+                    if (editingFacultyIdx !== null) {
+                      const updated = [...deptForm.faculty];
+                      updated[editingFacultyIdx] = deptFacultyForm;
+                      setDeptForm({...deptForm, faculty: updated});
+                      setEditingFacultyIdx(null);
+                    } else {
+                      setDeptForm({...deptForm, faculty:[...deptForm.faculty, deptFacultyForm]});
+                    }
+                    setDeptFacultyForm({name:"",designation:"",qualification:"",specialization:""});
+                  }}
+                  className="flex-1 px-4 py-2.5 rounded-xl text-sm font-bold text-white shadow hover:opacity-90 active:scale-95 transition-all" style={{ background: C.brand }}>
+                    {editingFacultyIdx !== null ? "Update Staff" : "Add Staff"}
+                  </button>
+                  {editingFacultyIdx !== null && (
+                    <button onClick={() => { setEditingFacultyIdx(null); setDeptFacultyForm({name:"",designation:"",qualification:"",specialization:""}); }}
+                      className="px-3 py-2.5 rounded-xl text-xs font-bold bg-gray-200 text-gray-700 hover:bg-gray-300 transition">
+                      Cancel
+                    </button>
+                  )}
+                </div>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {deptForm.faculty.map((f,i) => (
-                  <div key={i} className="flex items-center justify-between p-4 rounded-2xl shadow-sm border group hover:border-amber-200 transition-all" style={{ background: C.bg, borderColor: C.border }}>
-                    <div className="min-w-0">
+                  <div key={i} className={`flex items-center justify-between p-4 rounded-2xl shadow-sm border group hover:border-amber-300 transition-all ${editingFacultyIdx === i ? 'ring-2 ring-amber-500 bg-amber-50/30' : ''}`} style={{ background: C.bg, borderColor: C.border }}>
+                    <div className="min-w-0 flex-1">
                       <p className="font-bold text-sm truncate" style={{ color: C.text }}>{f.name}</p>
                       <div className="flex items-center gap-2 mt-1">
                         <p className="text-[10px] font-bold uppercase text-amber-600">{f.designation}</p>
@@ -1403,7 +1722,17 @@ const DepartmentsTab = ({ selectedDept, setSelectedDept, departments, deptForm, 
                         <p className="text-[10px] font-medium text-gray-500 truncate">{f.qualification}</p>
                       </div>
                     </div>
-                    <IconBtn danger onClick={() => setDeptForm({...deptForm,faculty:deptForm.faculty.filter((_,idx)=>idx!==i)})}><Trash2 size={15}/></IconBtn>
+                    <div className="flex items-center gap-1.5 ml-2">
+                      <IconBtn onClick={() => { setEditingFacultyIdx(i); setDeptFacultyForm({ name: f.name || "", designation: f.designation || "", qualification: f.qualification || "", specialization: f.specialization || "" }); }}>
+                        <Edit3 size={15}/>
+                      </IconBtn>
+                      <IconBtn danger onClick={() => {
+                        setDeptForm({...deptForm, faculty: deptForm.faculty.filter((_,idx)=>idx!==i)});
+                        if (editingFacultyIdx === i) { setEditingFacultyIdx(null); setDeptFacultyForm({name:"",designation:"",qualification:"",specialization:""}); }
+                      }}>
+                        <Trash2 size={15}/>
+                      </IconBtn>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -1414,24 +1743,56 @@ const DepartmentsTab = ({ selectedDept, setSelectedDept, departments, deptForm, 
             const key = deptSub === "Facilities" ? "facilities" : "activities";
             const input = deptSub === "Facilities" ? deptFacilityInput : deptActivityInput;
             const setInput = deptSub === "Facilities" ? setDeptFacilityInput : setDeptActivityInput;
-            const add = () => { if(!input.trim()) return; setDeptForm({...deptForm,[key]:[...deptForm[key],input.trim()]}); setInput(""); };
+            const editingIdx = deptSub === "Facilities" ? editingFacilityIdx : editingActivityIdx;
+            const setEditingIdx = deptSub === "Facilities" ? setEditingFacilityIdx : setEditingActivityIdx;
+
+            const savePoint = () => {
+              if(!input.trim()) return;
+              if (editingIdx !== null) {
+                const updated = [...deptForm[key]];
+                updated[editingIdx] = input.trim();
+                setDeptForm({...deptForm, [key]: updated});
+                setEditingIdx(null);
+              } else {
+                setDeptForm({...deptForm, [key]: [...deptForm[key], input.trim()]});
+              }
+              setInput("");
+            };
+
             return (
               <div className="space-y-5 animate-in fade-in slide-in-from-bottom-2 duration-300">
                 <div className="flex gap-3">
-                  <input value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>e.key==="Enter"&&add()}
-                    placeholder={`Describe new ${deptSub.toLowerCase()} point...`} className={`${inputCls} flex-1 shadow-sm`} style={inputStyle}/>
-                  <button onClick={add} className="px-6 py-2.5 rounded-xl font-bold text-white shadow-lg hover:opacity-90 active:scale-95 transition-all shrink-0" style={{ background: C.brand }}><Plus size={20}/></button>
+                  <input value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>e.key==="Enter"&&savePoint()}
+                    placeholder={editingIdx !== null ? `Edit ${deptSub.toLowerCase()} point...` : `Describe new ${deptSub.toLowerCase()} point...`} className={`${inputCls} flex-1 shadow-sm`} style={inputStyle}/>
+                  <button onClick={savePoint} className="px-6 py-2.5 rounded-xl font-bold text-white shadow-lg hover:opacity-90 active:scale-95 transition-all shrink-0" style={{ background: C.brand }}>
+                    {editingIdx !== null ? "Update Point" : <Plus size={20}/>}
+                  </button>
+                  {editingIdx !== null && (
+                    <button onClick={() => { setEditingIdx(null); setInput(""); }} className="px-4 py-2.5 rounded-xl font-bold bg-gray-200 text-gray-700 hover:bg-gray-300 transition shrink-0 text-xs">
+                      Cancel
+                    </button>
+                  )}
                 </div>
                 <div className="grid grid-cols-1 gap-3">
                   {deptForm[key].map((item,i) => (
-                    <div key={i} className="flex items-center justify-between p-4 rounded-2xl group transition-all hover:bg-gray-50 border shadow-sm" style={{ background: C.bg, borderColor: C.border }}>
-                      <div className="flex items-center gap-3">
+                    <div key={i} className={`flex items-center justify-between p-4 rounded-2xl group transition-all border shadow-sm ${editingIdx === i ? 'ring-2 ring-amber-500 bg-amber-50/30' : 'hover:bg-gray-50'}`} style={{ background: C.bg, borderColor: C.border }}>
+                      <div className="flex items-center gap-3 flex-1 min-w-0 pr-3">
                         <div className="w-6 h-6 rounded-lg bg-white flex items-center justify-center shadow-sm shrink-0">
                           <span className="text-[10px] font-bold" style={{ color: C.accent }}>{i+1}</span>
                         </div>
                         <p className="text-sm leading-relaxed" style={{ color: C.text }}>{item}</p>
                       </div>
-                      <IconBtn danger onClick={() => setDeptForm({...deptForm,[key]:deptForm[key].filter((_,idx)=>idx!==i)})}><Trash2 size={14}/></IconBtn>
+                      <div className="flex items-center gap-1.5">
+                        <IconBtn onClick={() => { setEditingIdx(i); setInput(item); }}>
+                          <Edit3 size={14}/>
+                        </IconBtn>
+                        <IconBtn danger onClick={() => {
+                          setDeptForm({...deptForm, [key]: deptForm[key].filter((_,idx)=>idx!==i)});
+                          if (editingIdx === i) { setEditingIdx(null); setInput(""); }
+                        }}>
+                          <Trash2 size={14}/>
+                        </IconBtn>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -1514,9 +1875,9 @@ const GalleryForm = ({ editItem, formState, setFormState, closeModal, fetchData,
     </div>
 
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-      <Field label="Title"><input required value={formState.title} onChange={e=>setFormState({...formState,title:e.target.value})} className={inputCls} style={inputStyle} placeholder="e.g. Main Academic Building"/></Field>
+      <Field label="Title" required><FInput required value={formState.title} onChange={e=>setFormState({...formState,title:e.target.value})} placeholder="e.g. Main Academic Building"/></Field>
       <Field label="Category">
-        <select value={formState.category} onChange={e=>setFormState({...formState,category:e.target.value})} className={inputCls} style={inputStyle}>
+        <FSelect value={formState.category} onChange={e=>setFormState({...formState,category:e.target.value})}>
           <option value="college_campus_view">College Campus View</option>
           <option value="college_highlight">College Highlight</option>
           <option value="hospital">Hospital Main/Additional Images</option>
@@ -1526,10 +1887,10 @@ const GalleryForm = ({ editItem, formState, setFormState, closeModal, fetchData,
           <option value="event_cultural">Cultural Events</option>
           <option value="event_sports">Sports Events</option>
           <option value="event_community">Community Service Events</option>
-        </select>
+        </FSelect>
       </Field>
     </div>
-    <Field label="Description"><textarea rows={3} value={formState.description} onChange={e=>setFormState({...formState,description:e.target.value})} className={`${inputCls} resize-none`} style={inputStyle}/></Field>
+    <Field label="Description"><FTextarea rows={3} value={formState.description} onChange={e=>setFormState({...formState,description:e.target.value})} placeholder="Media description..."/></Field>
     
     {/* File Upload Area */}
     <Field label={formState.mediaType === 'video' ? 'Video File' : 'Image File'}>
@@ -1569,10 +1930,7 @@ const GalleryForm = ({ editItem, formState, setFormState, closeModal, fetchData,
       )}
     </Field>
 
-    <div className="flex gap-3 pt-2">
-      <button type="button" onClick={closeModal} className="flex-1 py-3 rounded-xl border font-bold text-sm transition hover:bg-gray-50" style={{ borderColor: C.border, color: C.muted }}>Cancel</button>
-      <button type="submit" className="flex-1 py-3 rounded-xl font-bold text-sm transition" style={{ background: C.accent, color: "#fff" }}>{editItem ? "Save Changes" : formState.mediaType === 'video' ? 'Upload Video' : 'Create Image'}</button>
-    </div>
+    <FormActions onCancel={closeModal} submitLabel={editItem ? "Save Changes" : formState.mediaType === 'video' ? 'Upload Video' : 'Create Image'}/>
   </form>
 );
 
@@ -1638,7 +1996,7 @@ const InstituteForm = ({ editItem, closeModal, fetchData, notify }) => {
         order: editItem.order || 0,
         specialties: Array.isArray(editItem.specialties) ? editItem.specialties.join(", ") : "",
         services: Array.isArray(editItem.services) ? editItem.services.join(", ") : "",
-        contact: { ...editItem.contact }
+        contact: { address: editItem.contact?.address || "", phone: editItem.contact?.phone || "", website: editItem.contact?.website || "" }
       });
     }
   }, [editItem]);
@@ -1660,35 +2018,33 @@ const InstituteForm = ({ editItem, closeModal, fetchData, notify }) => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="grid grid-cols-2 gap-4">
-        <Field label="Institute Name"><input required value={form.name} onChange={e=>setForm({...form, name:e.target.value})} className={inputCls} style={inputStyle}/></Field>
-        <Field label="Type (e.g. Hospital)"><input required value={form.type} onChange={e=>setForm({...form, type:e.target.value})} className={inputCls} style={inputStyle}/></Field>
+    <form onSubmit={handleSubmit} className="space-y-5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <Field label="Institute Name" required><FInput required value={form.name} onChange={e=>setForm({...form, name:e.target.value})} placeholder="e.g. Government Spine Institute"/></Field>
+        <Field label="Type (e.g. Hospital)" required><FInput required value={form.type} onChange={e=>setForm({...form, type:e.target.value})} placeholder="e.g. Educational Institute"/></Field>
       </div>
-      <div className="grid grid-cols-4 gap-4">
-        <Field label="Established"><input value={form.established} onChange={e=>setForm({...form, established:e.target.value})} className={inputCls} style={inputStyle}/></Field>
-        <Field label="Capacity"><input value={form.capacity} onChange={e=>setForm({...form, capacity:e.target.value})} className={inputCls} style={inputStyle}/></Field>
-        <Field label="Icon Emoji"><input value={form.icon} onChange={e=>setForm({...form, icon:e.target.value})} className={inputCls} style={inputStyle}/></Field>
-        <Field label="Sort Order"><input type="number" required value={form.order} onChange={e=>setForm({...form, order:parseInt(e.target.value)||0})} className={inputCls} style={inputStyle}/></Field>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <Field label="Established"><FInput value={form.established} onChange={e=>setForm({...form, established:e.target.value})} placeholder="e.g. 1980"/></Field>
+        <Field label="Capacity"><FInput value={form.capacity} onChange={e=>setForm({...form, capacity:e.target.value})} placeholder="e.g. 80 Beds"/></Field>
+        <Field label="Icon Emoji"><FInput value={form.icon} onChange={e=>setForm({...form, icon:e.target.value})}/></Field>
+        <Field label="Sort Order"><FInput type="number" required value={form.order} onChange={e=>setForm({...form, order:parseInt(e.target.value)||0})}/></Field>
       </div>
-      <Field label="Main Description"><textarea required rows={3} value={form.description} onChange={e=>setForm({...form, description:e.target.value})} className={`${inputCls} resize-none`} style={inputStyle}/></Field>
-      <Field label="Additional Description"><textarea rows={2} value={form.description2} onChange={e=>setForm({...form, description2:e.target.value})} className={`${inputCls} resize-none`} style={inputStyle}/></Field>
-      <Field label="Clinical Areas (comma separated)"><textarea rows={2} value={form.specialties} onChange={e=>setForm({...form, specialties:e.target.value})} className={`${inputCls} resize-none`} style={inputStyle}/></Field>
-      <Field label="Key Services (comma separated)"><textarea rows={2} value={form.services} onChange={e=>setForm({...form, services:e.target.value})} className={`${inputCls} resize-none`} style={inputStyle}/></Field>
+      <Field label="Main Description" required><FTextarea required rows={3} value={form.description} onChange={e=>setForm({...form, description:e.target.value})} placeholder="Main description..."/></Field>
+      <Field label="Additional Description"><FTextarea rows={2} value={form.description2} onChange={e=>setForm({...form, description2:e.target.value})} placeholder="Extra details..."/></Field>
+      <Field label="Clinical Areas (comma separated)"><FTextarea rows={2} value={form.specialties} onChange={e=>setForm({...form, specialties:e.target.value})} placeholder="e.g. Orthopedics, Spine Surgery"/></Field>
+      <Field label="Key Services (comma separated)"><FTextarea rows={2} value={form.services} onChange={e=>setForm({...form, services:e.target.value})} placeholder="e.g. Emergency, OPD, ICU"/></Field>
       
-      <div className="p-4 rounded-2xl bg-gray-50 space-y-4 border border-gray-100">
-        <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Contact Details</p>
-        <Field label="Address"><input value={form.contact.address} onChange={e=>setForm({...form, contact:{...form.contact, address:e.target.value}})} className={inputCls} style={inputStyle}/></Field>
-        <div className="grid grid-cols-2 gap-4">
-          <Field label="Phone"><input value={form.contact.phone} onChange={e=>setForm({...form, contact:{...form.contact, phone:e.target.value}})} className={inputCls} style={inputStyle}/></Field>
-          <Field label="Website"><input value={form.contact.website} onChange={e=>setForm({...form, contact:{...form.contact, website:e.target.value}})} className={inputCls} style={inputStyle}/></Field>
+      <FormSection title="Contact Details">
+        <div className="p-4 rounded-2xl bg-white space-y-4 border border-gray-200">
+          <Field label="Address"><FInput value={form.contact.address} onChange={e=>setForm({...form, contact:{...form.contact, address:e.target.value}})} placeholder="Institute address..."/></Field>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Field label="Phone"><FInput value={form.contact.phone} onChange={e=>setForm({...form, contact:{...form.contact, phone:e.target.value}})} placeholder="Contact number..."/></Field>
+            <Field label="Website"><FInput value={form.contact.website} onChange={e=>setForm({...form, contact:{...form.contact, website:e.target.value}})} placeholder="https://..."/></Field>
+          </div>
         </div>
-      </div>
+      </FormSection>
 
-      <div className="flex gap-3 pt-2">
-        <button type="button" onClick={closeModal} className="flex-1 py-3 rounded-xl border font-bold text-sm" style={{ borderColor: C.border }}>Cancel</button>
-        <button type="submit" className="flex-[2] py-3 rounded-xl text-sm font-bold text-white bg-amber-900" style={{ background: C.brand }}>{editItem ? "Save Changes" : "Create"}</button>
-      </div>
+      <FormActions onCancel={closeModal} submitLabel={editItem ? "Save Changes" : "Create Institute"}/>
     </form>
   );
 };
@@ -1703,28 +2059,25 @@ const KeyPersonForm = ({ editItem, keyPersonForm, setKeyPersonForm, closeModal, 
       else await axiosInstance.post(url,payload); 
       notify("Saved"); closeModal(); fetchData();
     } catch { notify("Failed","error"); }
-  }} className="space-y-4">
-    <div className="grid grid-cols-2 gap-4">
-      <Field label="Name"><input required value={keyPersonForm.name} onChange={e=>setKeyPersonForm({...keyPersonForm,name:e.target.value})} className={inputCls} style={inputStyle}/></Field>
-      <Field label="Position"><input required value={keyPersonForm.position} onChange={e=>setKeyPersonForm({...keyPersonForm,position:e.target.value})} className={inputCls} style={inputStyle}/></Field>
+  }} className="space-y-5">
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <Field label="Name" required><FInput required value={keyPersonForm.name} onChange={e=>setKeyPersonForm({...keyPersonForm,name:e.target.value})} placeholder="Full name"/></Field>
+      <Field label="Position" required><FInput required value={keyPersonForm.position} onChange={e=>setKeyPersonForm({...keyPersonForm,position:e.target.value})} placeholder="e.g. Principal"/></Field>
     </div>
-    <div className="grid grid-cols-2 gap-4">
-      <Field label="Qualification"><input value={keyPersonForm.qualification} onChange={e=>setKeyPersonForm({...keyPersonForm,qualification:e.target.value})} className={inputCls} style={inputStyle}/></Field>
-      <Field label="Phone"><input value={keyPersonForm.phone} onChange={e=>setKeyPersonForm({...keyPersonForm,phone:e.target.value})} className={inputCls} style={inputStyle}/></Field>
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <Field label="Qualification"><FInput value={keyPersonForm.qualification} onChange={e=>setKeyPersonForm({...keyPersonForm,qualification:e.target.value})} placeholder="e.g. M.Sc. Nursing, Ph.D."/></Field>
+      <Field label="Phone"><FInput value={keyPersonForm.phone} onChange={e=>setKeyPersonForm({...keyPersonForm,phone:e.target.value})} placeholder="Phone number"/></Field>
     </div>
-    <div className="grid grid-cols-2 gap-4">
-      <Field label="Email"><input value={keyPersonForm.email} onChange={e=>setKeyPersonForm({...keyPersonForm,email:e.target.value})} className={inputCls} style={inputStyle}/></Field>
-      <Field label="Hours"><input value={keyPersonForm.hours} onChange={e=>setKeyPersonForm({...keyPersonForm,hours:e.target.value})} className={inputCls} style={inputStyle}/></Field>
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <Field label="Email"><FInput value={keyPersonForm.email} onChange={e=>setKeyPersonForm({...keyPersonForm,email:e.target.value})} placeholder="Email address"/></Field>
+      <Field label="Office Hours"><FInput value={keyPersonForm.hours} onChange={e=>setKeyPersonForm({...keyPersonForm,hours:e.target.value})} placeholder="e.g. 9:00 AM - 5:00 PM"/></Field>
     </div>
-    <div className="grid grid-cols-2 gap-4">
-      <Field label="Icon Emoji"><input value={keyPersonForm.icon} onChange={e=>setKeyPersonForm({...keyPersonForm,icon:e.target.value})} className={inputCls} style={inputStyle}/></Field>
-      <Field label="Gradient Color (e.g. from-blue-500 to-blue-600)"><input value={keyPersonForm.color} onChange={e=>setKeyPersonForm({...keyPersonForm,color:e.target.value})} className={inputCls} style={inputStyle}/></Field>
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <Field label="Icon Emoji"><FInput value={keyPersonForm.icon} onChange={e=>setKeyPersonForm({...keyPersonForm,icon:e.target.value})}/></Field>
+      <Field label="Gradient Color" hint="e.g. from-blue-500 to-blue-600"><FInput value={keyPersonForm.color} onChange={e=>setKeyPersonForm({...keyPersonForm,color:e.target.value})}/></Field>
     </div>
-    <Field label="Responsibilities (one per line)"><textarea required rows={4} value={keyPersonForm.responsibilities} onChange={e=>setKeyPersonForm({...keyPersonForm,responsibilities:e.target.value})} className={`${inputCls} resize-none`} style={inputStyle}/></Field>
-    <div className="flex gap-3 pt-2">
-      <button type="button" onClick={closeModal} className="flex-1 py-3 rounded-xl border font-bold text-sm hover:bg-gray-50" style={{ borderColor: C.border, color: C.muted }}>Cancel</button>
-      <button type="submit" className="flex-[2] py-3 rounded-xl text-sm font-bold text-white" style={{ background: C.brand }}>{editItem?"Save":"Add"}</button>
-    </div>
+    <Field label="Responsibilities (one per line)" required><FTextarea required rows={4} value={keyPersonForm.responsibilities} onChange={e=>setKeyPersonForm({...keyPersonForm,responsibilities:e.target.value})} placeholder="Responsibility 1&#10;Responsibility 2"/></Field>
+    <FormActions onCancel={closeModal} submitLabel={editItem ? "Save Changes" : "Add Key Contact"}/>
   </form>
 );
 
@@ -1737,17 +2090,14 @@ const ContactDeptForm = ({ editItem, contactDeptForm, setContactDeptForm, closeM
       else await axiosInstance.post(url,contactDeptForm); 
       notify("Saved"); closeModal(); fetchData();
     } catch { notify("Failed","error"); }
-  }} className="space-y-4">
-    <div className="grid grid-cols-2 gap-4">
-      <Field label="Department Name"><input required value={contactDeptForm.name} onChange={e=>setContactDeptForm({...contactDeptForm,name:e.target.value})} className={inputCls} style={inputStyle}/></Field>
-      <Field label="Icon Emoji"><input value={contactDeptForm.icon} onChange={e=>setContactDeptForm({...contactDeptForm,icon:e.target.value})} className={inputCls} style={inputStyle}/></Field>
+  }} className="space-y-5">
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <Field label="Department Name" required><FInput required value={contactDeptForm.name} onChange={e=>setContactDeptForm({...contactDeptForm,name:e.target.value})} placeholder="e.g. Admission Office"/></Field>
+      <Field label="Icon Emoji"><FInput value={contactDeptForm.icon} onChange={e=>setContactDeptForm({...contactDeptForm,icon:e.target.value})}/></Field>
     </div>
-    <Field label="Phone"><input value={contactDeptForm.phone} onChange={e=>setContactDeptForm({...contactDeptForm,phone:e.target.value})} className={inputCls} style={inputStyle}/></Field>
-    <Field label="Email"><input value={contactDeptForm.email} onChange={e=>setContactDeptForm({...contactDeptForm,email:e.target.value})} className={inputCls} style={inputStyle}/></Field>
-    <div className="flex gap-3 pt-2">
-      <button type="button" onClick={closeModal} className="flex-1 py-3 rounded-xl border font-bold text-sm hover:bg-gray-50" style={{ borderColor: C.border, color: C.muted }}>Cancel</button>
-      <button type="submit" className="flex-[2] py-3 rounded-xl text-sm font-bold text-white" style={{ background: C.brand }}>{editItem?"Save":"Add"}</button>
-    </div>
+    <Field label="Phone"><FInput value={contactDeptForm.phone} onChange={e=>setContactDeptForm({...contactDeptForm,phone:e.target.value})} placeholder="Phone number"/></Field>
+    <Field label="Email"><FInput value={contactDeptForm.email} onChange={e=>setContactDeptForm({...contactDeptForm,email:e.target.value})} placeholder="Email address"/></Field>
+    <FormActions onCancel={closeModal} submitLabel={editItem ? "Save Changes" : "Add Department Contact"}/>
   </form>
 );
 
@@ -1799,6 +2149,218 @@ const ContactTab = ({ contactSub, setContactSub, keyPersons, setKeyPersonForm, c
   </div>
 );
 
+const SectionControlTab = ({ notify }) => {
+  const { sectionsList, loading, toggleSection, togglePageSections } = useSectionVisibility();
+  const [selectedPage, setSelectedPage] = useState("All");
+  const [searchTerm, setSearchTerm] = useState("");
+
+  const pages = ["All", "Home Page", "About Us", "Admission", "Departments", "Gallery", "Institutes", "Contact Us"];
+
+  const filteredSections = sectionsList.filter(s => {
+    const matchesPage = selectedPage === "All" || s.page === selectedPage;
+    const matchesSearch = (s.sectionName || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          (s.description || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          (s.sectionKey || "").toLowerCase().includes(searchTerm.toLowerCase());
+    return matchesPage && matchesSearch;
+  });
+
+  const grouped = filteredSections.reduce((acc, sec) => {
+    acc[sec.page] = acc[sec.page] || [];
+    acc[sec.page].push(sec);
+    return acc;
+  }, {});
+
+  const totalSections = sectionsList.length;
+  const activeSections = sectionsList.filter(s => s.isVisible !== false).length;
+  const hiddenSections = totalSections - activeSections;
+
+  return (
+    <div className="space-y-6">
+      {/* Top Header Banner matching Ginera Brand Colors */}
+      <div className="p-6 sm:p-8 rounded-3xl text-white shadow-xl relative overflow-hidden"
+           style={{ background: "linear-gradient(135deg, #4A2B13 0%, #6B3F1D 50%, #8B4A26 100%)" }}>
+        {/* Glow ambient background */}
+        <div className="absolute -right-10 -bottom-10 w-72 h-72 rounded-full bg-amber-500/15 blur-3xl pointer-events-none" />
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <span className="px-3 py-1 rounded-xl bg-amber-500/20 text-amber-300 font-bold text-xs uppercase tracking-wider flex items-center gap-2 border border-amber-400/30 backdrop-blur-md">
+                <Sliders size={14} /> Site Content Manager
+              </span>
+            </div>
+            <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-white">Section Visibility Control</h2>
+            <p className="text-amber-100/80 text-xs sm:text-sm mt-1 max-w-xl leading-relaxed">
+              Turn any website section ON (visible) or OFF (hidden) in real-time. Changes sync instantly across public pages.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-3 shrink-0">
+            <div className="px-5 py-3.5 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 text-center min-w-[95px] shadow-sm">
+              <p className="text-2xl sm:text-3xl font-black text-emerald-400">{activeSections}</p>
+              <p className="text-[10px] text-amber-200 uppercase font-bold tracking-wider mt-0.5">ON (Visible)</p>
+            </div>
+            <div className="px-5 py-3.5 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 text-center min-w-[95px] shadow-sm">
+              <p className="text-2xl sm:text-3xl font-black text-rose-300">{hiddenSections}</p>
+              <p className="text-[10px] text-amber-200 uppercase font-bold tracking-wider mt-0.5">OFF (Hidden)</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Filter Bar & Search Box */}
+      <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
+        <div className="flex items-center gap-2 overflow-x-auto w-full md:w-auto pb-2 md:pb-0 scrollbar-hide">
+          {pages.map(page => {
+            const active = selectedPage === page;
+            return (
+              <button
+                key={page}
+                onClick={() => setSelectedPage(page)}
+                className={`px-4 py-2.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
+                  active
+                    ? "text-white shadow-md scale-[1.02]"
+                    : "bg-white text-gray-700 hover:bg-amber-50/60 border border-gray-200 hover:border-amber-300"
+                }`}
+                style={active ? { background: "linear-gradient(135deg, #6B3F1D 0%, #E07B39 100%)" } : {}}
+              >
+                {page}
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="relative w-full md:w-80 shrink-0">
+          <input
+            type="text"
+            placeholder="Search section name or key..."
+            value={searchTerm}
+            onChange={e => setSearchTerm(e.target.value)}
+            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 bg-white text-xs font-medium focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500 outline-none shadow-xs transition-all placeholder:text-gray-400"
+          />
+          <Search size={16} className="absolute left-3.5 top-3 text-amber-800/60" />
+        </div>
+      </div>
+
+      {/* Sections List */}
+      {loading ? (
+        <div className="py-16 text-center text-gray-400 font-semibold text-sm">Loading visibility settings...</div>
+      ) : Object.keys(grouped).length === 0 ? (
+        <EmptyState icon={EyeOff} text="No sections found matching filter search." />
+      ) : (
+        <div className="space-y-8">
+          {Object.entries(grouped).map(([pageName, secs]) => {
+            return (
+              <div key={pageName} className="p-5 sm:p-6 rounded-3xl bg-white border border-[#E8E0D8] shadow-sm space-y-4">
+                {/* Page Group Header */}
+                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 pb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-2xl flex items-center justify-center font-bold text-white shadow-md"
+                         style={{ background: "linear-gradient(135deg, #6B3F1D, #E07B39)" }}>
+                      <Layers size={20} />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-gray-900 text-base">{pageName}</h3>
+                      <p className="text-xs text-gray-400 font-medium">{secs.length} Sections configured</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={async () => {
+                        try {
+                          await togglePageSections(pageName, true);
+                          notify(`Turned ALL sections ON for ${pageName}`);
+                        } catch {
+                          notify("Update failed", "error");
+                        }
+                      }}
+                      className="px-3.5 py-2 rounded-xl text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 transition-all border border-emerald-200 shadow-2xs flex items-center gap-1.5"
+                    >
+                      <CheckCircle2 size={14} /> Turn All ON
+                    </button>
+
+                    <button
+                      onClick={async () => {
+                        try {
+                          await togglePageSections(pageName, false);
+                          notify(`Turned ALL sections OFF for ${pageName}`);
+                        } catch {
+                          notify("Update failed", "error");
+                        }
+                      }}
+                      className="px-3.5 py-2 rounded-xl text-xs font-bold text-rose-700 bg-rose-50 hover:bg-rose-100 transition-all border border-rose-200 shadow-2xs flex items-center gap-1.5"
+                    >
+                      <X size={14} /> Turn All OFF
+                    </button>
+                  </div>
+                </div>
+
+                {/* Section Toggle Cards */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {secs.map(sec => {
+                    const isVisible = sec.isVisible !== false;
+
+                    return (
+                      <div
+                        key={sec.sectionKey}
+                        className={`p-4 rounded-2xl border transition-all flex items-center justify-between gap-4 ${
+                          isVisible
+                            ? "bg-gradient-to-r from-emerald-50/40 to-emerald-50/10 border-emerald-300/70 shadow-2xs hover:shadow-xs"
+                            : "bg-gray-50/80 border-gray-200/80 opacity-75"
+                        }`}
+                      >
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1.5">
+                            <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${
+                              isVisible ? "bg-emerald-100 text-emerald-800 border border-emerald-300/50" : "bg-rose-100 text-rose-800 border border-rose-300/50"
+                            }`}>
+                              {isVisible ? "VISIBLE (ON)" : "HIDDEN (OFF)"}
+                            </span>
+                            <span className="text-[10px] font-mono text-amber-950/50 truncate bg-amber-50/60 px-1.5 py-0.5 rounded-md border border-amber-200/40">{sec.sectionKey}</span>
+                          </div>
+
+                          <h4 className="font-bold text-sm text-gray-900 truncate">{sec.sectionName}</h4>
+                          <p className="text-xs text-gray-500 line-clamp-1 mt-0.5">{sec.description}</p>
+                        </div>
+
+                        <button
+                          onClick={async () => {
+                            try {
+                              await toggleSection(sec.sectionKey, !isVisible);
+                              notify(`${sec.sectionName} is now ${!isVisible ? "ON (Visible)" : "OFF (Hidden)"}`);
+                            } catch {
+                              notify("Update failed", "error");
+                            }
+                          }}
+                          className={`relative inline-flex h-8 w-14 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                            isVisible ? "bg-[#E07B39]" : "bg-gray-300"
+                          }`}
+                        >
+                          <span
+                            className={`pointer-events-none inline-block h-7 w-7 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out flex items-center justify-center ${
+                              isVisible ? "translate-x-6" : "translate-x-0"
+                            }`}
+                          >
+                            {isVisible ? (
+                              <CheckCircle2 size={15} className="text-emerald-600" />
+                            ) : (
+                              <X size={15} className="text-gray-400" />
+                            )}
+                          </span>
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+};
+
 const AdminPanel = ({ onLogout }) => {
   const [activeTab, setActiveTab] = useState("Home Page");
   const [aboutSub, setAboutSub] = useState("Branding");
@@ -1830,6 +2392,7 @@ const AdminPanel = ({ onLogout }) => {
   const [deanMessage, setDeanMessage] = useState({ name:"",title:"",greeting:"",paragraphs:[],highlight:"",photoUrl:"",stats:[] });
   const [collegeLogo, setCollegeLogo] = useState({ logoUrl:"",collegeName:"",tagline:"" });
   const [aboutImages, setAboutImages] = useState([]);
+  const [historyContent, setHistoryContent] = useState({ heroTitle: "Our History", timelineTitle: "Institutional Timeline", timelineParagraphs: [], legacyTitle: "Legacy of Excellence", legacyParagraphs: [] });
   const [visionMission, setVisionMission] = useState([]);
   const [coreValues, setCoreValues] = useState([]);
   const [courses, setCourses] = useState([]);
@@ -1899,6 +2462,7 @@ const AdminPanel = ({ onLogout }) => {
         axiosInstance.get("/contact/key-persons"),
         axiosInstance.get("/contact/departments"),
         axiosInstance.get("/contact/info"),
+        axiosInstance.get("/about/history-content"),
       ]);
       setPrograms(r[0].data); setTestimonials(r[1].data); setAcademicContent(r[2].data);
       setMilestones(r[3].data); setDeanMessage(r[4].data); setCollegeLogo(r[5].data);
@@ -1906,6 +2470,7 @@ const AdminPanel = ({ onLogout }) => {
       setAdmissionSteps(r[10].data); setAdmissionRules(r[11].data); setBonds(r[12].data);
       setGuidelines(r[13].data); setDepartments(r[14].data); setSliders(r[15].data); setGalleryImages(r[16].data);
       setInstitutes(r[17].data); setKeyPersons(r[18].data); setContactDepartments(r[19].data); setContactInfo(r[20].data);
+      if (r[21]?.data) setHistoryContent(r[21].data);
     } catch { notify("Error fetching data", "error"); }
     finally { setLoading(false); }
   };
@@ -1939,6 +2504,7 @@ const AdminPanel = ({ onLogout }) => {
   const closeModal = () => { setShowModal(false); setEditItem(null); };
 
   const navItems = [
+    { name: "Section Control", icon: Sliders },
     { name: "Home Page",    icon: ImageIcon },
     { name: "Academic",     icon: BookOpen },
     { name: "Testimonials", icon: Users },
@@ -1948,6 +2514,7 @@ const AdminPanel = ({ onLogout }) => {
     { name: "Institutes",   icon: Building2 },
     { name: "Gallery",      icon: ImageIcon },
     { name: "Contact Us",   icon: Phone },
+    { name: "Settings",     icon: Settings },
   ];
 
   const modalMeta = {
@@ -1969,7 +2536,7 @@ const AdminPanel = ({ onLogout }) => {
   }[modalType] || {};
 
   return (
-    <div className="flex h-full w-full min-h-0 bg-gray-50 text-gray-900 font-sans overflow-hidden">
+    <div className="flex flex-1 h-full w-full min-h-0 bg-gray-50 text-gray-900 font-sans overflow-hidden relative items-stretch">
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap');
         * { font-family: 'DM Sans', sans-serif; box-sizing: border-box; }
@@ -1980,36 +2547,36 @@ const AdminPanel = ({ onLogout }) => {
         .admin-scroll::-webkit-scrollbar-track { background: #F4F1EE; border-radius: 10px; }
         .admin-scroll::-webkit-scrollbar-thumb { background: #C4A882; border-radius: 10px; border: 2px solid #F4F1EE; }
         .admin-scroll::-webkit-scrollbar-thumb:hover { background: #6B3F1D; }
-        .admin-scroll { scrollbar-width: thin; scrollbar-color: #C4A882 #F4F1EE; }
+        .admin-scroll { scrollbar-width: thin; scrollbar-color: #C4A882 #F4F1EE; -webkit-overflow-scrolling: touch; }
       `}</style>
 
       <Toast note={note}/>
-      <Sidebar isMobile={isMobile} sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} activeTab={activeTab} setActiveTab={setActiveTab} selectedDept={selectedDept} setSelectedDept={setSelectedDept} navItems={navItems} onLogout={onLogout}/>
+      <Sidebar isMobile={isMobile} sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} activeTab={activeTab} setActiveTab={setActiveTab} selectedDept={selectedDept} setSelectedDept={setSelectedDept} navItems={navItems} onLogout={onLogout} />
       
-      <main className="flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden">
+      <main className="flex-1 flex flex-col min-w-0 h-full overflow-hidden bg-gray-50">
         <Header setSidebarOpen={setSidebarOpen} selectedDept={selectedDept} activeTab={activeTab}/>
         
-        <div className="flex-1 min-h-0 relative">
-          <div className="admin-scroll absolute inset-0 overflow-y-auto p-4 lg:p-8">
-          <div className="max-w-7xl mx-auto">
+        <div className="flex-1 min-h-0 overflow-y-auto admin-scroll p-4 md:p-6 lg:p-8">
+          <div className="max-w-7xl mx-auto pb-24">
             {loading && (
               <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/60 backdrop-blur-sm">
-                <div className="w-10 h-10 border-4 border-t-transparent rounded-full animate-spin" style={{ borderColor: C.accent, borderTopColor: "transparent" }}/>
+                <div className="w-10 h-10 border-4 border-t-transparent rounded-full animate-spin" />
               </div>
             )}
             <AnimatePresence mode="wait">
                 <motion.div key={activeTab + (selectedDept?._id || "")} initial={{ opacity:0, y:12 }} animate={{ opacity:1, y:0 }} exit={{ opacity:0, y:-12 }} transition={{ duration:0.25 }}>
+                  {activeTab === "Section Control" && <SectionControlTab notify={notify}/>}
                   {activeTab === "Home Page" && <HomeTab selectedDeptForSlider={selectedDeptForSlider} setSelectedDeptForSlider={setSelectedDeptForSlider} departments={departments} sliders={sliders} handleSliderUpload={handleSliderUpload} updateSliderImage={updateSliderImage} del={del}/>}
                   {activeTab === "Academic" && <AcademicTab programs={programs} academicContent={academicContent} setAcademicContent={setAcademicContent} axiosInstance={axiosInstance} notify={notify} openModal={openModal} setProgramForm={setProgramForm} del={del}/>}
                   {activeTab === "Testimonials" && <TestimonialsTab testimonials={testimonials} testimonialForm={testimonialForm} setTestimonialForm={setTestimonialForm} openModal={openModal} del={del}/>}
-                  {activeTab === "About Us" && <AboutTab aboutSub={aboutSub} setAboutSub={setAboutSub} collegeLogo={collegeLogo} setCollegeLogo={setCollegeLogo} logoFile={logoFile} setLogoFile={setLogoFile} deanMessage={deanMessage} setDeanMessage={setDeanMessage} deanPhotoFile={deanPhotoFile} setDeanPhotoFile={setDeanPhotoFile} milestones={milestones} milestoneForm={milestoneForm} setMilestoneForm={setMilestoneForm} openModal={openModal} setMilestones={setMilestones} visionMission={visionMission} setVmForm={setVmForm} coreValues={coreValues} setCvForm={setCvForm} aboutImages={aboutImages} setAboutImages={setAboutImages} aboutImageFiles={aboutImageFiles} setAboutImageFiles={setAboutImageFiles} axiosInstance={axiosInstance} notify={notify} del={del}/>}
+                  {activeTab === "About Us" && <AboutTab aboutSub={aboutSub} setAboutSub={setAboutSub} collegeLogo={collegeLogo} setCollegeLogo={setCollegeLogo} logoFile={logoFile} setLogoFile={setLogoFile} deanMessage={deanMessage} setDeanMessage={setDeanMessage} deanPhotoFile={deanPhotoFile} setDeanPhotoFile={setDeanPhotoFile} milestones={milestones} milestoneForm={milestoneForm} setMilestoneForm={setMilestoneForm} openModal={openModal} setMilestones={setMilestones} visionMission={visionMission} setVmForm={setVmForm} coreValues={coreValues} setCvForm={setCvForm} aboutImages={aboutImages} setAboutImages={setAboutImages} aboutImageFiles={aboutImageFiles} setAboutImageFiles={setAboutImageFiles} historyContent={historyContent} setHistoryContent={setHistoryContent} axiosInstance={axiosInstance} notify={notify} del={del}/>}
                   {activeTab === "Admission" && <AdmissionTab admSub={admSub} setAdmSub={setAdmSub} courses={courses} openModal={openModal} setCourseForm={setCourseForm} del={del} admissionSteps={admissionSteps} setStepForm={setStepForm} admissionRules={admissionRules} setRuleForm={setRuleForm} bonds={bonds} setBondForm={setBondForm} guidelines={guidelines} setGuidelineForm={setGuidelineForm}/>}
                   {activeTab === "Departments" && <DepartmentsTab selectedDept={selectedDept} setSelectedDept={setSelectedDept} departments={departments} deptForm={deptForm} setDeptForm={setDeptForm} deptSub={deptSub} setDeptSub={setDeptSub} deptFacultyForm={deptFacultyForm} setDeptFacultyForm={setDeptFacultyForm} deptFacilityInput={deptFacilityInput} setDeptFacilityInput={setDeptFacilityInput} deptActivityInput={deptActivityInput} setDeptActivityInput={setDeptActivityInput} sliders={sliders} axiosInstance={axiosInstance} fetchData={fetchData} notify={notify} openModal={openModal} del={del} handleSliderUpload={handleSliderUpload}/>}
                   {activeTab === "Gallery" && <GalleryTab galleryImages={galleryImages} galleryForm={galleryForm} setGalleryForm={setGalleryForm} openModal={openModal} del={del} />}
                   {activeTab === "Institutes" && <InstitutesTab institutes={institutes} openModal={openModal} del={del} />}
                   {activeTab === "Contact Us" && <ContactTab contactSub={contactSub} setContactSub={setContactSub} keyPersons={keyPersons} setKeyPersonForm={setKeyPersonForm} contactDepartments={contactDepartments} setContactDeptForm={setContactDeptForm} contactInfo={contactInfo} setContactInfo={setContactInfo} openModal={openModal} del={del} notify={notify} axiosInstance={axiosInstance} />}
                   {activeTab === "Settings" && (
-                    <div className="flex flex-col items-center justify-center py-32 text-center" style={{ color: C.muted }}>
+                    <div className="flex flex-col items-center justify-center py-32 text-center text-slate-400">
                       <Settings size={48} className="mb-4 opacity-30"/>
                       <p className="font-semibold">Settings Console — feature coming soon</p>
                     </div>
@@ -2018,8 +2585,7 @@ const AdminPanel = ({ onLogout }) => {
               </AnimatePresence>
           </div>
         </div>
-      </div>
-    </main>
+      </main>
 
       <Modal show={showModal} onClose={closeModal} title={modalMeta.title} subtitle={modalMeta.subtitle}>
         {modalType === "program" && <ProgramForm editItem={editItem} programForm={programForm} setProgramForm={setProgramForm} closeModal={closeModal} fetchData={fetchData} notify={notify}/>}

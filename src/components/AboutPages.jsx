@@ -20,6 +20,8 @@ import { Button } from "./ui/button";
 import principleImage from "../images/principleImage.jpeg"
 import axiosInstance, { getMediaUrl } from "../api/axiosInstance";
 import campusLocationImg from "../images/coll.jpeg";
+import { useSectionVisibility } from "../context/SectionVisibilityContext";
+import SectionOffNotice from "./SectionOffNotice";
 
 
 // import collegeImage2 from "../images/collegeimage2.jpg";
@@ -87,8 +89,11 @@ function MissionStatementItem({ text, index, direction = 1 }) {
 }
 
 export function AboutLogo({ onNavigate }) {
+  const { isSectionVisible } = useSectionVisibility();
   const [collegeBranding, setCollegeBranding] = useState(null);
   const [aboutImages, setAboutImages] = useState([]);
+
+  if (!isSectionVisible('about_logo')) return <SectionOffNotice name="College Logo & Branding" />;
 
   useEffect(() => {
     axiosInstance.get('/about/college-logo').then(r => setCollegeBranding(r.data)).catch(() => { });
@@ -425,7 +430,10 @@ const statsVariants = {
 };
 
 export function DeanMessage() {
+  const { isSectionVisible } = useSectionVisibility();
   const [dean, setDean] = useState(null);
+
+  if (!isSectionVisible('about_dean_message')) return <SectionOffNotice name="Dean's Message" />;
 
   useEffect(() => {
     axiosInstance.get('/about/dean').then(r => setDean(r.data)).catch(() => { });
@@ -683,25 +691,57 @@ const imageAnimation = {
 
 
 export function History() {
+  const { isSectionVisible } = useSectionVisibility();
+  if (!isSectionVisible('about_history')) return <SectionOffNotice name="History & Milestones" />;
   const [dynamicMilestones, setDynamicMilestones] = useState([]);
+  const [aboutImages, setAboutImages] = useState([]);
+  const [historyContent, setHistoryContent] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isHistoryExpanded, setIsHistoryExpanded] = React.useState(false);
   const [expandedMilestones, setExpandedMilestones] = React.useState([]);
 
   useEffect(() => {
     setLoading(true);
-    axiosInstance.get('/about/milestones')
-      .then(r => {
-        setDynamicMilestones(r.data);
+    Promise.all([
+      axiosInstance.get('/about/milestones'),
+      axiosInstance.get('/about/images'),
+      axiosInstance.get('/about/history-content')
+    ])
+      .then(([rMilestones, rImages, rContent]) => {
+        setDynamicMilestones(rMilestones.data);
+        setAboutImages(rImages.data);
+        setHistoryContent(rContent.data);
         setLoading(false);
       })
       .catch((err) => {
-        console.error("Failed to fetch milestones:", err);
+        console.error("Failed to fetch history data:", err);
         setLoading(false);
       });
   }, []);
 
   const milestonesToDisplay = dynamicMilestones;
+
+  const historyHeroSlot = aboutImages.find(img => img.key === 'historyHero');
+  const historyTimelineSlot = aboutImages.find(img => img.key === 'historyTimeline');
+  const historyLegacySlot = aboutImages.find(img => img.key === 'historyLegacy');
+
+  const historyHeroImg = historyHeroSlot?.imageUrl ? getMediaUrl(historyHeroSlot.imageUrl) : collegeImage1;
+  const historyTimelineImg = historyTimelineSlot?.imageUrl ? getMediaUrl(historyTimelineSlot.imageUrl) : laboratoryImage;
+  const historyLegacyImg = historyLegacySlot?.imageUrl ? getMediaUrl(historyLegacySlot.imageUrl) : laboratoryImage;
+
+  const timelineParas = historyContent?.timelineParagraphs?.length
+    ? historyContent.timelineParagraphs
+    : [
+        "The college has completed 62 years of teaching to nursing students. Students of this college have obtained various statuses in administration, education and clinical field in Gujarat (India) as well abroad.",
+        "The college has the roots in the post basic Nursing School, which was started in 1963. At the time Gujarat was very young state and the need for P.H.N. nurses was acute. So the diploma course in Public Health Nursing was started. Two years later with the increasing in Nursing Schools a especially the ANM schools the need for tutors was felt, so in 1965 a Diploma in Nursing Education course was started.",
+        "During the years when the Diploma courses were being conducted, the concept of post Basic B.Sc. Degree course in Nursing was conceived. The Idea very new too many but was easily accepted. It was realized that changing needs of the society which in turn is due to the rapid advanced medicine and technology demands professional Nurses. This could be done if a collegiate program was started thus, in July 1963 the post Basic nursing school ceased to exist and the college of Nursing born."
+      ];
+
+  const legacyParas = historyContent?.legacyParagraphs?.length
+    ? historyContent.legacyParagraphs
+    : [
+        "Government College of Nursing, GINERA, Ahmedabad signifies a history of producing high-quality, competent nurses through a combination of strong academics, practical experience, and a commitment to ethical and compassionate care. This legacy is built on proven leadership, consistent accreditation, and a holistic approach that develops critical thinking, empathy, and job-ready skills for a dynamic healthcare environment."
+      ];
 
   return (
     <motion.div
@@ -719,8 +759,8 @@ export function History() {
         transition={{ duration: 1 }}
       >
         <motion.img
-          src={collegeImage1}
-          alt="College Library"
+          src={historyHeroImg}
+          alt={historyHeroSlot?.alt || "College Library"}
           className="w-full h-full object-cover rounded-xl"
           initial={{ scale: 1.1 }}
           animate={{ scale: 1 }}
@@ -732,7 +772,7 @@ export function History() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1.2 }}
         >
-          Our History
+          {historyContent?.heroTitle || "Our History"}
         </motion.h1>
       </motion.div>
 
@@ -750,8 +790,8 @@ export function History() {
           >
             <motion.img
               style={{ marginTop: '70px' }}
-              src={laboratoryImage}
-              alt="Institutional Timeline"
+              src={historyTimelineImg}
+              alt={historyTimelineSlot?.alt || "Institutional Timeline"}
               className="rounded-2xl shadow-2xl w-full max-w-md h-84   object-cover border-4 border-white"
               whileHover={{
                 scale: 1.05,
@@ -770,30 +810,29 @@ export function History() {
               className="text-3xl md:text-4xl font-bold"
               style={{ color: "#f59e0b" }}
             >
-              Institutional Timeline
+              {historyContent?.timelineTitle || "Institutional Timeline"}
             </motion.h2>
 
             <div
               className="space-y-4 text-lg leading-relaxed"
               style={{ color: "#6b7280" }}
             >
-              <p>
-                The college has completed 62 years of teaching to nursing students. Students of this college have obtained various statuses in administration, education and clinical field in Gujarat (India) as well abroad.
-              </p>
+              <p>{timelineParas[0]}</p>
               {isHistoryExpanded && (
                 <>
-                  <p>
-                    The college has the roots in the post basic Nursing School, which was started in 1963. At the time Gujarat was very young state and the need for P.H.N. nurses was acute. So the diploma course in Public Health Nursing was started. Two years later with the increasing in Nursing Schools a especially the ANM schools the need for tutors was felt, so in 1965 a Diploma in Nursing Education course was started.
-                  </p>
-                  <p>During the years when the Diploma courses were being conducted, the concept of post Basic B.Sc. Degree course in Nursing was conceived. The Idea very new too many but was easily accepted. It was realized that changing needs of the society which in turn is due to the rapid advanced medicine and technology demands professional Nurses. This could be done if a collegiate program was started thus, in July 1963 the post Basic nursing school ceased to exist and the college of Nursing born.</p>
+                  {timelineParas.slice(1).map((para, pIdx) => (
+                    <p key={pIdx}>{para}</p>
+                  ))}
                 </>
               )}
-              <button
-                onClick={() => setIsHistoryExpanded(!isHistoryExpanded)}
-                className="text-orange-600 font-semibold hover:underline text-sm focus:outline-none mt-2"
-              >
-                {isHistoryExpanded ? "Read less" : "Read more"}
-              </button>
+              {timelineParas.length > 1 && (
+                <button
+                  onClick={() => setIsHistoryExpanded(!isHistoryExpanded)}
+                  className="text-orange-600 font-semibold hover:underline text-sm focus:outline-none mt-2"
+                >
+                  {isHistoryExpanded ? "Read less" : "Read more"}
+                </button>
+              )}
             </div>
 
             {/* Stats */}
@@ -815,17 +854,16 @@ export function History() {
               className="text-3xl md:text-4xl font-bold"
               style={{ color: "#f59e0b" }}
             >
-              Legacy of Excellence
+              {historyContent?.legacyTitle || "Legacy of Excellence"}
             </motion.h2>
 
             <div
               className="space-y-4 text-lg leading-relaxed"
               style={{ color: "#6b7280" }}
             >
-              <p>
-                Government College of Nursing, GINERA, Ahmedabad signifies a history of producing high-quality, competent nurses through a combination of strong academics, practical experience, and a commitment to ethical and compassionate care. This legacy is built on proven leadership, consistent accreditation, and a holistic approach that develops critical thinking, empathy, and job-ready skills for a dynamic healthcare environment.
-              </p>
-
+              {legacyParas.map((para, pIdx) => (
+                <p key={pIdx}>{para}</p>
+              ))}
             </div>
 
             {/* Stats */}
@@ -837,8 +875,8 @@ export function History() {
             variants={imageAnimation}
           >
             <motion.img
-              src={laboratoryImage}
-              alt="Legacy of Excellence"
+              src={historyLegacyImg}
+              alt={historyLegacySlot?.alt || "Legacy of Excellence"}
               className="rounded-2xl shadow-2xl w-full max-w-md h-80 object-cover border-4 border-white"
               whileHover={{
                 scale: 1.05,
@@ -972,6 +1010,8 @@ export function History() {
 }
 
 export function Location() {
+  const { isSectionVisible } = useSectionVisibility();
+  if (!isSectionVisible('about_location')) return <SectionOffNotice name="Location & Map" />;
   return (
     <motion.div
       className="min-h-screen bg-gradient-to-br from-amber-50 to-orange-50 py-16 relative"
@@ -1272,6 +1312,8 @@ const valueCardVariants = {
 };
 
 export function VisionMission() {
+  const { isSectionVisible } = useSectionVisibility();
+  if (!isSectionVisible('about_vision_mission')) return <SectionOffNotice name="Vision & Mission" />;
   const [expandedCoreValues, setExpandedCoreValues] = React.useState([]);
 
   const toggleCoreValue = (title) => {
@@ -1706,6 +1748,8 @@ export function VisionMission() {
 }
 
 export function Achievements() {
+  const { isSectionVisible } = useSectionVisibility();
+  if (!isSectionVisible('about_achievements')) return <SectionOffNotice name="Achievements & Photo Showcase" />;
   const achievements = [
     {
       category: "Academic Excellence",

@@ -25,6 +25,8 @@ import { useState, useEffect } from "react";
 import { ExternalLink } from "lucide-react";
 import axiosInstance from "../api/axiosInstance";
 import LoadingScreen from "./LoadingScreen";
+import { useSectionVisibility } from "../context/SectionVisibilityContext";
+import SectionOffNotice from "./SectionOffNotice";
 
 
 // Animation variants
@@ -141,9 +143,12 @@ const FeatureCard = ({ item, index }) => {
 };
 
 export function CoursesOffered() {
+  const { isSectionVisible } = useSectionVisibility();
   const [expandedIds, setExpandedIds] = useState([]);
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  if (!isSectionVisible('admission_courses')) return <SectionOffNotice name="Courses Offered" />;
 
   useEffect(() => {
     const fetchCourses = async () => {
@@ -548,8 +553,11 @@ export function CoursesOffered() {
 // example variants
 
 export function AdmissionProcedure() {
+  const { isSectionVisible } = useSectionVisibility();
   const [steps, setSteps] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  if (!isSectionVisible('admission_procedure')) return <SectionOffNotice name="Admission Procedure & Steps" />;
 
   const getIcon = (iconName) => {
     switch (iconName) {
@@ -1458,7 +1466,10 @@ export function AdmissionProcedure() {
 //   );
 // }
 export function AdmissionRules() {
+  const { isSectionVisible } = useSectionVisibility();
   const [isCommitteeTextExpanded, setIsCommitteeTextExpanded] = useState(false);
+
+  if (!isSectionVisible('admission_rules')) return <SectionOffNotice name="Rules & Regulations" />;
   // Animation variants
   const staggerContainer = {
     hidden: { opacity: 0 },
@@ -2114,8 +2125,11 @@ Government of Gujarat ,Gandhinagar</motion.p>
 
 
 export function Instructions() {
+  const { isSectionVisible } = useSectionVisibility();
   const [guidelines, setGuidelines] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  if (!isSectionVisible('admission_instructions')) return <SectionOffNotice name="Instructions & Guidelines" />;
 
   useEffect(() => {
     const fetchGuidelines = async () => {

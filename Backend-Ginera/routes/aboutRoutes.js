@@ -33,4 +33,8 @@ router.post('/core-values', c.createCoreValue);
 router.put('/core-values/:id', c.updateCoreValue);
 router.delete('/core-values/:id', c.deleteCoreValue);
 
+// History Page Content (Hero, Timeline & Legacy Titles/Paragraphs)
+router.get('/history-content', c.getHistoryContent);
+router.put('/history-content', c.updateHistoryContent);
+
 module.exports = router;

@@ -4,6 +4,8 @@ import { Badge } from "./ui/badge";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
 import { motion } from "framer-motion";
 import axiosInstance, { getMediaUrl } from '../api/axiosInstance';
+import { useSectionVisibility } from "../context/SectionVisibilityContext";
+import SectionOffNotice from "./SectionOffNotice";
 
 
 const containerVariants = {
@@ -22,8 +24,11 @@ const cardVariants = {
 };
 
 export function CollegePhotos() {
+  const { isSectionVisible } = useSectionVisibility();
   const [collegeImages, setCollegeImages] = useState([]);
   const [additionalImages, setAdditionalImages] = useState([]);
+
+  if (!isSectionVisible('gallery_college')) return <SectionOffNotice name="College Photos" />;
 
   useEffect(() => {
     const fetchGallery = async () => {
@@ -179,8 +184,11 @@ export function CollegePhotos() {
 
 
 export function HospitalPhotos() {
+  const { isSectionVisible } = useSectionVisibility();
   const [hospitalImages, setHospitalImages] = useState([]);
   const [hospitalFacilities, setHospitalFacilities] = useState([]);
+
+  if (!isSectionVisible('gallery_hospital')) return <SectionOffNotice name="Hospital Photos" />;
 
   useEffect(() => {
     const fetchGallery = async () => {
@@ -373,8 +381,11 @@ export function HospitalPhotos() {
 
 
 export function EventsPhotos() {
+  const { isSectionVisible } = useSectionVisibility();
   const [eventImages, setEventImages] = useState([]);
   const [eventCategories, setEventCategories] = useState([]);
+
+  if (!isSectionVisible('gallery_events')) return <SectionOffNotice name="Events & Activities Photos" />;
 
   useEffect(() => {
     const fetchGallery = async () => {

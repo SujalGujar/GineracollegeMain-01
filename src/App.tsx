@@ -19,7 +19,7 @@ import AdminPanel from './components/AdminPanel';
 import { LoginPage } from './components/LoginPage';
 import LoadingScreen from './components/LoadingScreen';
 
-const PAGE_LOADER_DELAY = 1200;
+const PAGE_LOADER_DELAY = 900;
 
 export default function App() {
   const getPageFromLocation = () => {
@@ -58,14 +58,9 @@ export default function App() {
       }
     }
 
-    if (page === currentPage) {
-      window.scrollTo(0, 0);
-      setPageLoading(false);
-      return;
-    }
-
     setPageLoading(true);
     window.scrollTo(0, 0);
+
     navTimerRef.current = setTimeout(() => {
       setCurrentPage(page);
       setPageLoading(false);
@@ -73,10 +68,10 @@ export default function App() {
   };
 
   useEffect(() => {
-    // Artificial delay to ensure a smooth transition and allow resources to settle
+    // Initial page load screen transition
     const timer = setTimeout(() => {
       setIsLoading(false);
-    }, 4000);
+    }, 1200);
     return () => clearTimeout(timer);
   }, []);
 
@@ -107,27 +102,25 @@ export default function App() {
       case 'about-logo':
         return <AboutLogo onNavigate={handleNavigation} />;
       case 'dean-message':
-        return <DeanMessage />;
+        return <DeanMessage onNavigate={handleNavigation} />;
       case 'history':
-        return <History />;
+        return <History onNavigate={handleNavigation} />;
       case 'location':
-        return <Location />;
+        return <Location onNavigate={handleNavigation} />;
       case 'vision-mission':
-        return <VisionMission />;
+        return <VisionMission onNavigate={handleNavigation} />;
       case 'achievements':
-        return <Achievements />;
+        return <Achievements onNavigate={handleNavigation} />;
 
       // Admission pages
       case 'courses':
-        return <CoursesOffered />;
+        return <CoursesOffered onNavigate={handleNavigation} />;
       case 'admission-procedure':
-        return <AdmissionProcedure />;
+        return <AdmissionProcedure onNavigate={handleNavigation} />;
       case 'admission-rules':
-        return <AdmissionRules />;
-      case 'service-bond':
-        return <div>Service Bond page has been removed.</div>;
+        return <AdmissionRules onNavigate={handleNavigation} />;
       case 'instructions':
-        return <Instructions />;
+        return <Instructions onNavigate={handleNavigation} />;
 
       // Nursing Department pages
       case 'department-fundamentals':
@@ -145,17 +138,17 @@ export default function App() {
 
       // Photo Gallery pages
       case 'college-photos':
-        return <CollegePhotos />;
+        return <CollegePhotos onNavigate={handleNavigation} />;
       case 'hospital-photos':
-        return <HospitalPhotos />;
+        return <HospitalPhotos onNavigate={handleNavigation} />;
       case 'events-photos':
-        return <EventsPhotos />;
+        return <EventsPhotos onNavigate={handleNavigation} />;
 
       // Other pages
       case 'affiliated-institutes':
-        return <AffiliatedInstitutes />;
+        return <AffiliatedInstitutes onNavigate={handleNavigation} />;
       case 'contact':
-        return <ContactPage />;
+        return <ContactPage onNavigate={handleNavigation} />;
       case 'admin':
         if (isLoggedIn) {
           return <AdminPanel onLogout={() => {
@@ -181,11 +174,11 @@ export default function App() {
   return (
     <ThemeProvider>
       {isAdmin ? (
-        // Admin layout: completely isolated 100dvh container — no header/footer interference
+        // Admin layout: fill the viewport and let admin panel handle its own scrolling
         <>
           {showLoader && <LoadingScreen />}
-          <div style={{ display: showLoader ? 'none' : 'flex', flexDirection: 'column', height: '100dvh', width: '100%', overflow: 'hidden' }}>
-            <main style={{ flex: 1, minHeight: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+          <div className="flex flex-col w-screen h-screen overflow-hidden bg-gray-50" style={{ display: showLoader ? 'none' : 'flex' }}>
+            <main className="flex-1 min-h-0 flex flex-col overflow-hidden w-full">
               {renderCurrentPage()}
             </main>
             <Toaster />

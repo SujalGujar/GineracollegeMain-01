@@ -782,6 +782,7 @@ import collegelogo4 from "../Logos/collegelogo4.webp";
 import HeroSection from "../Homepages/HeroSection";
 import ImageSlider from "./ImageSlider";
 import axiosInstance from "../api/axiosInstance";
+import { useSectionVisibility } from "../context/SectionVisibilityContext";
 // ─────────────────────────────────────────────────────────────────────────────
 
 /* ═══════════════════════════════════════════════════════
@@ -1070,6 +1071,7 @@ const cardVariant = {
    MAIN COMPONENT
 ═══════════════════════════════════════════════════════ */
 const HomePage=({ onNavigate }) => {
+  const { isSectionVisible } = useSectionVisibility();
   const [testimonialsIndex, setTestimonialsIndex] = useState(0);
   const [logoOffset, setLogoOffset] = useState(0);
   const [programsVisible, setProgramsVisible] = useState(false);
@@ -1183,7 +1185,8 @@ const HomePage=({ onNavigate }) => {
             objectFit: "cover", opacity: 0.06, zIndex: 0, pointerEvents: "none",
           }}
         />
-        <HeroSection />
+        {isSectionVisible('home_hero') && <HeroSection />}
+        {isSectionVisible('home_academic') && (
         <section
           id="academic-programs"
           style={{
@@ -1382,6 +1385,8 @@ const HomePage=({ onNavigate }) => {
             </motion.div>
           </div>
         </section>
+        )}
+        {isSectionVisible('home_testimonials') && (
         <section style={{
           position: "relative",
           padding: "48px 0 64px",
@@ -1518,6 +1523,8 @@ const HomePage=({ onNavigate }) => {
             </div>
           </div>
         </section>
+        )}
+        {isSectionVisible('home_institutes') && (
         <section style={{
           position: "relative",
           padding: "64px 0",
@@ -1579,6 +1586,7 @@ const HomePage=({ onNavigate }) => {
             </div>
           </div>
         </section>
+        )}
       </div>
     </>
   );

@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const aboutImageSchema = new mongoose.Schema({
   key: {
     type: String,
-    enum: ['missionValues', 'visionGoals', 'visionMain', 'missionMain'],
+    enum: ['missionValues', 'visionGoals', 'visionMain', 'missionMain', 'historyHero', 'historyTimeline', 'historyLegacy'],
     required: true,
     unique: true
   },

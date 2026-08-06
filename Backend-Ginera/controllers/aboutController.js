@@ -1,5 +1,6 @@
 const multer = require('multer');
 const path = require('path');
+const HistoryContent = require('../models/HistoryContent');
 const Milestone = require('../models/Milestone');
 const DeanMessage = require('../models/DeanMessage');
 const CollegeLogo = require('../models/CollegeLogo');
@@ -18,6 +19,9 @@ const ABOUT_IMAGE_SLOTS = [
   { key: 'visionGoals', title: 'Vision & Goals Image', alt: 'Vision & Goals', order: 2 },
   { key: 'visionMain', title: 'Vision Section Image', alt: 'Our Vision for Medical Excellence', order: 3 },
   { key: 'missionMain', title: 'Mission Section Image', alt: 'Our Mission in Action', order: 4 },
+  { key: 'historyHero', title: 'History Hero Banner Image', alt: 'Our History Banner', order: 5 },
+  { key: 'historyTimeline', title: 'Institutional Timeline Image', alt: 'Institutional Timeline', order: 6 },
+  { key: 'historyLegacy', title: 'Legacy of Excellence Image', alt: 'Legacy of Excellence', order: 7 },
 ];
 
 const ensureAboutImageSlots = async () => {
@@ -25,7 +29,7 @@ const ensureAboutImageSlots = async () => {
     AboutImage.findOneAndUpdate(
       { key: slot.key },
       { $setOnInsert: slot },
-      { upsert: true, new: true }
+      { upsert: true, returnDocument: 'after' }
     )
   ));
   return docs.sort((a, b) => a.order - b.order);
@@ -239,5 +243,36 @@ exports.deleteCoreValue = async (req, res) => {
   try {
     await CoreValue.findByIdAndDelete(req.params.id);
     res.json({ message: 'Deleted' });
+  } catch (err) { res.status(400).json({ message: err.message }); }
+};
+
+// ─── HISTORY CONTENT ─────────────────────────────────────────────────────────
+exports.getHistoryContent = async (req, res) => {
+  try {
+    let history = await HistoryContent.findOne();
+    if (!history) {
+      history = await HistoryContent.create({});
+    }
+    res.json(history);
+  } catch (err) { res.status(500).json({ message: err.message }); }
+};
+
+exports.updateHistoryContent = async (req, res) => {
+  try {
+    let history = await HistoryContent.findOne();
+    const updates = { ...req.body };
+    if (typeof updates.timelineParagraphs === 'string') {
+      try { updates.timelineParagraphs = JSON.parse(updates.timelineParagraphs); } catch { }
+    }
+    if (typeof updates.legacyParagraphs === 'string') {
+      try { updates.legacyParagraphs = JSON.parse(updates.legacyParagraphs); } catch { }
+    }
+    if (history) {
+      Object.assign(history, updates);
+      await history.save();
+    } else {
+      history = await HistoryContent.create(updates);
+    }
+    res.json(history);
   } catch (err) { res.status(400).json({ message: err.message }); }
 };

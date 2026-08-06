@@ -17,8 +17,13 @@ const fadeInUp = {
 };
 
 import axiosInstance from "../api/axiosInstance";
+import { useSectionVisibility } from "../context/SectionVisibilityContext";
+import SectionOffNotice from "./SectionOffNotice";
 
 export function AffiliatedInstitutes() {
+  const { isSectionVisible } = useSectionVisibility();
+  if (!isSectionVisible('institutes_list')) return <SectionOffNotice name="Affiliated Institutes" />;
+
   const DEFAULT_INSTITUTES = [
     {
       name: "Civil Hospital Ahmedabad",

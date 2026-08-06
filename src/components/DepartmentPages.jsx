@@ -484,6 +484,8 @@ import { Users, BookOpen, Microscope, GraduationCap, ChevronLeft, ChevronRight }
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Badge } from "./ui/badge";
 import { AnimatePresence } from "framer-motion";
+import { useSectionVisibility } from "../context/SectionVisibilityContext";
+import SectionOffNotice from "./SectionOffNotice";
 
 const imgUrl = (url) =>
   !url ? "/placeholder.png"
@@ -970,9 +972,15 @@ const allDepartments = {
 
 // Export GenericDepartment component that uses the department data
 export function GenericDepartment({ slug, category }) {
+  const { isSectionVisible } = useSectionVisibility();
   const [department, setDepartment] = useState(null);
   const [sliders, setSliders] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  const sectionKey = `dept_${(slug || '').replace(/-/g, '_')}`;
+  if (!isSectionVisible(sectionKey)) {
+    return <SectionOffNotice name="Department Section" />;
+  }
 
   useEffect(() => {
     const fetchDepartment = async () => {

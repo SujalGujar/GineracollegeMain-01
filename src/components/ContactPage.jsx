@@ -16,8 +16,10 @@ import {
 } from "lucide-react";
 import SendMessageButton from "../components/Buttons/SendMessageButton.";
 import axiosInstance from "../api/axiosInstance";
+import { useSectionVisibility } from "../context/SectionVisibilityContext";
 
 export function ContactPage() {
+  const { isSectionVisible } = useSectionVisibility();
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -85,6 +87,7 @@ export function ContactPage() {
         </div>
 
         {/* Key Contacts Section */}
+        {isSectionVisible('contact_key_persons') && (
         <div
           className="mb-16 animate-fade-in-up"
           style={{ animationDelay: "0.1s" }}
@@ -195,10 +198,12 @@ export function ContactPage() {
             ))}
           </div>
         </div>
+        )}
 
         {/* Contact Form and College Info */}
         <div className="grid lg:grid-cols-2 gap-8 mb-16">
           {/* Contact Form */}
+          {isSectionVisible('contact_feedback_form') && (
           <div
             className="animate-fade-in-left"
             style={{ animationDelay: "0.3s" }}
@@ -275,8 +280,10 @@ export function ContactPage() {
               </CardContent>
             </Card>
           </div>
+          )}
 
           {/* College Info */}
+          {isSectionVisible('contact_info') && (
           <div
             className="animate-fade-in-right"
             style={{ animationDelay: "0.4s" }}
@@ -339,9 +346,11 @@ export function ContactPage() {
               </CardContent>
             </Card>
           </div>
+          )}
         </div>
 
         {/* Department Contacts */}
+        {isSectionVisible('contact_departments') && (
         <div
           className="mb-16 animate-fade-in-up"
           style={{ animationDelay: "0.5s" }}
@@ -389,6 +398,7 @@ export function ContactPage() {
             </CardContent>
           </Card>
         </div>
+        )}
 
 
       </div>
