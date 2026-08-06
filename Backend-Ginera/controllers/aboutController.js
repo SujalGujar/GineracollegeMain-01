@@ -5,12 +5,31 @@ const DeanMessage = require('../models/DeanMessage');
 const CollegeLogo = require('../models/CollegeLogo');
 const VisionMission = require('../models/VisionMission');
 const CoreValue = require('../models/CoreValue');
+const AboutImage = require('../models/AboutImage');
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, 'uploads/'),
   filename: (req, file, cb) => cb(null, Date.now() + path.extname(file.originalname))
 });
 const upload = multer({ storage });
+
+const ABOUT_IMAGE_SLOTS = [
+  { key: 'missionValues', title: 'Mission & Values Image', alt: 'Mission & Values', order: 1 },
+  { key: 'visionGoals', title: 'Vision & Goals Image', alt: 'Vision & Goals', order: 2 },
+  { key: 'visionMain', title: 'Vision Section Image', alt: 'Our Vision for Medical Excellence', order: 3 },
+  { key: 'missionMain', title: 'Mission Section Image', alt: 'Our Mission in Action', order: 4 },
+];
+
+const ensureAboutImageSlots = async () => {
+  const docs = await Promise.all(ABOUT_IMAGE_SLOTS.map(slot =>
+    AboutImage.findOneAndUpdate(
+      { key: slot.key },
+      { $setOnInsert: slot },
+      { upsert: true, new: true }
+    )
+  ));
+  return docs.sort((a, b) => a.order - b.order);
+};
 
 // ─── MILESTONES ────────────────────────────────────────────────────────────────
 exports.getMilestones = async (req, res) => {
@@ -118,6 +137,52 @@ exports.updateCollegeLogo = [
 ];
 
 // ─── VISION & MISSION ────────────────────────────────────────────────────────
+// ABOUT PAGE IMAGES
+exports.getAboutImages = async (req, res) => {
+  try {
+    const images = await ensureAboutImageSlots();
+    res.json(images);
+  } catch (err) { res.status(500).json({ message: err.message }); }
+};
+
+exports.updateAboutImage = [
+  upload.single('image'),
+  async (req, res) => {
+    try {
+      const slot = ABOUT_IMAGE_SLOTS.find(item => item.key === req.params.key);
+      if (!slot) return res.status(404).json({ message: 'Image slot not found' });
+
+      const updates = {
+        title: req.body.title || slot.title,
+        alt: req.body.alt || slot.alt,
+        order: slot.order
+      };
+      if (req.file) updates.imageUrl = '/uploads/' + req.file.filename;
+
+      const image = await AboutImage.findOneAndUpdate(
+        { key: slot.key },
+        { $set: updates, $setOnInsert: { key: slot.key } },
+        { upsert: true, new: true, runValidators: true }
+      );
+      res.json(image);
+    } catch (err) { res.status(400).json({ message: err.message }); }
+  }
+];
+
+exports.clearAboutImage = async (req, res) => {
+  try {
+    const slot = ABOUT_IMAGE_SLOTS.find(item => item.key === req.params.key);
+    if (!slot) return res.status(404).json({ message: 'Image slot not found' });
+
+    const image = await AboutImage.findOneAndUpdate(
+      { key: slot.key },
+      { $set: { imageUrl: '', title: slot.title, alt: slot.alt, order: slot.order }, $setOnInsert: { key: slot.key } },
+      { upsert: true, new: true, runValidators: true }
+    );
+    res.json(image);
+  } catch (err) { res.status(400).json({ message: err.message }); }
+};
+
 exports.getVisionMission = async (req, res) => {
   try {
     const items = await VisionMission.find().sort({ order: 1 });

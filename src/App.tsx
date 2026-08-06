@@ -19,8 +19,10 @@ import AdminPanel from './components/AdminPanel';
 import { LoginPage } from './components/LoginPage';
 import LoadingScreen from './components/LoadingScreen';
 
+const PAGE_LOADER_DELAY = 1200;
+
 export default function App() {
-  const [currentPage, setCurrentPage] = useState(() => {
+  const getPageFromLocation = () => {
     const hash = window.location.hash;
     if (window.location.pathname === '/admin' || hash === '#/admin') {
       return 'admin';
@@ -29,6 +31,10 @@ export default function App() {
       return hash.substring(2);
     }
     return 'home';
+  };
+
+  const [currentPage, setCurrentPage] = useState(() => {
+    return getPageFromLocation();
   });
 
   const [isLoggedIn, setIsLoggedIn] = useState(() => {
@@ -38,6 +44,33 @@ export default function App() {
   const [isLoading, setIsLoading] = useState(true);
   const [pageLoading, setPageLoading] = useState(false);
   const navTimerRef = React.useRef(null);
+
+  const openPageWithLoader = (page, updateUrl = true) => {
+    if (navTimerRef.current) {
+      clearTimeout(navTimerRef.current);
+    }
+
+    if (updateUrl) {
+      if (page === 'home') {
+        window.history.pushState(null, '', window.location.pathname);
+      } else {
+        window.history.pushState(null, '', '#/' + page);
+      }
+    }
+
+    if (page === currentPage) {
+      window.scrollTo(0, 0);
+      setPageLoading(false);
+      return;
+    }
+
+    setPageLoading(true);
+    window.scrollTo(0, 0);
+    navTimerRef.current = setTimeout(() => {
+      setCurrentPage(page);
+      setPageLoading(false);
+    }, PAGE_LOADER_DELAY);
+  };
 
   useEffect(() => {
     // Artificial delay to ensure a smooth transition and allow resources to settle
@@ -55,37 +88,14 @@ export default function App() {
 
   useEffect(() => {
     const handleHashChange = () => {
-      const hash = window.location.hash;
-      if (window.location.pathname === '/admin' || hash === '#/admin') {
-        setCurrentPage('admin');
-      } else if (hash && hash.startsWith('#/')) {
-        setCurrentPage(hash.substring(2));
-      } else {
-        setCurrentPage('home');
-      }
+      openPageWithLoader(getPageFromLocation(), false);
     };
     window.addEventListener('hashchange', handleHashChange);
     return () => window.removeEventListener('hashchange', handleHashChange);
-  }, []);
+  }, [currentPage]);
 
   const handleNavigation = (page) => {
-    if (page !== currentPage) {
-      if (navTimerRef.current) {
-        clearTimeout(navTimerRef.current);
-      }
-      setPageLoading(true);
-      setCurrentPage(page);
-      window.scrollTo(0, 0);
-      navTimerRef.current = setTimeout(() => {
-        setPageLoading(false);
-      }, 1200);
-    }
-    // Update URL hash to match state for safe reloading
-    if (page === 'home') {
-      window.history.pushState(null, '', window.location.pathname);
-    } else {
-      window.history.pushState(null, '', '#/' + page);
-    }
+    openPageWithLoader(page);
   };
 
   const renderCurrentPage = () => {

@@ -21,7 +21,7 @@ function walk(dir) {
 const files = walk(srcDir);
 let changedFiles = 0;
 
-const DYNAMIC_URL = "${window.location.hostname === 'localhost' ? 'http://localhost:8080' : 'https://gineracollegemain-01.onrender.com'}";
+const DYNAMIC_URL = "${window.location.hostname === 'localhost' ? 'http://localhost:8080' : ''}";
 
 files.forEach(file => {
     if (!file.endsWith('.js') && !file.endsWith('.jsx') && !file.endsWith('.ts') && !file.endsWith('.tsx')) return;
@@ -38,7 +38,7 @@ files.forEach(file => {
     
     // Fix axiosInstance.js specifically
     if (file.endsWith('axiosInstance.js')) {
-      content = `import axios from 'axios';\n\nconst baseURL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' \n  ? 'http://localhost:8080/api' \n  : 'https://gineracollegemain-01.onrender.com/api';\n\nconst axiosInstance = axios.create({\n  baseURL,\n  timeout: 15000,\n});\n\nexport default axiosInstance;\n`;
+      content = `import axios from 'axios';\n\nconst baseURL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' \n  ? 'http://localhost:8080/api' \n  : '/api';\n\nconst axiosInstance = axios.create({\n  baseURL,\n  timeout: 15000,\n});\n\nexport default axiosInstance;\n`;
     }
 
     if (content !== original) {

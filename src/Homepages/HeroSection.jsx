@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import HeroImage1 from "../images/collegeimage1.jpg"
 import HeroImage2 from "../images/collegeimage2.jpg"
 import HeroImage3 from "../images/collegeimage3.jpg"
-import axiosInstance from "../api/axiosInstance";
+import axiosInstance, { getMediaUrl } from "../api/axiosInstance";
 
 const backgroundSlides = [
   { 
@@ -49,11 +49,11 @@ const HeroSection = ({ departmentName }) => {
         
         const response = await axiosInstance.get(url);
         if (response.data && response.data.length > 0) {
-          const backendSlides = response.data.map(item => ({
-            image: item.imageUrl.startsWith('http') ? item.imageUrl : `${window.location.hostname === 'localhost' ? `${window.location.hostname === 'localhost' ? 'http://localhost:8080' : 'https://gineracollegemain-01.onrender.com'}` + '' : 'https://gineracollegemain-01.onrender.com'}${item.imageUrl}`,
+          const backendSlides = response.data.filter(item => item.imageUrl).map(item => ({
+            image: getMediaUrl(item.imageUrl),
             alt: item.title || "Ginera College Slider"
           }));
-          setSlides(backendSlides);
+          setSlides(backendSlides.length > 0 ? backendSlides : backgroundSlides);
         } else {
           setSlides(backgroundSlides);
         }
@@ -128,6 +128,10 @@ const HeroSection = ({ departmentName }) => {
               src={slide.image}
               alt={slide.alt}
               className="w-full h-full object-cover object-top"
+              onError={(event) => {
+                event.currentTarget.onerror = null;
+                event.currentTarget.src = backgroundSlides[index % backgroundSlides.length].image;
+              }}
             />
             {/* Dark overlay for better visibility of UI elements */}
             <div className="absolute inset-0 bg-black/30"></div>

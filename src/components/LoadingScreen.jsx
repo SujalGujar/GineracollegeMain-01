@@ -42,7 +42,7 @@ const LoadingScreen = () => {
           transition={{ delay: 0.2, duration: 0.5 }}
           className="text-center"
         >
-          <h2 className="text-2xl font-bold text-gray-900 tracking-tight">Ginera Medical College</h2>
+          <h2 className="text-2xl font-bold text-gray-900 tracking-tight">Ginera Nursing College</h2>
           <div className="mt-2 flex items-center justify-center gap-1.5">
             {[0, 1, 2].map((i) => (
               <motion.div

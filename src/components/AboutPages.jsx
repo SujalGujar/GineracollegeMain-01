@@ -18,7 +18,7 @@ import { MapPin, Hospital } from "lucide-react";
 import ViewAllProgramsButton from "./Buttons/ViewAllProgramsButton";
 import { Button } from "./ui/button";
 import principleImage from "../images/principleImage.jpeg"
-import axiosInstance from "../api/axiosInstance";
+import axiosInstance, { getMediaUrl } from "../api/axiosInstance";
 import campusLocationImg from "../images/coll.jpeg";
 
 
@@ -88,6 +88,7 @@ function MissionStatementItem({ text, index, direction = 1 }) {
 
 export function AboutLogo({ onNavigate }) {
   const [collegeBranding, setCollegeBranding] = useState(null);
+  const [aboutImages, setAboutImages] = useState([]);
 
   useEffect(() => {
     axiosInstance.get('/about/college-logo').then(r => setCollegeBranding(r.data)).catch(() => { });
@@ -98,12 +99,36 @@ export function AboutLogo({ onNavigate }) {
     axiosInstance.get('/about/vision-mission').then(r => setVisionMission(r.data)).catch(() => { });
   }, []);
 
+  useEffect(() => {
+    axiosInstance.get('/about/images').then(r => setAboutImages(r.data)).catch(() => { });
+  }, []);
+
   const visionPoints = visionMission.filter(v => v.type === 'vision').map(v => v.content);
   const missionPoints = visionMission.filter(v => v.type === 'mission').map(v => v.content);
 
   const displayLogo = collegeBranding?.logoUrl
-    ? (collegeBranding.logoUrl.startsWith('http') ? collegeBranding.logoUrl : `${window.location.hostname === 'localhost' ? `${window.location.hostname === 'localhost' ? 'http://localhost:8080' : 'https://gineracollegemain-01.onrender.com'}` + '' : 'https://gineracollegemain-01.onrender.com'}${collegeBranding.logoUrl}`)
+    ? getMediaUrl(collegeBranding.logoUrl)
     : logo;
+  const imageFor = (key, fallback) => {
+    const image = aboutImages.find(item => item.key === key);
+    if (image?.imageUrl) return getMediaUrl(image.imageUrl);
+    const altKey = key === 'missionValues' ? 'missionMain' : key === 'visionGoals' ? 'visionMain' : null;
+    if (altKey) {
+      const altImage = aboutImages.find(item => item.key === altKey);
+      if (altImage?.imageUrl) return getMediaUrl(altImage.imageUrl);
+    }
+    return fallback;
+  };
+  const altFor = (key, fallback) => {
+    const image = aboutImages.find(item => item.key === key);
+    if (image?.alt) return image.alt;
+    const altKey = key === 'missionValues' ? 'missionMain' : key === 'visionGoals' ? 'visionMain' : null;
+    if (altKey) {
+      const altImage = aboutImages.find(item => item.key === altKey);
+      if (altImage?.alt) return altImage.alt;
+    }
+    return fallback;
+  };
 
   const items = visionPoints.length ? visionPoints : [
     "A college of nursing's vision is to be a leader in nursing education, preparing competent, compassionate, and ethically grounded professionals who can contribute to global healthcare.",
@@ -264,8 +289,8 @@ export function AboutLogo({ onNavigate }) {
                 transition={{ duration: 0.8 }}
               >
                 <img
-                  src={libraryImage}
-                  alt="Mission & Values"
+                  src={imageFor('missionValues', libraryImage)}
+                  alt={altFor('missionValues', 'Mission & Values')}
                   className="w-full h-full object-cover transform hover:scale-105 transition-transform duration-500"
                 />
               </motion.div>
@@ -288,8 +313,8 @@ export function AboutLogo({ onNavigate }) {
                 transition={{ duration: 0.8 }}
               >
                 <img
-                  src={laboratoryImage}
-                  alt="Branding Guidelines"
+                  src={imageFor('visionGoals', laboratoryImage)}
+                  alt={altFor('visionGoals', 'Vision & Goals')}
                   className="w-full h-full object-cover transform hover:scale-105 transition-transform duration-500"
                 />
               </motion.div>
@@ -423,7 +448,7 @@ export function DeanMessage() {
     { number: "35+", label: "Research Papers/Year", color: "#7c3aed" }
   ];
   const deanPhoto = dean?.photoUrl
-    ? (dean.photoUrl.startsWith('http') ? dean.photoUrl : `${window.location.hostname === 'localhost' ? `${window.location.hostname === 'localhost' ? 'http://localhost:8080' : 'https://gineracollegemain-01.onrender.com'}` + '' : 'https://gineracollegemain-01.onrender.com'}${dean.photoUrl}`)
+    ? getMediaUrl(dean.photoUrl)
     : principleImage;
 
   const containerVariants = {
@@ -1258,10 +1283,12 @@ export function VisionMission() {
   };
   const [visionMission, setVisionMission] = useState([]);
   const [coreValuesData, setCoreValuesData] = useState([]);
+  const [aboutImages, setAboutImages] = useState([]);
 
   useEffect(() => {
     axiosInstance.get('/about/vision-mission').then(r => setVisionMission(r.data)).catch(() => { });
     axiosInstance.get('/about/core-values').then(r => setCoreValuesData(r.data)).catch(() => { });
+    axiosInstance.get('/about/images').then(r => setAboutImages(r.data)).catch(() => { });
   }, []);
 
   const visionPoints = visionMission.filter(v => v.type === 'vision').map(v => v.content);
@@ -1277,6 +1304,26 @@ export function VisionMission() {
     "This includes developing nurses who can serve diverse communities, promote health, prevent illness, and contribute to the advancement of the nursing profession both locally and globally",
     "Deliver compassionate, ethical, and evidence-based healthcare services",
   ];
+  const imageFor = (key, fallback) => {
+    const image = aboutImages.find(item => item.key === key);
+    if (image?.imageUrl) return getMediaUrl(image.imageUrl);
+    const altKey = key === 'missionMain' ? 'missionValues' : key === 'visionMain' ? 'visionGoals' : null;
+    if (altKey) {
+      const altImage = aboutImages.find(item => item.key === altKey);
+      if (altImage?.imageUrl) return getMediaUrl(altImage.imageUrl);
+    }
+    return fallback;
+  };
+  const altFor = (key, fallback) => {
+    const image = aboutImages.find(item => item.key === key);
+    if (image?.alt) return image.alt;
+    const altKey = key === 'missionMain' ? 'missionValues' : key === 'visionMain' ? 'visionGoals' : null;
+    if (altKey) {
+      const altImage = aboutImages.find(item => item.key === altKey);
+      if (altImage?.alt) return altImage.alt;
+    }
+    return fallback;
+  };
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -1361,8 +1408,8 @@ export function VisionMission() {
             >
               <div className="rounded-2xl overflow-hidden shadow-2xl bg-gradient-to-br from-amber-100 to-orange-100 h-full">
                 <img
-                  src={ourVisionImage}
-                  alt="Our Vision for Medical Excellence"
+                  src={imageFor('visionMain', ourVisionImage)}
+                  alt={altFor('visionMain', 'Our Vision for Medical Excellence')}
                   className="w-full h-full object-cover hover:scale-105 transition-transform duration-700"
                   onError={(e) => {
                     // If image fails to load, show fallback content
@@ -1530,8 +1577,8 @@ export function VisionMission() {
             >
               <div className="rounded-2xl overflow-hidden shadow-2xl bg-gradient-to-br from-orange-100 to-amber-100 h-full">
                 <img
-                  src={ourMissionImage}
-                  alt="Our Mission in Action"
+                  src={imageFor('missionMain', ourMissionImage)}
+                  alt={altFor('missionMain', 'Our Mission in Action')}
                   className="w-full h-full object-cover hover:scale-105 transition-transform duration-700"
                   onError={(e) => {
                     // If image fails to load, show fallback content

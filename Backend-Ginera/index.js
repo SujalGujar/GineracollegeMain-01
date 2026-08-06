@@ -8,10 +8,11 @@ const dns = require('node:dns');
 // Force Node.js to use Google DNS to solve querySrv issues
 dns.setServers(['8.8.8.8', '8.8.4.4']);
 
-dotenv.config();
+dotenv.config({ path: path.join(__dirname, '.env') });
 
 const app = express();
 const PORT = process.env.PORT || 8080;
+let lastMongoError = null;
 
 // Middleware
 app.use(cors());
@@ -60,12 +61,17 @@ mongoose.set('bufferCommands', false);
 
 const connectDB = async () => {
   try {
+    if (!process.env.MONGODB_URI) {
+      throw new Error('MONGODB_URI is not configured');
+    }
     await mongoose.connect(process.env.MONGODB_URI, {
       serverSelectionTimeoutMS: 10000,
       socketTimeoutMS: 45000,
     });
+    lastMongoError = null;
     console.log('✅ Connected to MongoDB Atlas');
   } catch (err) {
+    lastMongoError = err.message;
     console.error('❌ MongoDB connection error:', err.message);
     console.log('👉 TIP: Please ensure your IP address is whitelisted in MongoDB Atlas Network Access.');
   }
@@ -83,8 +89,30 @@ mongoose.connection.on('disconnected', () => {
 });
 
 app.get('/', (req, res) => {
+  const indexPath = path.join(__dirname, 'public', 'index.html');
+  if (fs.existsSync(indexPath)) {
+    return res.sendFile(indexPath);
+  }
   res.send('Ginera College Backend is running');
 });
+
+app.get('/api/health', (req, res) => {
+  res.json({
+    status: 'ok',
+    hasMongoUri: Boolean(process.env.MONGODB_URI),
+    dbReadyState: mongoose.connection.readyState,
+    dbName: mongoose.connection.name || null,
+    lastMongoError,
+  });
+});
+
+const publicDir = path.join(__dirname, 'public');
+if (fs.existsSync(publicDir)) {
+  app.use(express.static(publicDir));
+  app.get(/^\/(?!api\/|uploads\/).*/, (req, res) => {
+    res.sendFile(path.join(publicDir, 'index.html'));
+  });
+}
 
 // Global Error Handler
 app.use((err, req, res, next) => {

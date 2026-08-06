@@ -24,6 +24,7 @@ import AnimatedLearnMoreButton from "./Buttons/AnimatedLearnMoreButton";
 import { useState, useEffect } from "react";
 import { ExternalLink } from "lucide-react";
 import axiosInstance from "../api/axiosInstance";
+import LoadingScreen from "./LoadingScreen";
 
 
 // Animation variants
@@ -148,7 +149,8 @@ export function CoursesOffered() {
     const fetchCourses = async () => {
       try {
         const response = await axiosInstance.get("/courses");
-        const grouped = response.data.reduce((acc, course) => {
+        const courseList = Array.isArray(response.data) ? response.data : [];
+        const grouped = courseList.reduce((acc, course) => {
           const cat = acc.find(c => c.type === course.category);
           if (cat) {
             cat.programs.push(course);
@@ -168,15 +170,7 @@ export function CoursesOffered() {
   }, []);
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-amber-50">
-        <motion.div
-          animate={{ rotate: 360 }}
-          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-          className="w-12 h-12 border-4 border-orange-500 border-t-transparent rounded-full"
-        />
-      </div>
-    );
+    return <LoadingScreen />;
   }
 
   //   admission: "Through University Entrance Exam",

@@ -479,7 +479,7 @@
 
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import axiosInstance from "../api/axiosInstance";
+import axiosInstance, { getMediaUrl } from "../api/axiosInstance";
 import { Users, BookOpen, Microscope, GraduationCap, ChevronLeft, ChevronRight } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Badge } from "./ui/badge";
@@ -488,7 +488,7 @@ import { AnimatePresence } from "framer-motion";
 const imgUrl = (url) =>
   !url ? "/placeholder.png"
        : url.startsWith("http") ? url
-       : `${window.location.hostname === 'localhost' ? `${window.location.hostname === 'localhost' ? 'http://localhost:8080' : 'https://gineracollegemain-01.onrender.com'}` + '' : 'https://gineracollegemain-01.onrender.com'}${url}`;
+       : getMediaUrl(url);
 
 const ImageSlider = ({ images }) => {
   const [index, setIndex] = useState(0);

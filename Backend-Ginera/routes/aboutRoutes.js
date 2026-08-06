@@ -16,6 +16,11 @@ router.put('/dean', ...c.updateDeanMessage);
 router.get('/college-logo', c.getCollegeLogo);
 router.put('/college-logo', ...c.updateCollegeLogo);
 
+// About Page Images
+router.get('/images', c.getAboutImages);
+router.put('/images/:key', ...c.updateAboutImage);
+router.delete('/images/:key', c.clearAboutImage);
+
 // Vision & Mission
 router.get('/vision-mission', c.getVisionMission);
 router.post('/vision-mission', c.createVisionMission);

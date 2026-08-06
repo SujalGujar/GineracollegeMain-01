@@ -1038,6 +1038,15 @@ const TESTIMONIALS = [
 
 const LOGOS = [collegelogo1, collegelogo2, collegelogo3, collegelogo4];
 
+const getMediaUrl = (url, fallback = "/placeholder.png") => {
+  if (!url) return fallback;
+  if (url.startsWith("http") || url.startsWith("data:") || url.startsWith("blob:")) return url;
+  const backendOrigin = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
+    ? "http://localhost:8080"
+    : "https://gineracollegemain-01.onrender.com";
+  return `${backendOrigin}${url.startsWith("/") ? url : `/${url}`}`;
+};
+
 /* ═══════════════════════════════════════════════════════
    ANIMATION VARIANTS
 ═══════════════════════════════════════════════════════ */
@@ -1099,7 +1108,7 @@ const HomePage=({ onNavigate }) => {
     const fetchDynamicPrograms = async () => {
       try {
         const response = await axiosInstance.get("/programs");
-        setDynamicPrograms(response.data);
+        setDynamicPrograms(Array.isArray(response.data) ? response.data : []);
       } catch (error) {
         console.error("Error fetching programs:", error);
       } finally {
@@ -1113,7 +1122,9 @@ const HomePage=({ onNavigate }) => {
     const fetchAcademicContent = async () => {
       try {
         const response = await axiosInstance.get("/content/academic");
-        if (response.data) setAcademicContent(response.data);
+        if (response.data && typeof response.data === "object" && !Array.isArray(response.data)) {
+          setAcademicContent(response.data);
+        }
       } catch (error) {
         console.error("Error fetching academic content:", error);
       }
@@ -1124,8 +1135,13 @@ const HomePage=({ onNavigate }) => {
   useEffect(() => {
     const fetchDynamicTestimonials = async () => {
       try {
-        const response = await axiosInstance.get("/testimonials");
-        setDynamicTestimonials(response.data);
+        const response = await axiosInstance.get("/testimonials", {
+          params: { t: Date.now() },
+          headers: { "Cache-Control": "no-cache" },
+        });
+        const testimonials = Array.isArray(response.data) ? response.data : [];
+        setDynamicTestimonials(testimonials);
+        setTestimonialsIndex(0);
       } catch (error) {
         console.error("Error fetching testimonials:", error);
       }
@@ -1267,12 +1283,7 @@ const HomePage=({ onNavigate }) => {
                 const courses = Array.isArray(prog.courses) ? prog.courses : [];
                 const displayCourses = isExpanded ? courses : courses.slice(0, 2);
                 const hasMore = courses.length > 2;
-                const getImgUrl = (url) => {
-                  if (!url) return "/placeholder.png";
-                  if (url.startsWith("http")) return url;
-                  return `${window.location.hostname === 'localhost' ? `${window.location.hostname === 'localhost' ? 'http://localhost:8080' : 'https://gineracollegemain-01.onrender.com'}` + '' : 'https://gineracollegemain-01.onrender.com'}${url}`;
-                };
-                const imageUrl = getImgUrl(prog.imageUrl || prog.image);
+                const imageUrl = getMediaUrl(prog.imageUrl || prog.image);
                 
                 return (
                   <motion.div
@@ -1449,7 +1460,7 @@ const HomePage=({ onNavigate }) => {
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1.4fr" }}>
                     <div style={{ position: "relative", minHeight: 320, overflow: "hidden" }}>
                       <img
-                        src={current.imageUrl ? (current.imageUrl.startsWith('http') ? current.imageUrl : `${window.location.hostname === 'localhost' ? `${window.location.hostname === 'localhost' ? 'http://localhost:8080' : 'https://gineracollegemain-01.onrender.com'}` + '' : 'https://gineracollegemain-01.onrender.com'}${current.imageUrl}`) : current.image}
+                        src={getMediaUrl(current.imageUrl || current.image, libraryImage)}
                         alt={current.name}
                         style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
                       />

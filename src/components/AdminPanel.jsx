@@ -8,7 +8,7 @@ import {
   ArrowLeft, Building2, Zap, ChevronDown, ChevronUp, Eye,
   GraduationCap, Phone, MapPin
 } from "lucide-react";
-import axiosInstance from "../api/axiosInstance";
+import axiosInstance, { getMediaUrl } from "../api/axiosInstance";
 
 /* ─── Design Tokens ─────────────────────────────────────── */
 const C = {
@@ -30,7 +30,7 @@ const C = {
 const imgUrl = (url) =>
   !url ? "/placeholder.png"
        : url.startsWith("http") ? url
-       : `${window.location.hostname === 'localhost' ? `${window.location.hostname === 'localhost' ? 'http://localhost:8080' : 'https://gineracollegemain-01.onrender.com'}` + '' : 'https://gineracollegemain-01.onrender.com'}${url}`;
+       : getMediaUrl(url);
 
 const Pill = ({ children, color = C.accent }) => (
   <span style={{ background: color + "20", color }}
@@ -826,7 +826,179 @@ const TestimonialsTab = ({ testimonials, testimonialForm, setTestimonialForm, op
   </div>
 );
 
-const AboutTab = ({ aboutSub, setAboutSub, collegeLogo, setCollegeLogo, logoFile, setLogoFile, deanMessage, setDeanMessage, deanPhotoFile, setDeanPhotoFile, milestones, milestoneForm, setMilestoneForm, openModal, setMilestones, visionMission, setVmForm, coreValues, setCvForm, axiosInstance, notify, del }) => (
+const AboutImagesManager = ({ aboutImages, setAboutImages, aboutImageFiles, setAboutImageFiles, axiosInstance, notify, slotKeys, title = "About Page Images", subtitle = "Manage the images shown on the About Us and Vision & Mission pages" }) => {
+  const updateLocal = (key, updates) => {
+    setAboutImages(aboutImages.map(item => item.key === key ? { ...item, ...updates } : item));
+  };
+
+  const saveImage = async (slot) => {
+    const fd = new FormData();
+    fd.append("title", slot.title || "");
+    fd.append("alt", slot.alt || "");
+    if (aboutImageFiles[slot.key]) fd.append("image", aboutImageFiles[slot.key]);
+    try {
+      const r = await axiosInstance.put(`/about/images/${slot.key}`, fd);
+      setAboutImages(aboutImages.map(item => item.key === slot.key ? r.data : item));
+      setAboutImageFiles({ ...aboutImageFiles, [slot.key]: null });
+      notify("About image saved");
+    } catch {
+      notify("Image update failed", "error");
+    }
+  };
+
+  const clearImage = async (key) => {
+    if (!window.confirm("Delete this About page image? The page will use the default image.")) return;
+    try {
+      const r = await axiosInstance.delete(`/about/images/${key}`);
+      setAboutImages(aboutImages.map(item => item.key === key ? r.data : item));
+      setAboutImageFiles({ ...aboutImageFiles, [key]: null });
+      notify("Image deleted");
+    } catch {
+      notify("Delete failed", "error");
+    }
+  };
+
+  const visibleImages = slotKeys?.length
+    ? aboutImages.filter(slot => slotKeys.includes(slot.key))
+    : aboutImages;
+
+  return (
+    <div className="space-y-6">
+      <SectionHeader icon={ImageIcon} title={title} subtitle={subtitle}/>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6" style={{ gap: '1.5rem' }}>
+        {visibleImages.map(slot => {
+          const selectedFile = aboutImageFiles[slot.key];
+          const preview = selectedFile ? URL.createObjectURL(selectedFile) : (slot.imageUrl ? imgUrl(slot.imageUrl) : null);
+          return (
+            <div key={slot.key} className="p-5 rounded-3xl shadow-sm space-y-4" style={{ background: C.surface, border:`1px solid ${C.border}` }}>
+              <div className="aspect-[16/9] rounded-2xl overflow-hidden bg-gray-50 border border-dashed flex items-center justify-center" style={{ borderColor: C.border }}>
+                {preview ? (
+                  <img src={preview} alt={slot.alt || slot.title} className="w-full h-full object-cover"/>
+                ) : (
+                  <div className="text-center" style={{ color: C.muted }}>
+                    <ImageIcon size={34} className="mx-auto mb-2 opacity-60"/>
+                    <p className="text-xs font-bold uppercase tracking-wider">Default image active</p>
+                  </div>
+                )}
+              </div>
+              <div className="space-y-3">
+                <Field label="Image Slot">
+                  <input value={slot.title || ""} onChange={e=>updateLocal(slot.key, { title:e.target.value })} className={inputCls} style={inputStyle}/>
+                </Field>
+                <Field label="Alt Text">
+                  <input value={slot.alt || ""} onChange={e=>updateLocal(slot.key, { alt:e.target.value })} className={inputCls} style={inputStyle}/>
+                </Field>
+              </div>
+              <div className="flex flex-col sm:flex-row gap-3">
+                <label className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl border-2 border-dashed text-sm font-semibold cursor-pointer hover:bg-gray-50 transition-all"
+                  style={{ borderColor: C.border, color: C.muted }}>
+                  <Upload size={16}/> {selectedFile ? selectedFile.name : "Choose Image"}
+                  <input type="file" className="hidden" accept="image/*" onChange={e=>setAboutImageFiles({ ...aboutImageFiles, [slot.key]: e.target.files[0] })}/>
+                </label>
+                <button onClick={()=>saveImage(slot)} className="px-5 py-3 rounded-xl text-sm font-bold text-white shadow-md active:scale-95 transition-all flex items-center justify-center gap-2" style={{ background: C.brand }}>
+                  <Save size={16}/> Save
+                </button>
+                <button onClick={()=>clearImage(slot.key)} className="px-4 py-3 rounded-xl text-sm font-bold bg-red-50 text-red-600 hover:bg-red-100 active:scale-95 transition-all flex items-center justify-center gap-2">
+                  <Trash2 size={16}/> Delete
+                </button>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
+const AboutImageCard = ({ slot, linkedKey, label, aboutImages, setAboutImages, aboutImageFiles, setAboutImageFiles, axiosInstance, notify }) => {
+  if (!slot) return null;
+
+  const selectedFile = aboutImageFiles[slot.key];
+  const preview = selectedFile ? URL.createObjectURL(selectedFile) : (slot.imageUrl ? imgUrl(slot.imageUrl) : null);
+
+  const updateLocal = (updates) => {
+    setAboutImages(aboutImages.map(item => (item.key === slot.key || item.key === linkedKey) ? { ...item, ...updates } : item));
+  };
+
+  const saveImage = async () => {
+    const fd = new FormData();
+    fd.append("title", slot.title || label);
+    fd.append("alt", slot.alt || label);
+    if (selectedFile) fd.append("image", selectedFile);
+    try {
+      const r = await axiosInstance.put(`/about/images/${slot.key}`, fd);
+      let updatedImages = aboutImages.map(item => item.key === slot.key ? r.data : item);
+      if (linkedKey) {
+        const fd2 = new FormData();
+        fd2.append("title", slot.title || label);
+        fd2.append("alt", slot.alt || label);
+        if (selectedFile) fd2.append("image", selectedFile);
+        try {
+          const r2 = await axiosInstance.put(`/about/images/${linkedKey}`, fd2);
+          updatedImages = updatedImages.map(item => item.key === linkedKey ? r2.data : item);
+        } catch { }
+      }
+      setAboutImages(updatedImages);
+      setAboutImageFiles({ ...aboutImageFiles, [slot.key]: null, ...(linkedKey ? { [linkedKey]: null } : {}) });
+      notify(`${label} image saved`);
+    } catch {
+      notify("Image update failed", "error");
+    }
+  };
+
+  const clearImage = async () => {
+    if (!window.confirm(`Delete ${label} image? The website will use the default image.`)) return;
+    try {
+      const r = await axiosInstance.delete(`/about/images/${slot.key}`);
+      let updatedImages = aboutImages.map(item => item.key === slot.key ? r.data : item);
+      if (linkedKey) {
+        try {
+          const r2 = await axiosInstance.delete(`/about/images/${linkedKey}`);
+          updatedImages = updatedImages.map(item => item.key === linkedKey ? r2.data : item);
+        } catch { }
+      }
+      setAboutImages(updatedImages);
+      setAboutImageFiles({ ...aboutImageFiles, [slot.key]: null, ...(linkedKey ? { [linkedKey]: null } : {}) });
+      notify(`${label} image deleted`);
+    } catch {
+      notify("Delete failed", "error");
+    }
+  };
+
+  return (
+    <div className="p-4 rounded-2xl shadow-sm space-y-3" style={{ background: C.surface, border:`1px solid ${C.border}` }}>
+      <p className="text-xs font-bold uppercase tracking-widest" style={{ color: C.muted }}>{label} Image</p>
+      <div className="rounded-xl overflow-hidden bg-gray-50 border border-dashed flex items-center justify-center" style={{ borderColor: C.border, maxHeight: '200px', minHeight: '120px' }}>
+        {preview ? (
+          <img src={preview} alt={slot.alt || label} className="w-full object-cover" style={{ maxHeight: '200px', width: '100%', display: 'block' }}/>
+        ) : (
+          <div className="text-center py-8" style={{ color: C.muted }}>
+            <ImageIcon size={28} className="mx-auto mb-2 opacity-60"/>
+            <p className="text-[11px] font-bold uppercase tracking-wider">Default image active</p>
+          </div>
+        )}
+      </div>
+      <Field label="Alt Text">
+        <input value={slot.alt || ""} onChange={e=>updateLocal({ alt:e.target.value })} className={inputCls} style={inputStyle}/>
+      </Field>
+      <div className="flex flex-col sm:flex-row gap-2">
+        <label className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl border-2 border-dashed text-xs font-semibold cursor-pointer hover:bg-gray-50 transition-all"
+          style={{ borderColor: C.border, color: C.muted }}>
+          <Upload size={14}/> {selectedFile ? selectedFile.name : "Choose Image"}
+          <input type="file" className="hidden" accept="image/*" onChange={e=>setAboutImageFiles({ ...aboutImageFiles, [slot.key]: e.target.files[0] })}/>
+        </label>
+        <button onClick={saveImage} className="px-4 py-2.5 rounded-xl text-xs font-bold text-white shadow-md active:scale-95 transition-all flex items-center justify-center gap-2" style={{ background: C.brand }}>
+          <Save size={14}/> Save
+        </button>
+        <button onClick={clearImage} className="px-3 py-2.5 rounded-xl text-xs font-bold bg-red-50 text-red-600 hover:bg-red-100 active:scale-95 transition-all flex items-center justify-center gap-2">
+          <Trash2 size={14}/> Delete
+        </button>
+      </div>
+    </div>
+  );
+};
+
+const AboutTab = ({ aboutSub, setAboutSub, collegeLogo, setCollegeLogo, logoFile, setLogoFile, deanMessage, setDeanMessage, deanPhotoFile, setDeanPhotoFile, milestones, milestoneForm, setMilestoneForm, openModal, setMilestones, visionMission, setVmForm, coreValues, setCvForm, aboutImages, setAboutImages, aboutImageFiles, setAboutImageFiles, axiosInstance, notify, del }) => (
   <div className="space-y-6">
     <SubTabs tabs={["Branding","Principal","Timeline","Vision & Mission","Core Values"]} active={aboutSub} onChange={setAboutSub}/>
     <AnimatePresence mode="wait">
@@ -893,10 +1065,7 @@ const AboutTab = ({ aboutSub, setAboutSub, collegeLogo, setCollegeLogo, logoFile
 
         {aboutSub === "Timeline" && (
           <div className="space-y-6">
-            <SectionHeader icon={Zap} title="Historical Milestones" subtitle={`Tracing our growth since inception`}
-              action={<AddBtn onClick={() => { setMilestoneForm({year:"",event:"",icon:"🎯",color:"#1e3a8a",description:"",order:0}); openModal("milestone"); }} label="New Milestone"/>}/>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5" style={{ gap: '1.25rem' }}>
-              {milestones.map(m => (
+                    {milestones.map(m => (
                 <div key={m._id} className="p-5 rounded-2xl group relative transition-all hover:shadow-md" style={{ background: C.surface, border:`1px solid ${C.border}`, borderLeft:`5px solid ${m.color}` }}>
                   <div className="flex items-start gap-4">
                     <span className="text-3xl filter grayscale group-hover:grayscale-0 transition-all">{m.icon}</span>
@@ -913,16 +1082,37 @@ const AboutTab = ({ aboutSub, setAboutSub, collegeLogo, setCollegeLogo, logoFile
                 </div>
               ))}
             </div>
-          </div>
         )}
 
         {aboutSub === "Vision & Mission" && (
            <div className="space-y-6">
              <SectionHeader icon={Info} title="Vision & Mission" subtitle="Strategic direction statements"
                 action={<AddBtn onClick={() => { setVmForm({type:"vision",content:"",order:0}); openModal("visionMission"); }} label="Add Statement"/>}/>
+
+             {/* ── Vision & Mission Images ── */}
+             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+               <AboutImageCard
+                 slot={aboutImages.find(item => item.key === "visionMain") || aboutImages.find(item => item.key === "visionGoals")}
+                 linkedKey="visionGoals"
+                 label="Vision"
+                 aboutImages={aboutImages} setAboutImages={setAboutImages}
+                 aboutImageFiles={aboutImageFiles} setAboutImageFiles={setAboutImageFiles}
+                 axiosInstance={axiosInstance} notify={notify}
+               />
+               <AboutImageCard
+                 slot={aboutImages.find(item => item.key === "missionMain") || aboutImages.find(item => item.key === "missionValues")}
+                 linkedKey="missionValues"
+                 label="Mission"
+                 aboutImages={aboutImages} setAboutImages={setAboutImages}
+                 aboutImageFiles={aboutImageFiles} setAboutImageFiles={setAboutImageFiles}
+                 axiosInstance={axiosInstance} notify={notify}
+               />
+             </div>
+
+             {/* ── Statements ── */}
              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6" style={{ gap: '1.5rem' }}>
                 {["vision","mission"].map(type => (
-                  <div key={type} className="flex flex-col gap-3" style={{ gap: '0.75rem' }}>
+                  <div key={type} className="flex flex-col gap-3 min-w-0" style={{ gap: '0.75rem' }}>
                     <p className="text-xs font-bold uppercase tracking-widest pl-2" style={{ color: C.muted }}>{type} Statement</p>
                     {visionMission.filter(v=>v.type===type).map(v => (
                       <div key={v._id} className="p-5 rounded-2xl relative group shadow-sm" style={{ background: C.surface, border:`1px solid ${C.border}` }}>
@@ -1639,6 +1829,7 @@ const AdminPanel = ({ onLogout }) => {
   const [milestones, setMilestones] = useState([]);
   const [deanMessage, setDeanMessage] = useState({ name:"",title:"",greeting:"",paragraphs:[],highlight:"",photoUrl:"",stats:[] });
   const [collegeLogo, setCollegeLogo] = useState({ logoUrl:"",collegeName:"",tagline:"" });
+  const [aboutImages, setAboutImages] = useState([]);
   const [visionMission, setVisionMission] = useState([]);
   const [coreValues, setCoreValues] = useState([]);
   const [courses, setCourses] = useState([]);
@@ -1669,6 +1860,7 @@ const AdminPanel = ({ onLogout }) => {
   const [deptActivityInput, setDeptActivityInput] = useState("");
   const [deanPhotoFile, setDeanPhotoFile] = useState(null);
   const [logoFile, setLogoFile] = useState(null);
+  const [aboutImageFiles, setAboutImageFiles] = useState({});
 
   const [galleryImages, setGalleryImages] = useState([]);
   const [galleryForm, setGalleryForm] = useState({ title:"", description:"", category:"college_campus_view", image:null });
@@ -1692,6 +1884,7 @@ const AdminPanel = ({ onLogout }) => {
         axiosInstance.get("/about/milestones"),
         axiosInstance.get("/about/dean"),
         axiosInstance.get("/about/college-logo"),
+        axiosInstance.get("/about/images"),
         axiosInstance.get("/about/vision-mission"),
         axiosInstance.get("/about/core-values"),
         axiosInstance.get("/courses"),
@@ -1709,10 +1902,10 @@ const AdminPanel = ({ onLogout }) => {
       ]);
       setPrograms(r[0].data); setTestimonials(r[1].data); setAcademicContent(r[2].data);
       setMilestones(r[3].data); setDeanMessage(r[4].data); setCollegeLogo(r[5].data);
-      setVisionMission(r[6].data); setCoreValues(r[7].data); setCourses(r[8].data);
-      setAdmissionSteps(r[9].data); setAdmissionRules(r[10].data); setBonds(r[11].data);
-      setGuidelines(r[12].data); setDepartments(r[13].data); setSliders(r[14].data); setGalleryImages(r[15].data);
-      setInstitutes(r[16].data); setKeyPersons(r[17].data); setContactDepartments(r[18].data); setContactInfo(r[19].data);
+      setAboutImages(r[6].data); setVisionMission(r[7].data); setCoreValues(r[8].data); setCourses(r[9].data);
+      setAdmissionSteps(r[10].data); setAdmissionRules(r[11].data); setBonds(r[12].data);
+      setGuidelines(r[13].data); setDepartments(r[14].data); setSliders(r[15].data); setGalleryImages(r[16].data);
+      setInstitutes(r[17].data); setKeyPersons(r[18].data); setContactDepartments(r[19].data); setContactInfo(r[20].data);
     } catch { notify("Error fetching data", "error"); }
     finally { setLoading(false); }
   };
@@ -1809,7 +2002,7 @@ const AdminPanel = ({ onLogout }) => {
                   {activeTab === "Home Page" && <HomeTab selectedDeptForSlider={selectedDeptForSlider} setSelectedDeptForSlider={setSelectedDeptForSlider} departments={departments} sliders={sliders} handleSliderUpload={handleSliderUpload} updateSliderImage={updateSliderImage} del={del}/>}
                   {activeTab === "Academic" && <AcademicTab programs={programs} academicContent={academicContent} setAcademicContent={setAcademicContent} axiosInstance={axiosInstance} notify={notify} openModal={openModal} setProgramForm={setProgramForm} del={del}/>}
                   {activeTab === "Testimonials" && <TestimonialsTab testimonials={testimonials} testimonialForm={testimonialForm} setTestimonialForm={setTestimonialForm} openModal={openModal} del={del}/>}
-                  {activeTab === "About Us" && <AboutTab aboutSub={aboutSub} setAboutSub={setAboutSub} collegeLogo={collegeLogo} setCollegeLogo={setCollegeLogo} logoFile={logoFile} setLogoFile={setLogoFile} deanMessage={deanMessage} setDeanMessage={setDeanMessage} deanPhotoFile={deanPhotoFile} setDeanPhotoFile={setDeanPhotoFile} milestones={milestones} milestoneForm={milestoneForm} setMilestoneForm={setMilestoneForm} openModal={openModal} setMilestones={setMilestones} visionMission={visionMission} setVmForm={setVmForm} coreValues={coreValues} setCvForm={setCvForm} axiosInstance={axiosInstance} notify={notify} del={del}/>}
+                  {activeTab === "About Us" && <AboutTab aboutSub={aboutSub} setAboutSub={setAboutSub} collegeLogo={collegeLogo} setCollegeLogo={setCollegeLogo} logoFile={logoFile} setLogoFile={setLogoFile} deanMessage={deanMessage} setDeanMessage={setDeanMessage} deanPhotoFile={deanPhotoFile} setDeanPhotoFile={setDeanPhotoFile} milestones={milestones} milestoneForm={milestoneForm} setMilestoneForm={setMilestoneForm} openModal={openModal} setMilestones={setMilestones} visionMission={visionMission} setVmForm={setVmForm} coreValues={coreValues} setCvForm={setCvForm} aboutImages={aboutImages} setAboutImages={setAboutImages} aboutImageFiles={aboutImageFiles} setAboutImageFiles={setAboutImageFiles} axiosInstance={axiosInstance} notify={notify} del={del}/>}
                   {activeTab === "Admission" && <AdmissionTab admSub={admSub} setAdmSub={setAdmSub} courses={courses} openModal={openModal} setCourseForm={setCourseForm} del={del} admissionSteps={admissionSteps} setStepForm={setStepForm} admissionRules={admissionRules} setRuleForm={setRuleForm} bonds={bonds} setBondForm={setBondForm} guidelines={guidelines} setGuidelineForm={setGuidelineForm}/>}
                   {activeTab === "Departments" && <DepartmentsTab selectedDept={selectedDept} setSelectedDept={setSelectedDept} departments={departments} deptForm={deptForm} setDeptForm={setDeptForm} deptSub={deptSub} setDeptSub={setDeptSub} deptFacultyForm={deptFacultyForm} setDeptFacultyForm={setDeptFacultyForm} deptFacilityInput={deptFacilityInput} setDeptFacilityInput={setDeptFacilityInput} deptActivityInput={deptActivityInput} setDeptActivityInput={setDeptActivityInput} sliders={sliders} axiosInstance={axiosInstance} fetchData={fetchData} notify={notify} openModal={openModal} del={del} handleSliderUpload={handleSliderUpload}/>}
                   {activeTab === "Gallery" && <GalleryTab galleryImages={galleryImages} galleryForm={galleryForm} setGalleryForm={setGalleryForm} openModal={openModal} del={del} />}

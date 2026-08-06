@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { getMediaUrl } from "../api/axiosInstance";
 
 export default function ImageSlider({ images, interval = 3000 }) {
   const [currentIdx, setCurrentIdx] = useState(0);
@@ -25,7 +26,7 @@ export default function ImageSlider({ images, interval = 3000 }) {
   const getImgUrl = (url) => {
     if (!url) return "/placeholder.png";
     if (url.startsWith("http")) return url;
-    return `${window.location.hostname === 'localhost' ? `${window.location.hostname === 'localhost' ? 'http://localhost:8080' : 'https://gineracollegemain-01.onrender.com'}` + '' : 'https://gineracollegemain-01.onrender.com'}${url}`;
+    return getMediaUrl(url);
   };
 
   const src = current.imageUrl || current.src || current.image;
