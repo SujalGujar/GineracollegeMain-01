@@ -177,8 +177,19 @@ export default function App() {
         // Admin layout: fill the viewport and let admin panel handle its own scrolling
         <>
           {showLoader && <LoadingScreen />}
-          <div className="flex flex-col w-screen h-screen overflow-hidden bg-gray-50" style={{ display: showLoader ? 'none' : 'flex' }}>
-            <main className="flex-1 min-h-0 flex flex-col overflow-hidden w-full">
+          <div
+            className="flex flex-col w-screen h-screen overflow-hidden bg-gray-50"
+            style={{
+              display: showLoader ? 'none' : 'flex',
+              width: '100vw',
+              height: '100dvh',
+              minHeight: '100dvh',
+              maxHeight: '100dvh',
+              overflow: 'hidden',
+            }}>
+            <main
+              className="flex-1 min-h-0 flex flex-col overflow-hidden w-full"
+              style={{ minHeight: 0, height: '100%' }}>
               {renderCurrentPage()}
             </main>
             <Toaster />

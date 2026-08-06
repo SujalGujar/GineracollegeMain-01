@@ -70,8 +70,8 @@ const Toast = ({ note }) => (
 );
 
 const Field = ({ label, hint, required, children }) => (
-  <div className="flex flex-col gap-1.5">
-    <div className="flex items-center gap-1.5">
+  <div className="admin-field flex flex-col gap-1.5">
+    <div className="admin-field-label flex items-center gap-1.5">
       <label className="text-[13px] font-bold tracking-wide" style={{ color: C.text }}>{label}</label>
       {required && <span className="text-red-500 text-xs font-bold">*</span>}
     </div>
@@ -129,8 +129,14 @@ const Modal = ({ show, onClose, title, subtitle, children }) => {
     <AnimatePresence>
       {show && (
         <div
-          className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6"
-          style={{ fontFamily: "'DM Sans', sans-serif" }}>
+          className="admin-modal-overlay fixed inset-0 flex items-center justify-center p-4 sm:p-6"
+          style={{
+            fontFamily: "'DM Sans', sans-serif",
+            zIndex: 9999,
+            minHeight: '100dvh',
+            overflow: 'hidden',
+            padding: 'clamp(12px, 2vw, 24px)',
+          }}>
           {/* Custom style for Modal Form Scrollbar */}
           <style>{`
             .form-scroll-container::-webkit-scrollbar {
@@ -150,9 +156,97 @@ const Modal = ({ show, onClose, title, subtitle, children }) => {
               background: #4A2B14 !important;
             }
             .form-scroll-container {
+              overflow-y: auto !important;
               scrollbar-width: thin !important;
               scrollbar-color: #6B3F1D #F0ECE7 !important;
               -webkit-overflow-scrolling: touch;
+              overscroll-behavior: contain;
+              min-height: 0;
+            }
+            .admin-modal-overlay {
+              align-items: center !important;
+              justify-content: center !important;
+            }
+            .admin-modal-card {
+              margin: 0 auto !important;
+            }
+            .admin-modal-body form .grid {
+              display: grid !important;
+              grid-template-columns: minmax(0, 1fr) !important;
+              gap: 16px !important;
+            }
+            .admin-modal-body form {
+              display: flex;
+              flex-direction: column;
+              gap: 22px;
+            }
+            .admin-modal-body form > * {
+              margin-top: 0 !important;
+              margin-bottom: 0 !important;
+            }
+            .admin-field {
+              gap: 9px !important;
+              min-width: 0;
+            }
+            .admin-field-label {
+              min-height: 20px;
+              align-items: center;
+            }
+            .admin-field-label label {
+              line-height: 1.35 !important;
+            }
+            .admin-modal-body input,
+            .admin-modal-body select,
+            .admin-modal-body textarea,
+            .admin-modal-body label {
+              max-width: 100%;
+            }
+            .admin-modal-body input,
+            .admin-modal-body select,
+            .admin-modal-body textarea,
+            .admin-modal-body .admin-field > label {
+              min-height: 44px;
+            }
+            .admin-form-actions {
+              position: sticky;
+              bottom: -24px;
+              z-index: 2;
+              background: #FAFAF9;
+              padding-bottom: 6px;
+            }
+            @media (min-width: 760px) {
+              .admin-modal-body form .grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+              }
+              .admin-modal-body form .grid-cols-1 {
+                grid-template-columns: minmax(0, 1fr) !important;
+              }
+            }
+            @media (min-width: 1024px) {
+              .admin-modal-overlay {
+                left: 320px !important;
+                width: calc(100vw - 320px) !important;
+                padding: 24px !important;
+              }
+            }
+            @media (max-width: 640px) {
+              .admin-modal-card {
+                border-radius: 14px !important;
+              }
+              .admin-modal-header {
+                padding: 16px !important;
+              }
+              .admin-modal-body {
+                padding: 16px !important;
+              }
+              .admin-form-actions {
+                flex-direction: column;
+                bottom: -16px;
+              }
+              .admin-form-actions button {
+                width: 100%;
+                min-width: 0 !important;
+              }
             }
           `}</style>
           {/* Backdrop */}
@@ -168,11 +262,19 @@ const Modal = ({ show, onClose, title, subtitle, children }) => {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.94, y: -20 }}
             transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
-            className="relative w-full rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[82vh]"
-            style={{ background: '#fff', zIndex: 1, maxWidth: '680px' }}>
+            className="admin-modal-card relative w-full rounded-2xl shadow-2xl overflow-hidden flex flex-col"
+            style={{
+              background: '#fff',
+              zIndex: 1,
+              width: 'min(680px, 100%)',
+              maxWidth: '680px',
+              maxHeight: 'calc(100dvh - 32px)',
+              height: 'min(760px, calc(100dvh - 32px))',
+              minHeight: 0,
+            }}>
             {/* Header (Fixed at top) */}
             <div
-              className="flex items-start justify-between px-7 py-5 border-b shrink-0"
+              className="admin-modal-header flex items-start justify-between px-7 py-5 border-b shrink-0"
               style={{ borderColor: '#EDE9E4', background: 'linear-gradient(135deg, #6B3F1D 0%, #8B5E3C 100%)' }}>
               <div>
                 <h3 className="text-[17px] font-bold text-white leading-tight">{title}</h3>
@@ -184,7 +286,9 @@ const Modal = ({ show, onClose, title, subtitle, children }) => {
               </button>
             </div>
             {/* Scrollable Form Body (Internal scroll forced) */}
-            <div className="px-6 sm:px-7 py-6 overflow-y-scroll form-scroll-container flex-1" style={{ background: '#FAFAF9' }}>
+            <div
+              className="admin-modal-body px-6 sm:px-7 py-6 overflow-y-scroll form-scroll-container flex-1"
+              style={{ background: '#FAFAF9', minHeight: 0 }}>
               {children}
             </div>
           </motion.div>
@@ -200,7 +304,7 @@ const Modal = ({ show, onClose, title, subtitle, children }) => {
 const fileLabelCls = "flex items-center gap-2 px-4 py-3 rounded-xl border-2 border-dashed bg-white cursor-pointer hover:bg-amber-50 hover:border-amber-400 transition-all text-sm font-medium";
 
 const FormActions = ({ onCancel, submitLabel = "Save Changes" }) => (
-  <div className="flex gap-3 pt-5 mt-1 border-t" style={{ borderColor: '#EDE9E4' }}>
+  <div className="admin-form-actions flex gap-3 pt-5 mt-1 border-t" style={{ borderColor: '#EDE9E4' }}>
     <button type="button" onClick={onCancel}
       className={formBtnSecondary} style={{ borderColor: '#D1C7BC', minWidth: '110px' }}>
       Cancel
@@ -785,8 +889,14 @@ const Sidebar = ({ isMobile, sidebarOpen, setSidebarOpen, ...props }) => (
   <>
     {/* Desktop Sidebar */}
     {!isMobile && (
-      <aside className="flex flex-col w-80 shrink-0 self-stretch border-r border-black/10"
-             style={{ background: C.brand }}>
+      <aside className="admin-sidebar flex flex-col w-80 shrink-0 self-stretch border-r border-black/10"
+             style={{
+               background: C.brand,
+               width: '320px',
+               height: '100%',
+               minHeight: '100dvh',
+               maxHeight: '100dvh',
+             }}>
         <SidebarContent onClose={null} {...props} />
       </aside>
     )}
@@ -804,8 +914,18 @@ const Sidebar = ({ isMobile, sidebarOpen, setSidebarOpen, ...props }) => (
             <motion.aside
               initial={{ x: -340 }} animate={{ x: 0 }} exit={{ x: -340 }}
               transition={{ type: "tween", duration: 0.3 }}
-              className="fixed inset-y-0 left-0 z-[10000] w-80 flex flex-col shadow-2xl"
-              style={{ background: C.brand, position: 'fixed', top: 0, bottom: 0, left: 0 }}>
+              className="admin-sidebar fixed inset-y-0 left-0 z-[10000] w-80 flex flex-col shadow-2xl"
+              style={{
+                background: C.brand,
+                position: 'fixed',
+                top: 0,
+                bottom: 0,
+                left: 0,
+                width: 'min(320px, 86vw)',
+                height: '100dvh',
+                maxHeight: '100dvh',
+                zIndex: 10000,
+              }}>
               <SidebarContent onClose={() => setSidebarOpen(false)} {...props} />
             </motion.aside>
           </>
@@ -817,7 +937,7 @@ const Sidebar = ({ isMobile, sidebarOpen, setSidebarOpen, ...props }) => (
 );
 
 const Header = ({ setSidebarOpen, selectedDept, activeTab }) => (
-  <header className="h-14 lg:h-16 flex items-center px-4 lg:px-6 border-b shrink-0 z-10"
+  <header className="admin-header h-14 lg:h-16 flex items-center px-4 lg:px-6 border-b shrink-0 z-10"
           style={{ background: C.surface, borderColor: C.border }}>
     <button onClick={() => setSidebarOpen(true)}
       className="p-2 rounded-xl hover:bg-gray-100 lg:hidden mr-3 transition"
@@ -2536,10 +2656,66 @@ const AdminPanel = ({ onLogout }) => {
   }[modalType] || {};
 
   return (
-    <div className="flex flex-1 h-full w-full min-h-0 bg-gray-50 text-gray-900 font-sans overflow-hidden relative items-stretch">
+    <div
+      className="admin-shell flex flex-1 h-full w-full min-h-0 bg-gray-50 text-gray-900 font-sans overflow-hidden relative items-stretch"
+      style={{
+        display: 'flex',
+        height: '100dvh',
+        minHeight: '100dvh',
+        maxHeight: '100dvh',
+        width: '100%',
+        overflow: 'hidden',
+      }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap');
         * { font-family: 'DM Sans', sans-serif; box-sizing: border-box; }
+        html, body, #root {
+          height: 100%;
+        }
+        body:has(.admin-shell) {
+          overflow: hidden;
+        }
+        .admin-shell {
+          display: flex !important;
+          height: 100dvh !important;
+          max-height: 100dvh !important;
+          overflow: hidden !important;
+        }
+        .admin-sidebar {
+          height: 100dvh !important;
+          max-height: 100dvh !important;
+          overflow: hidden !important;
+        }
+        .admin-main {
+          display: flex !important;
+          flex-direction: column !important;
+          flex: 1 1 auto !important;
+          min-width: 0 !important;
+          min-height: 0 !important;
+          height: 100dvh !important;
+          overflow: hidden !important;
+        }
+        .admin-header {
+          height: 64px !important;
+          min-height: 64px !important;
+        }
+        .admin-content-scroll {
+          flex: 1 1 auto !important;
+          min-height: 0 !important;
+          height: calc(100dvh - 64px) !important;
+          overflow-y: auto !important;
+          overflow-x: hidden !important;
+          overscroll-behavior: contain;
+        }
+        @media (max-width: 1023px) {
+          .admin-header {
+            height: 56px !important;
+            min-height: 56px !important;
+          }
+          .admin-content-scroll {
+            height: calc(100dvh - 56px) !important;
+          }
+        }
         .scrollbar-hide::-webkit-scrollbar { display: none; }
         .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
         /* Premium admin scrollbar */
@@ -2553,10 +2729,12 @@ const AdminPanel = ({ onLogout }) => {
       <Toast note={note}/>
       <Sidebar isMobile={isMobile} sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} activeTab={activeTab} setActiveTab={setActiveTab} selectedDept={selectedDept} setSelectedDept={setSelectedDept} navItems={navItems} onLogout={onLogout} />
       
-      <main className="flex-1 flex flex-col min-w-0 h-full overflow-hidden bg-gray-50">
+      <main
+        className="admin-main flex-1 flex flex-col min-w-0 h-full overflow-hidden bg-gray-50"
+        style={{ height: '100dvh', minHeight: 0, overflow: 'hidden' }}>
         <Header setSidebarOpen={setSidebarOpen} selectedDept={selectedDept} activeTab={activeTab}/>
         
-        <div className="flex-1 min-h-0 overflow-y-auto admin-scroll p-4 md:p-6 lg:p-8">
+        <div className="admin-content-scroll flex-1 min-h-0 overflow-y-auto admin-scroll p-4 md:p-6 lg:p-8">
           <div className="max-w-7xl mx-auto pb-24">
             {loading && (
               <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/60 backdrop-blur-sm">
