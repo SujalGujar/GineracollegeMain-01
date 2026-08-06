@@ -973,6 +973,11 @@ const PROGRAMS = [
     description: "Comprehensive medical education with hands-on clinical training",
     icon: GraduationCap,
     image: HomepageImage2,
+    features: [
+      "Hands-on clinical training",
+      "Modern nursing foundation",
+      "University-recognized curriculum",
+    ],
     courses: [
       "Graduate Course",
       "B.Sc. Nursing",
@@ -984,6 +989,12 @@ const PROGRAMS = [
     description: "Specialized advanced training in various Nursing disciplines",
     icon: Users,
     image: HomepageImage3,
+    features: [
+      "Advanced specialty nursing training",
+      "Research-focused learning",
+      "Expert faculty mentorship",
+      "Clinical specialization pathways",
+    ],
     courses: [
       "M.Sc. – Medical Surgical Nursing",
       "M.Sc. – Child Health Nursing",
@@ -998,6 +1009,12 @@ const PROGRAMS = [
     description: "Short-term specialized courses for skill enhancement",
     icon: FileText,
     image: HomepageImage1,
+    features: [
+      "Skill enhancement programs",
+      "Short-term specialty training",
+      "Practice-focused learning",
+      "Career-ready nursing skills",
+    ],
     courses: [
       "Diploma in General Nursing & Midwifery (3 Years)",
       "Post Basic Diploma – Burn & Reconstructive Surgery Specialty Nursing (1 Year)",
@@ -1165,6 +1182,11 @@ const HomePage=({ onNavigate }) => {
     setExpandedProgram(expandedProgram === programId ? null : programId);
   };
 
+  const getProgramFeatures = (prog) => {
+    const possibleLists = [prog.features, prog.highlights, prog.programFeatures, prog.courses];
+    return possibleLists.find((items) => Array.isArray(items) && items.length > 0) || [];
+  };
+
   const programsToDisplay = dynamicPrograms.length > 0 ? dynamicPrograms : PROGRAMS;
 
   const scrollPrograms = (dir) => {
@@ -1283,9 +1305,10 @@ const HomePage=({ onNavigate }) => {
               ) : programsToDisplay.map((prog, i) => {
                 const programId = prog._id || i;
                 const isExpanded = expandedProgram === programId;
-                const courses = Array.isArray(prog.courses) ? prog.courses : [];
-                const displayCourses = isExpanded ? courses : courses.slice(0, 2);
-                const hasMore = courses.length > 2;
+                const features = getProgramFeatures(prog);
+                const visibleFeatures = isExpanded ? features : features.slice(0, 2);
+                const hiddenFeatureCount = Math.max(features.length - 2, 0);
+                const hasMore = hiddenFeatureCount > 0;
                 const imageUrl = getMediaUrl(prog.imageUrl || prog.image);
                 
                 return (
@@ -1343,12 +1366,12 @@ const HomePage=({ onNavigate }) => {
                     </div>
                     <div style={{ padding: "20px 20px 24px", flex: 1, display: "flex", flexDirection: "column" }}>
                       <ul style={{ listStyle: "none", margin: "0 0 20px", padding: 0, flex: 1 }}>
-                        {displayCourses.map((course, ci) => (
+                        {visibleFeatures.map((feature, ci) => (
                           <li key={ci} className="prog-list-item">
                             <span className="bullet">
                               <ChevronRight size={12} color="#d97706" strokeWidth={3} />
                             </span>
-                            <span>{course}</span>
+                            <span>{feature}</span>
                           </li>
                         ))}
                       </ul>
@@ -1361,8 +1384,8 @@ const HomePage=({ onNavigate }) => {
                             alignSelf: "flex-start",
                           }}
                         >
-                          {isExpanded ? "Read Less" : `Read More (+${courses.length - 2} more)`}
-                          <ArrowRight size={12} style={{ transform: isExpanded ? "rotate(90deg)" : "none", transition: "transform 0.2s" }} />
+                          {isExpanded ? "Read Less" : `Read More (+${hiddenFeatureCount} more)`}
+                          <ArrowRight size={12} style={{ transform: isExpanded ? "rotate(-90deg)" : "none", transition: "transform 0.2s" }} />
                         </button>
                       )}
                       <LearnMoreButton onClick={() => onNavigate('courses')} />

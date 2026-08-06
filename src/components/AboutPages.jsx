@@ -159,7 +159,7 @@ export function AboutLogo({ onNavigate }) {
         {/* ------------------- SECTION 1 ------------------- */}
         <motion.div
           style={{ marginTop: "70px" }}
-          className="grid md:grid-cols-2 gap-16 items-center"
+          className="grid md:grid-cols-2 gap-10 lg:gap-16 items-center"
           initial={{ opacity: 0, y: 50 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
@@ -172,10 +172,14 @@ export function AboutLogo({ onNavigate }) {
             className="flex justify-center md:justify-end"
           >
             <motion.div
-              className="w-80 h-80 bg-gradient-to-br from-amber-500 to-orange-500 rounded-full flex items-center justify-center shadow-2xl border-8 border-white"
+              className="bg-gradient-to-br from-amber-500 to-orange-500 rounded-3xl flex items-center justify-center shadow-2xl border-8 border-white"
+              style={{
+                width: "min(320px, 82vw)",
+                aspectRatio: "1 / 1",
+                padding: "clamp(24px, 7vw, 56px)",
+              }}
               whileHover={{
-                scale: 1.05,
-                rotate: 5,
+                scale: 1.03,
                 boxShadow: "0 25px 50px -12px rgba(245, 158, 11, 0.5)",
               }}
               transition={{ duration: 0.4 }}
@@ -183,8 +187,15 @@ export function AboutLogo({ onNavigate }) {
               <motion.img
                 src={displayLogo}
                 alt={collegeBranding?.collegeName || 'College Logo'}
-                className="w-32 h-32 object-contain"
-                whileHover={{ scale: 1.1 }}
+                className="object-contain"
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  maxWidth: "210px",
+                  maxHeight: "210px",
+                  filter: "drop-shadow(0 10px 18px rgba(0,0,0,0.16))",
+                }}
+                whileHover={{ scale: 1.04 }}
                 transition={{ duration: 0.3 }}
               />
             </motion.div>
@@ -432,11 +443,24 @@ const statsVariants = {
 export function DeanMessage() {
   const { isSectionVisible } = useSectionVisibility();
   const [dean, setDean] = useState(null);
+  const [deanLoading, setDeanLoading] = useState(true);
 
   if (!isSectionVisible('about_dean_message')) return <SectionOffNotice name="Dean's Message" />;
 
   useEffect(() => {
-    axiosInstance.get('/about/dean').then(r => setDean(r.data)).catch(() => { });
+    let active = true;
+    setDeanLoading(true);
+    axiosInstance.get('/about/dean')
+      .then(r => {
+        if (active) setDean(r.data);
+      })
+      .catch(() => { })
+      .finally(() => {
+        if (active) setDeanLoading(false);
+      });
+    return () => {
+      active = false;
+    };
   }, []);
 
   const deanName = dean?.name || 'Dr. Hiral S. Shah';
@@ -457,7 +481,7 @@ export function DeanMessage() {
   ];
   const deanPhoto = dean?.photoUrl
     ? getMediaUrl(dean.photoUrl)
-    : principleImage;
+    : deanLoading ? null : principleImage;
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -520,11 +544,15 @@ export function DeanMessage() {
               variants={imageVariants}
             >
               <div style={{ height: '285px' }} className="relative w-80 rounded-full shadow-2xl border-8 border-white overflow-hidden bg-gradient-to-br from-[#A2632E] to-[#804C22]">
-                <img
-                  src={deanPhoto}
-                  className="w-full h-full object-cover relative z-10 rounded-full"
-                  alt="Dean & Principal"
-                />
+                {deanPhoto ? (
+                  <img
+                    src={deanPhoto}
+                    className="w-full h-full object-cover relative z-10 rounded-full"
+                    alt="Dean & Principal"
+                  />
+                ) : (
+                  <div className="w-full h-full relative z-10 rounded-full bg-gradient-to-br from-orange-100 to-amber-50 animate-pulse" />
+                )}
                 {/* Glow effect */}
                 <motion.div
                   className="absolute inset-0 rounded-full bg-[#A2632E] blur-xl opacity-30 -z-10"
