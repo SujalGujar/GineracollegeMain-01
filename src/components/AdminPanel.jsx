@@ -503,10 +503,7 @@ const CoreValueForm = ({ editItem, cvForm, setCvForm, closeModal, fetchData, not
       </Field>
     </div>
     <Field label="Description" required>
-      <FTextarea required rows={3} value={cvForm.description} onChange={e=>setCvForm({...cvForm,description:e.target.value})} placeholder="Brief description of this value…"/>
-    </Field>
-    <Field label="Gradient" hint="Tailwind gradient classes, e.g. from-amber-500 to-orange-500">
-      <FInput value={cvForm.color} onChange={e=>setCvForm({...cvForm,color:e.target.value})} placeholder="from-amber-500 to-orange-500"/>
+      <FTextarea required rows={4} value={cvForm.description} onChange={e=>setCvForm({...cvForm,description:e.target.value})} placeholder="Brief description of this value…"/>
     </Field>
     <FormActions onCancel={closeModal} submitLabel={editItem ? "Save Changes" : "Add Core Value"}/>
   </form>
@@ -1476,20 +1473,39 @@ const AboutTab = ({ aboutSub, setAboutSub, collegeLogo, setCollegeLogo, logoFile
             <div className="space-y-4 pt-4 border-t border-gray-200">
               <SectionHeader icon={Clock} title="Institutional Milestones" subtitle="Timeline entries & historical achievements"
                 action={<AddBtn onClick={() => { setMilestoneForm({year:"",event:"",icon:"🎯",color:"#1e3a8a",description:"",order:0}); openModal("milestone"); }} label="Add Milestone"/>}/>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4">
                 {milestones.map(m => (
-                  <div key={m._id} className="p-5 rounded-2xl group relative transition-all hover:shadow-md" style={{ background: C.surface, border:`1px solid ${C.border}`, borderLeft:`5px solid ${m.color}` }}>
-                    <div className="flex items-start gap-4">
-                      <span className="text-3xl filter grayscale group-hover:grayscale-0 transition-all">{m.icon}</span>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-[11px] font-extrabold uppercase tracking-[0.15em]" style={{ color: m.color }}>{m.year}</p>
-                        <p className="font-bold text-sm truncate mt-0.5" style={{ color: C.text }}>{m.event}</p>
-                        <p className="text-xs line-clamp-2 mt-1.5 leading-relaxed" style={{ color: C.muted }}>{m.description}</p>
+                  <div key={m._id} className="p-5 rounded-2xl transition-all hover:shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-4" style={{ background: C.surface, border:`1px solid ${C.border}`, borderLeft:`5px solid ${m.color || '#f59e0b'}` }}>
+                    <div className="flex items-start gap-4 min-w-0 flex-1">
+                      <span className="text-3xl shrink-0 p-2 rounded-xl bg-amber-50 border border-amber-100">{m.icon || "🎯"}</span>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="px-2.5 py-0.5 rounded-md text-xs font-bold text-gray-800 bg-gray-100 border border-gray-200">{m.year}</span>
+                        </div>
+                        <p className="font-bold text-sm text-gray-900 truncate">{m.event}</p>
+                        <p className="text-xs text-gray-500 line-clamp-2 mt-1 leading-relaxed">{m.description}</p>
                       </div>
                     </div>
-                    <div className="absolute top-3 right-3 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <IconBtn onClick={() => { setMilestoneForm({year:m.year,event:m.event,icon:m.icon,color:m.color,description:m.description,order:m.order||0}); openModal("milestone",m); }}><Edit3 size={13}/></IconBtn>
-                      <IconBtn danger onClick={async()=>{ try{await axiosInstance.delete(`/about/milestones/${m._id}`); setMilestones(milestones.filter(x=>x._id!==m._id)); notify("Milestone Removed");}catch{notify("Delete failed","error");}}}><Trash2 size={13}/></IconBtn>
+                    <div className="flex items-center gap-2 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-gray-100">
+                      <button
+                        onClick={() => { setMilestoneForm({year:m.year,event:m.event,icon:m.icon,color:m.color,description:m.description,order:m.order||0}); openModal("milestone",m); }}
+                        className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-amber-50 text-amber-900 border border-amber-200 hover:bg-amber-100 transition-all shadow-sm">
+                        <Edit3 size={14}/> Edit
+                      </button>
+                      <button
+                        onClick={async () => {
+                          if (!window.confirm("Delete this milestone?")) return;
+                          try {
+                            await axiosInstance.delete(`/about/milestones/${m._id}`);
+                            setMilestones(milestones.filter(x => x._id !== m._id));
+                            notify("Milestone Removed");
+                          } catch {
+                            notify("Delete failed", "error");
+                          }
+                        }}
+                        className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 transition-all shadow-sm">
+                        <Trash2 size={14}/> Delete
+                      </button>
                     </div>
                   </div>
                 ))}
@@ -2192,10 +2208,7 @@ const KeyPersonForm = ({ editItem, keyPersonForm, setKeyPersonForm, closeModal, 
       <Field label="Email"><FInput value={keyPersonForm.email} onChange={e=>setKeyPersonForm({...keyPersonForm,email:e.target.value})} placeholder="Email address"/></Field>
       <Field label="Office Hours"><FInput value={keyPersonForm.hours} onChange={e=>setKeyPersonForm({...keyPersonForm,hours:e.target.value})} placeholder="e.g. 9:00 AM - 5:00 PM"/></Field>
     </div>
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-      <Field label="Icon Emoji"><FInput value={keyPersonForm.icon} onChange={e=>setKeyPersonForm({...keyPersonForm,icon:e.target.value})}/></Field>
-      <Field label="Gradient Color" hint="e.g. from-blue-500 to-blue-600"><FInput value={keyPersonForm.color} onChange={e=>setKeyPersonForm({...keyPersonForm,color:e.target.value})}/></Field>
-    </div>
+    <Field label="Icon Emoji"><FInput value={keyPersonForm.icon} onChange={e=>setKeyPersonForm({...keyPersonForm,icon:e.target.value})}/></Field>
     <Field label="Responsibilities (one per line)" required><FTextarea required rows={4} value={keyPersonForm.responsibilities} onChange={e=>setKeyPersonForm({...keyPersonForm,responsibilities:e.target.value})} placeholder="Responsibility 1&#10;Responsibility 2"/></Field>
     <FormActions onCancel={closeModal} submitLabel={editItem ? "Save Changes" : "Add Key Contact"}/>
   </form>
@@ -2271,13 +2284,13 @@ const ContactTab = ({ contactSub, setContactSub, keyPersons, setKeyPersonForm, c
 
 const SectionControlTab = ({ notify }) => {
   const { sectionsList, loading, toggleSection, togglePageSections } = useSectionVisibility();
-  const [selectedPage, setSelectedPage] = useState("All");
+  const [selectedPage, setSelectedPage] = useState("Home Page");
   const [searchTerm, setSearchTerm] = useState("");
 
-  const pages = ["All", "Home Page", "About Us", "Admission", "Departments", "Gallery", "Institutes", "Contact Us"];
+  const pages = ["Home Page", "About Us", "Admission", "Departments", "Gallery", "Institutes", "Contact Us", "All Pages"];
 
   const filteredSections = sectionsList.filter(s => {
-    const matchesPage = selectedPage === "All" || s.page === selectedPage;
+    const matchesPage = selectedPage === "All Pages" || s.page === selectedPage;
     const matchesSearch = (s.sectionName || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
                           (s.description || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
                           (s.sectionKey || "").toLowerCase().includes(searchTerm.toLowerCase());
