@@ -978,9 +978,6 @@ export function GenericDepartment({ slug, category }) {
   const [loading, setLoading] = useState(true);
 
   const sectionKey = `dept_${(slug || '').replace(/-/g, '_')}`;
-  if (!isSectionVisible(sectionKey)) {
-    return <SectionOffNotice name="Department Section" />;
-  }
 
   useEffect(() => {
     const fetchDepartment = async () => {
@@ -1007,6 +1004,10 @@ export function GenericDepartment({ slug, category }) {
     };
     fetchDepartment();
   }, [slug]);
+
+  if (!isSectionVisible(sectionKey)) {
+    return <SectionOffNotice name="Department Section" />;
+  }
 
   if (loading) {
     return (

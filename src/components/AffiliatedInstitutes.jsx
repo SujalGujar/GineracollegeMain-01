@@ -22,7 +22,6 @@ import SectionOffNotice from "./SectionOffNotice";
 
 export function AffiliatedInstitutes() {
   const { isSectionVisible } = useSectionVisibility();
-  if (!isSectionVisible('institutes_list')) return <SectionOffNotice name="Affiliated Institutes" />;
 
   const DEFAULT_INSTITUTES = [
     {
@@ -260,6 +259,8 @@ export function AffiliatedInstitutes() {
     };
     fetchInstitutes();
   }, []);
+
+  if (!isSectionVisible('institutes_list')) return <SectionOffNotice name="Affiliated Institutes" />;
 
   return (
     <motion.div

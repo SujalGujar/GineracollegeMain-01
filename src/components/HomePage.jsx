@@ -854,7 +854,7 @@ const globalStyles = `
     transform: translateY(-3px) scale(1.04);
     box-shadow: 0 12px 36px rgba(139,69,19,0.4);
   }
-  .btn-view-all svg path { fill: currentColor; }
+  .btn-view-all svg path:not([fill="none"]) { fill: currentColor; }
   .prog-list-item {
     display: flex;
     align-items: flex-start;
@@ -957,7 +957,7 @@ const LearnMoreButton = ({ onClick }) => (
 const ViewAllButton = ({ onClick }) => (
   <button className="btn-view-all" onClick={onClick}>
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20">
-      <path fill="none" d="M0 0h24v24H0z" />
+      <path fill="none" style={{ fill: "none" }} d="M0 0h24v24H0z" />
       <path d="M1.946 9.315c-.522-.174-.527-.455.01-.634l19.087-6.362c.529-.176.832.12.684.638l-5.454 19.086c-.15.529-.455.547-.679.045L12 14l6-8-8 6-8.054-2.685z" />
     </svg>
     View All Programs
@@ -1059,10 +1059,13 @@ const LOGOS = [collegelogo1, collegelogo2, collegelogo3, collegelogo4];
 const getMediaUrl = (url, fallback = "/placeholder.png") => {
   if (!url) return fallback;
   if (url.startsWith("http") || url.startsWith("data:") || url.startsWith("blob:")) return url;
-  const backendOrigin = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
-    ? "http://localhost:8080"
-    : "https://gineracollegemain-01.onrender.com";
-  return `${backendOrigin}${url.startsWith("/") ? url : `/${url}`}`;
+  if (url.startsWith("uploads") || url.startsWith("/uploads")) {
+    const backendOrigin = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
+      ? "http://localhost:8080"
+      : "https://gineracollegemain-01.onrender.com";
+    return `${backendOrigin}${url.startsWith("/") ? url : `/${url}`}`;
+  }
+  return url;
 };
 
 /* ═══════════════════════════════════════════════════════
@@ -1103,9 +1106,10 @@ const HomePage=({ onNavigate }) => {
     description2: "Programs span 4 years (Undergraduate), 3 years (Diploma), 2 years (Masters in Nursing), and 1 year (Post-Basic Diploma)."
   });
 
-  const testimonialsToDisplay = dynamicTestimonials.length > 0 ? dynamicTestimonials : TESTIMONIALS;
+  const testimonialsToDisplay = dynamicTestimonials;
 
   useEffect(() => {
+    if (testimonialsToDisplay.length === 0) return;
     const id = setInterval(() => {
       setTestimonialsIndex((p) => (p + 1) % testimonialsToDisplay.length);
     }, 6000);
@@ -1173,10 +1177,16 @@ const HomePage=({ onNavigate }) => {
 
   const prevLogo = () => setLogoOffset((p) => Math.max(p - 1, 0));
   const nextLogo = () => setLogoOffset((p) => Math.min(p + 1, LOGOS.length - 1));
-  const prevTestimonial = () => setTestimonialsIndex((p) => (p === 0 ? testimonialsToDisplay.length - 1 : p - 1));
-  const nextTestimonial = () => setTestimonialsIndex((p) => (p + 1) % testimonialsToDisplay.length);
+  const prevTestimonial = () => {
+    if (testimonialsToDisplay.length === 0) return;
+    setTestimonialsIndex((p) => (p === 0 ? testimonialsToDisplay.length - 1 : p - 1));
+  };
+  const nextTestimonial = () => {
+    if (testimonialsToDisplay.length === 0) return;
+    setTestimonialsIndex((p) => (p + 1) % testimonialsToDisplay.length);
+  };
   
-  const current = testimonialsToDisplay[testimonialsIndex] || TESTIMONIALS[0];
+  const current = testimonialsToDisplay[testimonialsIndex] || {};
 
   const toggleReadMore = (programId) => {
     setExpandedProgram(expandedProgram === programId ? null : programId);
@@ -1280,6 +1290,7 @@ const HomePage=({ onNavigate }) => {
                 id="programs-slider"
                 style={{
                   display: "flex",
+                  alignItems: "stretch",
                   gap: 28,
                   overflowX: "auto",
                   scrollSnapType: "x mandatory",
@@ -1292,6 +1303,14 @@ const HomePage=({ onNavigate }) => {
               >
                 <style>{`
                   #programs-slider::-webkit-scrollbar { display: none; }
+                  #programs-slider {
+                    justify-content: center;
+                  }
+                  @media (max-width: 1160px) {
+                    #programs-slider {
+                      justify-content: flex-start;
+                    }
+                  }
                 `}</style>
               {loadingPrograms ? (
                 <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/50 backdrop-blur-sm rounded-3xl z-10">
@@ -1328,7 +1347,8 @@ const HomePage=({ onNavigate }) => {
                       display: "flex",
                       flexDirection: "column",
                       transition: "box-shadow 0.3s",
-                      height: "100%",
+                      height: "auto",
+                      alignSelf: "stretch",
                       flexShrink: 0,
                       width: 350,
                       scrollSnapAlign: "start",
@@ -1409,7 +1429,7 @@ const HomePage=({ onNavigate }) => {
           </div>
         </section>
         )}
-        {isSectionVisible('home_testimonials') && (
+        {isSectionVisible('home_testimonials') && dynamicTestimonials.length > 0 && (
         <section style={{
           position: "relative",
           padding: "48px 0 64px",
@@ -1477,53 +1497,76 @@ const HomePage=({ onNavigate }) => {
                 </motion.button>
               ))}
               <AnimatePresence mode="wait">
-                <motion.div
-                  key={testimonialsIndex}
-                  initial={{ opacity: 0, x: 60 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -60 }}
-                  transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
-                  className="testimonial-card"
-                >
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1.4fr" }}>
-                    <div style={{ position: "relative", minHeight: 320, overflow: "hidden" }}>
-                      <img
-                        src={getMediaUrl(current.imageUrl || current.image, libraryImage)}
-                        alt={current.name}
-                        style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
-                      />
-                      <div style={{
-                        position: "absolute", inset: 0,
-                        background: "linear-gradient(to top, rgba(0,0,0,0.2), transparent)",
-                      }} />
-                      <div style={{
-                        position: "absolute", top: 18, left: 18,
-                        background: "rgba(255,255,255,0.92)",
-                        backdropFilter: "blur(6px)",
-                        borderRadius: 9999,
-                        padding: "6px 14px",
-                        display: "flex", alignItems: "center", gap: 3,
-                        boxShadow: "0 2px 12px rgba(0,0,0,0.1)",
-                      }}>
-                        {[...Array(current.rating)].map((_, si) => (
-                          <Star key={si} size={14} fill="#f59e0b" color="#f59e0b" />
-                        ))}
+                {(() => {
+                  const hasImage = !!(current.imageUrl || current.image);
+                  return (
+                    <motion.div
+                      key={testimonialsIndex}
+                      initial={{ opacity: 0, x: 60 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -60 }}
+                      transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+                      className="testimonial-card"
+                    >
+                      <div style={{ display: "grid", gridTemplateColumns: hasImage ? "1fr 1.4fr" : "1fr" }}>
+                        {hasImage && (
+                          <div style={{ position: "relative", minHeight: 320, overflow: "hidden" }}>
+                            <img
+                              src={getMediaUrl(current.imageUrl || current.image)}
+                              alt={current.name}
+                              style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+                            />
+                            <div style={{
+                              position: "absolute", inset: 0,
+                              background: "linear-gradient(to top, rgba(0,0,0,0.2), transparent)",
+                            }} />
+                            <div style={{
+                              position: "absolute", top: 18, left: 18,
+                              background: "rgba(255,255,255,0.92)",
+                              backdropFilter: "blur(6px)",
+                              borderRadius: 9999,
+                              padding: "6px 14px",
+                              display: "flex", alignItems: "center", gap: 3,
+                              boxShadow: "0 2px 12px rgba(0,0,0,0.1)",
+                            }}>
+                              {[...Array(current.rating)].map((_, si) => (
+                                <Star key={si} size={14} fill="#f59e0b" color="#f59e0b" />
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        <div style={{ padding: "44px 40px", display: "flex", flexDirection: "column", justifyContent: "center" }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+                            <Quote size={40} color="#3b82f6" style={{ opacity: 0.8 }} />
+                            {!hasImage && (
+                              <div style={{
+                                background: "rgba(245,158,11,0.08)",
+                                borderRadius: 9999,
+                                padding: "6px 14px",
+                                display: "flex", alignItems: "center", gap: 3,
+                                border: "1px solid rgba(245,158,11,0.2)",
+                                boxShadow: "0 2px 12px rgba(0,0,0,0.05)",
+                              }}>
+                                {[...Array(current.rating)].map((_, si) => (
+                                  <Star key={si} size={14} fill="#f59e0b" color="#f59e0b" />
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                          <p style={{ fontSize: 17, color: "#374151", lineHeight: 1.75, fontStyle: "italic", marginBottom: 28 }}>
+                            "{current.content}"
+                          </p>
+                          <div style={{ borderTop: "1px solid #e5e7eb", paddingTop: 20 }}>
+                            <p style={{ fontWeight: 700, fontSize: 18, color: "#111827", marginBottom: 4 }}>
+                              {current.name}
+                            </p>
+                            <p style={{ fontSize: 14, color: "#6b7280" }}>{current.role}</p>
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                    <div style={{ padding: "44px 40px", display: "flex", flexDirection: "column", justifyContent: "center" }}>
-                      <Quote size={40} color="#3b82f6" style={{ marginBottom: 20, opacity: 0.8 }} />
-                      <p style={{ fontSize: 17, color: "#374151", lineHeight: 1.75, fontStyle: "italic", marginBottom: 28 }}>
-                        "{current.content}"
-                      </p>
-                      <div style={{ borderTop: "1px solid #e5e7eb", paddingTop: 20 }}>
-                        <p style={{ fontWeight: 700, fontSize: 18, color: "#111827", marginBottom: 4 }}>
-                          {current.name}
-                        </p>
-                        <p style={{ fontSize: 14, color: "#6b7280" }}>{current.role}</p>
-                      </div>
-                    </div>
-                  </div>
-                </motion.div>
+                    </motion.div>
+                  );
+                })()}
               </AnimatePresence>
               <div style={{ display: "flex", justifyContent: "center", gap: 10, marginTop: 28 }}>
                 {testimonialsToDisplay.map((_, di) => (

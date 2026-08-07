@@ -92,14 +92,12 @@ export function AboutLogo({ onNavigate }) {
   const { isSectionVisible } = useSectionVisibility();
   const [collegeBranding, setCollegeBranding] = useState(null);
   const [aboutImages, setAboutImages] = useState([]);
-
-  if (!isSectionVisible('about_logo')) return <SectionOffNotice name="College Logo & Branding" />;
+  const [visionMission, setVisionMission] = useState([]);
 
   useEffect(() => {
     axiosInstance.get('/about/college-logo').then(r => setCollegeBranding(r.data)).catch(() => { });
   }, []);
 
-  const [visionMission, setVisionMission] = useState([]);
   useEffect(() => {
     axiosInstance.get('/about/vision-mission').then(r => setVisionMission(r.data)).catch(() => { });
   }, []);
@@ -107,6 +105,8 @@ export function AboutLogo({ onNavigate }) {
   useEffect(() => {
     axiosInstance.get('/about/images').then(r => setAboutImages(r.data)).catch(() => { });
   }, []);
+
+  if (!isSectionVisible('about_logo')) return <SectionOffNotice name="College Logo & Branding" />;
 
   const visionPoints = visionMission.filter(v => v.type === 'vision').map(v => v.content);
   const missionPoints = visionMission.filter(v => v.type === 'mission').map(v => v.content);
@@ -445,8 +445,6 @@ export function DeanMessage() {
   const [dean, setDean] = useState(null);
   const [deanLoading, setDeanLoading] = useState(true);
 
-  if (!isSectionVisible('about_dean_message')) return <SectionOffNotice name="Dean's Message" />;
-
   useEffect(() => {
     let active = true;
     setDeanLoading(true);
@@ -462,6 +460,8 @@ export function DeanMessage() {
       active = false;
     };
   }, []);
+
+  if (!isSectionVisible('about_dean_message')) return <SectionOffNotice name="Dean's Message" />;
 
   const deanName = dean?.name || 'Dr. Hiral S. Shah';
   const deanTitle = dean?.title || 'Principal';
@@ -720,7 +720,6 @@ const imageAnimation = {
 
 export function History() {
   const { isSectionVisible } = useSectionVisibility();
-  if (!isSectionVisible('about_history')) return <SectionOffNotice name="History & Milestones" />;
   const [dynamicMilestones, setDynamicMilestones] = useState([]);
   const [aboutImages, setAboutImages] = useState([]);
   const [historyContent, setHistoryContent] = useState(null);
@@ -746,6 +745,8 @@ export function History() {
         setLoading(false);
       });
   }, []);
+
+  if (!isSectionVisible('about_history')) return <SectionOffNotice name="History & Milestones" />;
 
   const milestonesToDisplay = dynamicMilestones;
 
@@ -1341,8 +1342,10 @@ const valueCardVariants = {
 
 export function VisionMission() {
   const { isSectionVisible } = useSectionVisibility();
-  if (!isSectionVisible('about_vision_mission')) return <SectionOffNotice name="Vision & Mission" />;
   const [expandedCoreValues, setExpandedCoreValues] = React.useState([]);
+  const [visionMission, setVisionMission] = useState([]);
+  const [coreValuesData, setCoreValuesData] = useState([]);
+  const [aboutImages, setAboutImages] = useState([]);
 
   const toggleCoreValue = (title) => {
     setExpandedCoreValues((prev) =>
@@ -1351,15 +1354,14 @@ export function VisionMission() {
         : [...prev, title]
     );
   };
-  const [visionMission, setVisionMission] = useState([]);
-  const [coreValuesData, setCoreValuesData] = useState([]);
-  const [aboutImages, setAboutImages] = useState([]);
 
   useEffect(() => {
     axiosInstance.get('/about/vision-mission').then(r => setVisionMission(r.data)).catch(() => { });
     axiosInstance.get('/about/core-values').then(r => setCoreValuesData(r.data)).catch(() => { });
     axiosInstance.get('/about/images').then(r => setAboutImages(r.data)).catch(() => { });
   }, []);
+
+  if (!isSectionVisible('about_vision_mission')) return <SectionOffNotice name="Vision & Mission" />;
 
   const visionPoints = visionMission.filter(v => v.type === 'vision').map(v => v.content);
   const missionPoints = visionMission.filter(v => v.type === 'mission').map(v => v.content);

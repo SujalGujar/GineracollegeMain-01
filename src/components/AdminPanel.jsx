@@ -14,10 +14,12 @@ import { useSectionVisibility } from "../context/SectionVisibilityContext";
 /* ─── Design Tokens ─────────────────────────────────────── */
 const C = {
   brand:    "#6B3F1D",
+  brandDark:"#4E2B12",
   accent:   "#E07B39",
   accentSoft: "#FDF0E6",
   surface:  "#FFFFFF",
   bg:       "#F4F1EE",
+  panel:    "#FBFAF8",
   border:   "#E8E0D8",
   text:     "#1A1208",
   muted:    "#8A7A6A",
@@ -35,16 +37,19 @@ const imgUrl = (url) =>
 
 const Pill = ({ children, color = C.accent }) => (
   <span style={{ background: color + "20", color }}
-        className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md">
+        className="admin-pill text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md">
     {children}
   </span>
 );
 
-const IconBtn = ({ onClick, danger, children, className = "" }) => (
+const IconBtn = ({ onClick, danger, children, className = "", title }) => (
   <button onClick={onClick}
-    className={`p-2 rounded-lg transition-all hover:scale-105 active:scale-95 ${
+    type="button"
+    title={title}
+    aria-label={title}
+    className={`admin-icon-btn p-2 rounded-lg transition-all hover:scale-105 active:scale-95 ${
       danger
-        ? "bg-red-50 text-red-500 hover:bg-red-100"
+        ? "is-danger bg-red-50 text-red-500 hover:bg-red-100"
         : "bg-gray-100 text-gray-600 hover:bg-gray-200"
     } ${className}`}>
     {children}
@@ -135,7 +140,7 @@ const Modal = ({ show, onClose, title, subtitle, children }) => {
             zIndex: 9999,
             minHeight: '100dvh',
             overflow: 'hidden',
-            padding: 'clamp(12px, 2vw, 24px)',
+            padding: 'clamp(14px, 2.4vw, 28px)',
           }}>
           {/* Custom style for Modal Form Scrollbar */}
           <style>{`
@@ -166,9 +171,39 @@ const Modal = ({ show, onClose, title, subtitle, children }) => {
             .admin-modal-overlay {
               align-items: center !important;
               justify-content: center !important;
+              inset: 0 !important;
+              width: 100vw !important;
+              min-height: 100dvh !important;
             }
             .admin-modal-card {
               margin: 0 auto !important;
+              width: min(720px, calc(100vw - 32px)) !important;
+              max-height: calc(100dvh - 32px) !important;
+              height: auto !important;
+              border-radius: 18px !important;
+              box-shadow: 0 30px 80px rgba(26, 18, 8, 0.32) !important;
+            }
+            .admin-modal-header {
+              padding: 20px 24px !important;
+              min-height: 78px;
+              gap: 18px;
+            }
+            .admin-modal-header h3,
+            .admin-modal-header p {
+              margin: 0;
+            }
+            .admin-modal-header h3 {
+              font-size: 18px !important;
+              line-height: 1.2 !important;
+            }
+            .admin-modal-header p {
+              margin-top: 6px !important;
+              line-height: 1.35 !important;
+            }
+            .admin-modal-body {
+              padding: 24px !important;
+              max-height: calc(100dvh - 110px) !important;
+              background: #FAFAF9 !important;
             }
             .admin-modal-body form .grid {
               display: grid !important;
@@ -205,14 +240,18 @@ const Modal = ({ show, onClose, title, subtitle, children }) => {
             .admin-modal-body select,
             .admin-modal-body textarea,
             .admin-modal-body .admin-field > label {
-              min-height: 44px;
+              min-height: 46px;
             }
             .admin-form-actions {
               position: sticky;
               bottom: -24px;
               z-index: 2;
-              background: #FAFAF9;
-              padding-bottom: 6px;
+              background: linear-gradient(180deg, rgba(250,250,249,0.88), #FAFAF9 35%);
+              padding-top: 18px !important;
+              padding-bottom: 2px;
+            }
+            .admin-form-actions button {
+              min-height: 46px;
             }
             @media (min-width: 760px) {
               .admin-modal-body form .grid {
@@ -224,20 +263,22 @@ const Modal = ({ show, onClose, title, subtitle, children }) => {
             }
             @media (min-width: 1024px) {
               .admin-modal-overlay {
-                left: 320px !important;
-                width: calc(100vw - 320px) !important;
-                padding: 24px !important;
+                padding: 28px !important;
               }
             }
             @media (max-width: 640px) {
               .admin-modal-card {
                 border-radius: 14px !important;
+                width: calc(100vw - 24px) !important;
+                max-height: calc(100dvh - 24px) !important;
               }
               .admin-modal-header {
                 padding: 16px !important;
+                min-height: auto;
               }
               .admin-modal-body {
                 padding: 16px !important;
+                max-height: calc(100dvh - 88px) !important;
               }
               .admin-form-actions {
                 flex-direction: column;
@@ -266,10 +307,10 @@ const Modal = ({ show, onClose, title, subtitle, children }) => {
             style={{
               background: '#fff',
               zIndex: 1,
-              width: 'min(680px, 100%)',
-              maxWidth: '680px',
+              width: 'min(720px, calc(100vw - 32px))',
+              maxWidth: '720px',
               maxHeight: 'calc(100dvh - 32px)',
-              height: 'min(760px, calc(100dvh - 32px))',
+              height: 'auto',
               minHeight: 0,
             }}>
             {/* Header (Fixed at top) */}
@@ -280,14 +321,14 @@ const Modal = ({ show, onClose, title, subtitle, children }) => {
                 <h3 className="text-[17px] font-bold text-white leading-tight">{title}</h3>
                 {subtitle && <p className="text-sm mt-1 text-white/70">{subtitle}</p>}
               </div>
-              <button onClick={onClose}
+              <button type="button" onClick={onClose}
                 className="p-2 rounded-xl border border-white/20 hover:bg-white/10 transition shrink-0 ml-4 mt-0.5">
                 <X size={18} className="text-white"/>
               </button>
             </div>
             {/* Scrollable Form Body (Internal scroll forced) */}
             <div
-              className="admin-modal-body px-6 sm:px-7 py-6 overflow-y-scroll form-scroll-container flex-1"
+              className="admin-modal-body px-6 sm:px-7 py-6 overflow-y-auto form-scroll-container flex-1"
               style={{ background: '#FAFAF9', minHeight: 0 }}>
               {children}
             </div>
@@ -752,15 +793,11 @@ const DeptForm = ({ editItem, deptForm, setDeptForm, closeModal, fetchData, noti
 
 
 const SubTabs = ({ tabs, active, onChange }) => (
-  <div className="flex gap-1.5 p-1.5 rounded-2xl overflow-x-auto scrollbar-hide" style={{ background: C.bg, border: `1px solid ${C.border}` }}>
+  <div className="admin-subtabs">
     {tabs.map(t => (
       <button key={t} onClick={() => onChange(t)}
-        className="shrink-0 px-4 py-2 rounded-xl text-sm font-bold transition-all whitespace-nowrap"
-        style={{
-          background: active === t ? C.surface : "transparent",
-          color: active === t ? C.text : C.muted,
-          boxShadow: active === t ? "0 1px 6px rgba(0,0,0,0.08)" : "none",
-        }}>
+        type="button"
+        className={active === t ? "is-active" : ""}>
         {t}
       </button>
     ))}
@@ -768,16 +805,16 @@ const SubTabs = ({ tabs, active, onChange }) => (
 );
 
 const SectionHeader = ({ icon: Icon, title, subtitle, action }) => (
-  <div className="flex flex-col sm:flex-row sm:items-center gap-4 p-5 rounded-2xl"
+  <div className="admin-section-header flex flex-col sm:flex-row sm:items-center gap-4 p-5 rounded-2xl"
        style={{ background: C.surface, border: `1px solid ${C.border}` }}>
     <div className="flex items-center gap-3 flex-1 min-w-0">
-      <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+      <div className="admin-section-icon w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
            style={{ background: C.accentSoft }}>
         <Icon size={20} style={{ color: C.accent }}/>
       </div>
       <div className="min-w-0">
-        <h3 className="font-bold text-base truncate" style={{ color: C.text }}>{title}</h3>
-        {subtitle && <p className="text-xs mt-0.5 truncate" style={{ color: C.muted }}>{subtitle}</p>}
+        <h3 className="admin-section-title font-bold text-base truncate" style={{ color: C.text }}>{title}</h3>
+        {subtitle && <p className="admin-section-subtitle text-xs mt-0.5 truncate" style={{ color: C.muted }}>{subtitle}</p>}
       </div>
     </div>
     {action}
@@ -786,29 +823,29 @@ const SectionHeader = ({ icon: Icon, title, subtitle, action }) => (
 
 const AddBtn = ({ onClick, label = "Add New" }) => (
   <button onClick={onClick}
-    className="shrink-0 flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold text-white transition-all shadow hover:opacity-90 active:scale-95"
+    className="admin-add-btn shrink-0 flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold text-white transition-all shadow hover:opacity-90 active:scale-95"
     style={{ background: C.brand }}>
     <Plus size={16}/>{label}
   </button>
 );
 
 const RowItem = ({ icon, badge, title, sub, onEdit, onDelete, left }) => (
-  <div className="flex items-center gap-4 p-4 rounded-2xl group transition-all hover:shadow-sm"
+  <div className="admin-row-item flex items-center gap-4 p-4 rounded-2xl group transition-all hover:shadow-sm"
        style={{ background: C.surface, border: `1px solid ${C.border}` }}>
     {left || (
-      <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl shrink-0"
+      <div className="admin-row-icon w-10 h-10 rounded-xl flex items-center justify-center text-xl shrink-0"
            style={{ background: C.accentSoft }}>
         {icon || "📌"}
       </div>
     )}
     <div className="flex-1 min-w-0">
       {badge && <div className="mb-0.5"><Pill>{badge}</Pill></div>}
-      <p className="font-bold text-sm truncate" style={{ color: C.text }}>{title}</p>
-      {sub && <p className="text-xs truncate mt-0.5" style={{ color: C.muted }}>{sub}</p>}
+      <p className="admin-row-title font-bold text-sm truncate" style={{ color: C.text }}>{title}</p>
+      {sub && <p className="admin-row-subtitle text-xs truncate mt-0.5" style={{ color: C.muted }}>{sub}</p>}
     </div>
-    <div className="flex gap-1.5 opacity-0 group-hover:opacity-100 sm:opacity-100 transition-opacity shrink-0">
-      {onEdit && <IconBtn onClick={onEdit}><Edit3 size={15}/></IconBtn>}
-      {onDelete && <IconBtn onClick={onDelete} danger><Trash2 size={15}/></IconBtn>}
+    <div className="admin-row-actions flex gap-1.5 opacity-0 group-hover:opacity-100 sm:opacity-100 transition-opacity shrink-0">
+      {onEdit && <IconBtn onClick={onEdit} title="Edit"><Edit3 size={15}/></IconBtn>}
+      {onDelete && <IconBtn onClick={onDelete} danger title="Delete"><Trash2 size={15}/></IconBtn>}
     </div>
   </div>
 );
@@ -949,120 +986,1301 @@ const Header = ({ setSidebarOpen, selectedDept, activeTab }) => (
         {selectedDept ? "Department management console" : `Manage ${activeTab.toLowerCase()} system content`}
       </p>
     </div>
+    <div className="ml-auto hidden md:flex items-center gap-2">
+      <span className="admin-header-chip">
+        <span className="admin-header-dot" />
+        Live Admin
+      </span>
+    </div>
   </header>
 );
 
 // ── TAB COMPONENTS ───────────────────────────────────────
 
-const HomeTab = ({ selectedDeptForSlider, setSelectedDeptForSlider, departments, sliders, handleSliderUpload, updateSliderImage, del }) => (
-  <div className="space-y-6">
-    <div className="flex flex-col sm:flex-row gap-3 p-5 rounded-2xl shadow-sm" style={{ background: C.surface, border:`1px solid ${C.border}` }}>
-      <div className="flex-1">
-        <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1.5 ml-1">Target Section</label>
-        <select value={selectedDeptForSlider} onChange={e => setSelectedDeptForSlider(e.target.value)}
-          className="w-full px-4 py-2.5 rounded-xl border text-sm font-semibold outline-none transition-all focus:border-amber-500"
-          style={{ borderColor: C.border, background: C.bg, color: C.text }}>
-          <option value="null">Homepage Sliders</option>
-          {departments.map(d => <option key={d._id} value={d._id}>{d.name}</option>)}
-        </select>
-      </div>
-      <div className="flex items-end">
-        <label className="flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold text-white cursor-pointer transition-all hover:opacity-90 active:scale-95 shadow-md"
-               style={{ background: C.brand }}>
-          <Upload size={16}/> Upload Images
-          <input type="file" multiple className="hidden" onChange={handleSliderUpload}/>
-        </label>
-      </div>
-    </div>
+const HomeTab = ({ selectedDeptForSlider, setSelectedDeptForSlider, departments, sliders, handleSliderUpload, updateSliderImage, del }) => {
+  const filteredSliders = sliders.filter(s => selectedDeptForSlider === "null" ? !s.department : s.department?._id === selectedDeptForSlider);
+  const activeTarget = selectedDeptForSlider === "null"
+    ? "Homepage Sliders"
+    : departments.find(d => d._id === selectedDeptForSlider)?.name || "Department Sliders";
 
-    {sliders.length === 0 ? (
-      <EmptyState icon={ImageIcon} text="No slider images yet. Upload images to populate the section."/>
-    ) : (
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5">
-        <AnimatePresence>
-          {sliders.filter(s => selectedDeptForSlider === "null" ? !s.department : s.department?._id === selectedDeptForSlider).map(s => (
-            <motion.div key={s._id} layout initial={{ opacity:0, scale:0.9 }} animate={{ opacity:1, scale:1 }} exit={{ opacity:0, scale:0.9 }}
-              className="group relative aspect-video rounded-2xl overflow-hidden border-2 shadow-sm"
-              style={{ borderColor: C.border }}>
-              <img src={imgUrl(s.imageUrl)} alt="" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"/>
-              <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2 backdrop-blur-[2px]">
-                <label className="flex items-center gap-2 px-4 py-2 bg-white rounded-xl text-xs font-bold cursor-pointer hover:bg-gray-50 text-gray-800 shadow-lg">
-                  <Edit3 size={14}/> Replace
-                  <input type="file" className="hidden" onChange={e => updateSliderImage(s._id, e.target.files[0])}/>
-                </label>
-                <button onClick={() => del(`/sliders/${s._id}`)}
-                  className="flex items-center gap-2 px-4 py-2 bg-red-500 text-white rounded-xl text-xs font-bold hover:bg-red-600 shadow-lg">
-                  <Trash2 size={14}/> Remove
-                </button>
-              </div>
-            </motion.div>
-          ))}
-        </AnimatePresence>
-      </div>
-    )}
-  </div>
-);
+  const getFriendlyName = (s, index) => {
+    const sectionName = selectedDeptForSlider === "null" 
+      ? "Homepage Slider" 
+      : `${departments.find(d => d._id === selectedDeptForSlider)?.name || "Department"} Slider`;
+    return `${sectionName} #${index + 1}`;
+  };
 
-const AcademicTab = ({ programs, academicContent, setAcademicContent, axiosInstance, notify, openModal, setProgramForm, del }) => (
-  <div className="space-y-6">
-    <SectionHeader icon={BookOpen} title="Academic Programs"
-      subtitle={`${programs.length} programs currently active`}
-      action={<AddBtn onClick={() => { setProgramForm({title:"",description:"",duration:"",category:"Undergraduate",courses:"",image:null}); openModal("program"); }} label="Add New Program"/>}/>
+  const getUploadDate = (s) => {
+    if (s.createdAt) {
+      return new Date(s.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    }
+    return "Recent Upload";
+  };
 
-    <div className="p-6 rounded-2xl space-y-4 shadow-sm" style={{ background: C.surface, border:`1px solid ${C.border}` }}>
-      <p className="text-sm font-bold uppercase tracking-widest" style={{ color: C.muted }}>Section Banner Content</p>
-      <input value={academicContent.title} onChange={e => setAcademicContent({...academicContent, title:e.target.value})}
-        placeholder="Section Display Title" className={inputCls} style={inputStyle}/>
-      <textarea value={academicContent.description1} onChange={e => setAcademicContent({...academicContent, description1:e.target.value})}
-        placeholder="Primary Description Paragraph" rows={3} className={`${inputCls} resize-none`} style={inputStyle}/>
-      <textarea value={academicContent.description2} onChange={e => setAcademicContent({...academicContent, description2:e.target.value})}
-        placeholder="Secondary Description Paragraph (Optional)" rows={2} className={`${inputCls} resize-none`} style={inputStyle}/>
-      <button onClick={async () => { try { await axiosInstance.put("/content/academic", academicContent); notify("Content Saved Successfully"); } catch { notify("Failed to save content","error"); }}}
-        className="px-6 py-2.5 rounded-xl text-sm font-bold text-white shadow-md hover:opacity-90" style={{ background: C.brand }}>
-        Update Content
-      </button>
-    </div>
+  return (
+    <div className="home-manager-shell">
+      <style>{`
+        .home-manager-shell {
+          display: flex;
+          flex-direction: column;
+          gap: 20px;
+        }
+        .home-manager-hero {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) auto;
+          gap: 22px;
+          align-items: center;
+          padding: 22px;
+          border: 1px solid #E7DDD2;
+          border-radius: 18px;
+          background:
+            linear-gradient(135deg, rgba(255,255,255,0.97), rgba(255,249,243,0.94)),
+            linear-gradient(135deg, #6B3F1D, #E07B39);
+          box-shadow: 0 18px 42px rgba(65, 42, 22, 0.08);
+        }
+        .home-manager-title-row {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          min-width: 0;
+        }
+        .home-manager-icon {
+          width: 46px;
+          height: 46px;
+          border-radius: 14px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          color: #FFFFFF;
+          background: linear-gradient(135deg, #6B3F1D 0%, #A85D2A 100%);
+          box-shadow: 0 12px 26px rgba(107, 63, 29, 0.22);
+          flex: 0 0 auto;
+        }
+        .home-manager-kicker {
+          margin: 0 0 4px;
+          color: #8A7A6A;
+          font-size: 11px;
+          font-weight: 800;
+          letter-spacing: 0.12em;
+          text-transform: uppercase;
+        }
+        .home-manager-title {
+          margin: 0;
+          color: #1A1208;
+          font-size: 26px;
+          line-height: 1.14;
+          font-weight: 900;
+          letter-spacing: 0;
+        }
+        .home-manager-subtitle {
+          margin: 8px 0 0;
+          max-width: 620px;
+          color: #786859;
+          font-size: 13px;
+          font-weight: 600;
+          line-height: 1.55;
+        }
+        .home-manager-stats {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(116px, 1fr));
+          gap: 10px;
+          min-width: 260px;
+        }
+        .home-manager-stat {
+          padding: 14px;
+          border: 1px solid #E8E0D8;
+          border-radius: 14px;
+          background: #FFFFFF;
+          box-shadow: 0 10px 24px rgba(65, 42, 22, 0.06);
+        }
+        .home-manager-stat strong {
+          display: block;
+          color: #1A1208;
+          font-size: 25px;
+          line-height: 1;
+          font-weight: 900;
+        }
+        .home-manager-stat span {
+          display: block;
+          margin-top: 7px;
+          color: #7A6A5B;
+          font-size: 10px;
+          font-weight: 900;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+        }
+        .home-manager-panel {
+          border: 1px solid #E8E0D8;
+          border-radius: 18px;
+          background: #FFFFFF;
+          box-shadow: 0 16px 38px rgba(65, 42, 22, 0.06);
+          overflow: hidden;
+        }
+        .home-manager-toolbar {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) auto;
+          gap: 16px;
+          align-items: end;
+          padding: 18px;
+          border-bottom: 1px solid #EFE7DF;
+          background: linear-gradient(180deg, #FFFFFF 0%, #FFFCFA 100%);
+        }
+        .home-manager-field label {
+          display: block;
+          margin: 0 0 8px 1px;
+          color: #8A7A6A;
+          font-size: 11px;
+          font-weight: 900;
+          letter-spacing: 0.1em;
+          text-transform: uppercase;
+        }
+        .home-manager-select-wrap {
+          position: relative;
+        }
+        .home-manager-select-wrap select {
+          width: 100%;
+          height: 46px;
+          appearance: none;
+          border: 1px solid #E6DCD1;
+          border-radius: 12px;
+          background: #FBFAF8;
+          color: #1A1208;
+          font-size: 13px;
+          font-weight: 750;
+          outline: none;
+          padding: 0 42px 0 14px;
+          cursor: pointer;
+          transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
+        }
+        .home-manager-select-wrap select:focus {
+          border-color: #C7773D;
+          background: #FFFFFF;
+          box-shadow: 0 0 0 4px rgba(224, 123, 57, 0.13);
+        }
+        .home-manager-select-wrap svg {
+          position: absolute;
+          right: 14px;
+          top: 50%;
+          transform: translateY(-50%);
+          color: #7A6A5B;
+          pointer-events: none;
+        }
+        .home-manager-upload {
+          height: 46px;
+          min-width: 168px;
+          border: 0;
+          border-radius: 12px;
+          padding: 0 16px;
+          color: #FFFFFF;
+          background: linear-gradient(135deg, #6B3F1D 0%, #9B5A2D 100%);
+          box-shadow: 0 12px 24px rgba(107, 63, 29, 0.2);
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 9px;
+          font-size: 13px;
+          font-weight: 900;
+          cursor: pointer;
+          transition: transform 160ms ease, box-shadow 160ms ease;
+        }
+        .home-manager-upload:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 16px 30px rgba(107, 63, 29, 0.25);
+        }
+        .home-manager-upload input,
+        .home-manager-action input {
+          display: none;
+        }
+        .home-manager-content {
+          padding: 18px;
+        }
+        .home-manager-section-head {
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          gap: 14px;
+          margin-bottom: 16px;
+        }
+        .home-manager-section-head h3 {
+          margin: 0;
+          color: #1A1208;
+          font-size: 18px;
+          line-height: 1.2;
+          font-weight: 900;
+        }
+        .home-manager-section-head p {
+          margin: 5px 0 0;
+          color: #8A7A6A;
+          font-size: 13px;
+          font-weight: 650;
+        }
+        .home-manager-target-badge {
+          max-width: 260px;
+          border: 1px solid #E7DDD2;
+          border-radius: 999px;
+          padding: 7px 11px;
+          color: #6B3F1D;
+          background: #FFF8F1;
+          font-size: 12px;
+          font-weight: 900;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+          flex: 0 0 auto;
+        }
+        .home-manager-empty {
+          min-height: 320px;
+          border: 2px dashed #E6DCD1;
+          border-radius: 16px;
+          background: #FBFAF8;
+          text-align: center;
+          padding: 36px 20px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+        }
+        .home-manager-empty-icon {
+          width: 64px;
+          height: 64px;
+          border-radius: 18px;
+          color: #6B3F1D;
+          background: #FDF0E6;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          box-shadow: inset 0 0 0 1px rgba(107, 63, 29, 0.08);
+          margin-bottom: 16px;
+        }
+        .home-manager-empty h4 {
+          margin: 0;
+          color: #1A1208;
+          font-size: 18px;
+          font-weight: 900;
+        }
+        .home-manager-empty p {
+          margin: 8px 0 18px;
+          max-width: 380px;
+          color: #786859;
+          font-size: 13px;
+          font-weight: 600;
+          line-height: 1.55;
+        }
+        .home-manager-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+          gap: 16px;
+        }
+        .home-slider-card {
+          min-width: 0;
+          border: 1px solid #E8E0D8;
+          border-radius: 16px;
+          background: #FFFFFF;
+          overflow: hidden;
+          box-shadow: 0 12px 28px rgba(65, 42, 22, 0.06);
+          display: flex;
+          flex-direction: column;
+          transition: transform 170ms ease, box-shadow 170ms ease, border-color 170ms ease;
+        }
+        .home-slider-card:hover {
+          transform: translateY(-2px);
+          border-color: #D7C3AE;
+          box-shadow: 0 18px 36px rgba(65, 42, 22, 0.11);
+        }
+        .home-slider-media {
+          position: relative;
+          aspect-ratio: 16 / 10;
+          background: #F3EFEA;
+          overflow: hidden;
+        }
+        .home-slider-media img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          display: block;
+          transition: transform 260ms ease;
+        }
+        .home-slider-card:hover .home-slider-media img {
+          transform: scale(1.035);
+        }
+        .home-slider-overlay {
+          position: absolute;
+          inset: 0;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: #FFFFFF;
+          background: rgba(26, 18, 8, 0.18);
+          opacity: 0;
+          transition: opacity 180ms ease;
+          pointer-events: none;
+        }
+        .home-slider-card:hover .home-slider-overlay {
+          opacity: 1;
+        }
+        .home-slider-overlay span {
+          width: 42px;
+          height: 42px;
+          border-radius: 50%;
+          background: rgba(255,255,255,0.18);
+          backdrop-filter: blur(8px);
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          box-shadow: inset 0 0 0 1px rgba(255,255,255,0.18);
+        }
+        .home-slider-body {
+          padding: 14px;
+          display: flex;
+          flex: 1 1 auto;
+          flex-direction: column;
+          justify-content: space-between;
+          gap: 14px;
+        }
+        .home-slider-body h4 {
+          margin: 0;
+          color: #1A1208;
+          font-size: 14px;
+          line-height: 1.25;
+          font-weight: 900;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+        .home-slider-body p {
+          margin: 5px 0 0;
+          color: #8A7A6A;
+          font-size: 12px;
+          font-weight: 700;
+        }
+        .home-manager-actions {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 9px;
+          padding-top: 12px;
+          border-top: 1px solid #EFE7DF;
+        }
+        .home-manager-action {
+          height: 38px;
+          border: 1px solid #E6DCD1;
+          border-radius: 10px;
+          background: #FBFAF8;
+          color: #1A1208;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 7px;
+          font-size: 12px;
+          font-weight: 900;
+          cursor: pointer;
+          transition: transform 160ms ease, background 160ms ease, border-color 160ms ease, color 160ms ease;
+        }
+        .home-manager-action:hover {
+          transform: translateY(-1px);
+          background: #6B3F1D;
+          border-color: #6B3F1D;
+          color: #FFFFFF;
+        }
+        .home-manager-action.danger:hover {
+          background: #B42318;
+          border-color: #B42318;
+        }
+        @media (max-width: 920px) {
+          .home-manager-hero,
+          .home-manager-toolbar {
+            grid-template-columns: 1fr;
+          }
+          .home-manager-stats {
+            min-width: 0;
+          }
+          .home-manager-upload {
+            width: 100%;
+          }
+        }
+        @media (max-width: 560px) {
+          .home-manager-hero,
+          .home-manager-toolbar,
+          .home-manager-content {
+            padding: 14px;
+          }
+          .home-manager-title {
+            font-size: 21px;
+          }
+          .home-manager-title-row {
+            align-items: flex-start;
+          }
+          .home-manager-stats {
+            grid-template-columns: 1fr;
+          }
+          .home-manager-section-head {
+            flex-direction: column;
+          }
+          .home-manager-target-badge {
+            max-width: 100%;
+          }
+          .home-manager-grid {
+            grid-template-columns: 1fr;
+          }
+        }
+      `}</style>
 
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      {programs.map(p => (
-        <motion.div key={p._id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-          className="p-6 rounded-3xl group relative shadow-md transition-all hover:shadow-lg flex flex-col h-full"
-          style={{ background: C.surface, border:`1px solid ${C.border}` }}>
-          
-          <div className="flex items-start justify-between gap-4 mb-4">
-            <div className="flex items-center gap-4">
-              <div className="w-14 h-14 rounded-2xl overflow-hidden border-2 shadow-sm shrink-0" style={{ borderColor: C.accentSoft }}>
-                <img src={imgUrl(p.imageUrl)} alt={p.title} className="w-full h-full object-cover"/>
-              </div>
-              <div className="min-w-0">
-                <p className="font-bold text-sm leading-tight mb-1 truncate" style={{ color: C.text }}>{p.title}</p>
-                <div className="flex flex-wrap gap-1.5 items-center">
-                   <Pill color={C.brand}>{p.category}</Pill>
-                   <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{p.duration}</span>
-                </div>
-              </div>
+      <div className="home-manager-hero">
+        <div>
+          <div className="home-manager-title-row">
+            <div className="home-manager-icon">
+              <ImageIcon size={22} />
             </div>
-            
-            <div className="flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-              <IconBtn onClick={() => { setProgramForm({ title:p.title,description:p.description,duration:p.duration,category:p.category,courses:p.courses?.join(", ")||"",image:null }); openModal("program",p); }}><Edit3 size={14}/></IconBtn>
-              <IconBtn danger onClick={() => del(`/programs/${p._id}`)}><Trash2 size={14}/></IconBtn>
+            <div className="min-w-0">
+              <p className="home-manager-kicker">Homepage Media</p>
+              <h1 className="home-manager-title">Home Page Management</h1>
+            </div>
+          </div>
+          <p className="home-manager-subtitle">
+            Manage homepage banner and department slider images with a cleaner preview-first workflow.
+          </p>
+        </div>
+
+        <div className="home-manager-stats">
+          <div className="home-manager-stat">
+            <strong>{filteredSliders.length}</strong>
+            <span>Shown Here</span>
+          </div>
+          <div className="home-manager-stat">
+            <strong>{sliders.length}</strong>
+            <span>Total Images</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="home-manager-panel">
+        <div className="home-manager-toolbar">
+          <div className="home-manager-field">
+            <label>Target Section</label>
+            <div className="home-manager-select-wrap">
+              <select value={selectedDeptForSlider} onChange={e => setSelectedDeptForSlider(e.target.value)}>
+                <option value="null">Homepage Sliders</option>
+                {departments.map(d => <option key={d._id} value={d._id}>{d.name}</option>)}
+              </select>
+              <ChevronDown size={17} />
             </div>
           </div>
 
-          <div className="mt-1 flex-1">
-            <p className="text-xs leading-relaxed text-gray-500 line-clamp-3">
-              {p.description}
-            </p>
+          <label className="home-manager-upload">
+            <Upload size={17} />
+            Upload Images
+            <input type="file" multiple onChange={handleSliderUpload} />
+          </label>
+        </div>
+
+        <div className="home-manager-content">
+          <div className="home-manager-section-head">
+            <div>
+              <h3>Gallery Images</h3>
+              <p>Replace or remove images currently attached to this slider group.</p>
+            </div>
+            <span className="home-manager-target-badge">{activeTarget}</span>
           </div>
-        </motion.div>
-      ))}
-      {programs.length === 0 && <div className="col-span-full"><EmptyState icon={BookOpen} text="No programs registered yet"/></div>}
+
+          {filteredSliders.length === 0 ? (
+            <div className="home-manager-empty">
+              <div className="home-manager-empty-icon">
+                <Upload size={30} />
+              </div>
+              <h4>No Images Uploaded</h4>
+              <p>Upload images for this section. A 16:9 image works best for public slider banners.</p>
+              <label className="home-manager-upload">
+                <Upload size={17} />
+                Upload Images
+                <input type="file" multiple onChange={handleSliderUpload} />
+              </label>
+            </div>
+          ) : (
+            <div className="home-manager-grid">
+              <AnimatePresence>
+                {filteredSliders.map((s, index) => (
+                  <motion.div
+                    key={s._id}
+                    layout
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.96 }}
+                    className="home-slider-card"
+                  >
+                    <div className="home-slider-media">
+                      <img src={imgUrl(s.imageUrl)} alt={getFriendlyName(s, index)} />
+                      <div className="home-slider-overlay">
+                        <span><ImageIcon size={18} /></span>
+                      </div>
+                    </div>
+
+                    <div className="home-slider-body">
+                      <div>
+                        <h4 title={getFriendlyName(s, index)}>{getFriendlyName(s, index)}</h4>
+                        <p>Uploaded: {getUploadDate(s)}</p>
+                      </div>
+
+                      <div className="home-manager-actions">
+                        <label className="home-manager-action">
+                          <Edit3 size={13} />
+                          Replace
+                          <input
+                            type="file"
+                            onChange={e => {
+                              const file = e.target.files?.[0];
+                              if (file) updateSliderImage(s._id, file);
+                            }}
+                          />
+                        </label>
+                        <button type="button" className="home-manager-action danger" onClick={() => del(`/sliders/${s._id}`)}>
+                          <Trash2 size={13} />
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
-  </div>
-);
+  );
+};
+
+const AcademicTab = ({ programs, academicContent, setAcademicContent, axiosInstance, notify, openModal, setProgramForm, del }) => {
+  const categoryCount = new Set(programs.map(p => p.category).filter(Boolean)).size;
+
+  const openCreateProgram = () => {
+    setProgramForm({ title:"", description:"", duration:"", category:"Undergraduate", courses:"", image:null });
+    openModal("program");
+  };
+
+  const openEditProgram = (p) => {
+    setProgramForm({
+      title: p.title,
+      description: p.description,
+      duration: p.duration,
+      category: p.category,
+      courses: p.courses?.join(", ") || "",
+      image: null
+    });
+    openModal("program", p);
+  };
+
+  return (
+    <div className="academic-manager-shell">
+      <style>{`
+        .academic-manager-shell {
+          display: flex;
+          flex-direction: column;
+          gap: 20px;
+        }
+        .academic-manager-hero {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) auto;
+          gap: 22px;
+          align-items: center;
+          padding: 22px;
+          border: 1px solid #E7DDD2;
+          border-radius: 18px;
+          background:
+            linear-gradient(135deg, rgba(255,255,255,0.97), rgba(255,249,243,0.94)),
+            linear-gradient(135deg, #6B3F1D, #E07B39);
+          box-shadow: 0 18px 42px rgba(65, 42, 22, 0.08);
+        }
+        .academic-manager-title-row {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          min-width: 0;
+        }
+        .academic-manager-icon {
+          width: 46px;
+          height: 46px;
+          border-radius: 14px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          color: #FFFFFF;
+          background: linear-gradient(135deg, #6B3F1D 0%, #A85D2A 100%);
+          box-shadow: 0 12px 26px rgba(107, 63, 29, 0.22);
+          flex: 0 0 auto;
+        }
+        .academic-manager-kicker {
+          margin: 0 0 4px;
+          color: #8A7A6A;
+          font-size: 11px;
+          font-weight: 800;
+          letter-spacing: 0.12em;
+          text-transform: uppercase;
+        }
+        .academic-manager-title {
+          margin: 0;
+          color: #1A1208;
+          font-size: 26px;
+          line-height: 1.14;
+          font-weight: 900;
+          letter-spacing: 0;
+        }
+        .academic-manager-subtitle {
+          margin: 8px 0 0;
+          max-width: 650px;
+          color: #786859;
+          font-size: 13px;
+          font-weight: 600;
+          line-height: 1.55;
+        }
+        .academic-manager-top-actions {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+        }
+        .academic-manager-add {
+          height: 44px;
+          border: 0;
+          border-radius: 12px;
+          padding: 0 16px;
+          color: #FFFFFF;
+          background: linear-gradient(135deg, #6B3F1D 0%, #9B5A2D 100%);
+          box-shadow: 0 12px 24px rgba(107, 63, 29, 0.2);
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 9px;
+          font-size: 13px;
+          font-weight: 900;
+          cursor: pointer;
+          white-space: nowrap;
+          transition: transform 160ms ease, box-shadow 160ms ease;
+        }
+        .academic-manager-add:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 16px 30px rgba(107, 63, 29, 0.25);
+        }
+        .academic-manager-stats {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(116px, 1fr));
+          gap: 10px;
+          min-width: 260px;
+        }
+        .academic-manager-stat {
+          padding: 14px;
+          border: 1px solid #E8E0D8;
+          border-radius: 14px;
+          background: #FFFFFF;
+          box-shadow: 0 10px 24px rgba(65, 42, 22, 0.06);
+        }
+        .academic-manager-stat strong {
+          display: block;
+          color: #1A1208;
+          font-size: 25px;
+          line-height: 1;
+          font-weight: 900;
+        }
+        .academic-manager-stat span {
+          display: block;
+          margin-top: 7px;
+          color: #7A6A5B;
+          font-size: 10px;
+          font-weight: 900;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+        }
+        .academic-manager-panel {
+          border: 1px solid #E8E0D8;
+          border-radius: 18px;
+          background: #FFFFFF;
+          box-shadow: 0 16px 38px rgba(65, 42, 22, 0.06);
+          overflow: hidden;
+        }
+        .academic-manager-panel-head {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 14px;
+          padding: 18px;
+          border-bottom: 1px solid #EFE7DF;
+          background: linear-gradient(180deg, #FFFFFF 0%, #FFFCFA 100%);
+        }
+        .academic-manager-panel-title {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          min-width: 0;
+        }
+        .academic-manager-panel-icon {
+          width: 40px;
+          height: 40px;
+          border-radius: 12px;
+          color: #6B3F1D;
+          background: #FDF0E6;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          flex: 0 0 auto;
+        }
+        .academic-manager-panel-title h3 {
+          margin: 0;
+          color: #1A1208;
+          font-size: 17px;
+          line-height: 1.2;
+          font-weight: 900;
+        }
+        .academic-manager-panel-title p {
+          margin: 4px 0 0;
+          color: #8A7A6A;
+          font-size: 12px;
+          font-weight: 700;
+        }
+        .academic-manager-form {
+          padding: 18px;
+          display: grid;
+          gap: 14px;
+        }
+        .academic-manager-field label {
+          display: block;
+          margin: 0 0 8px 1px;
+          color: #8A7A6A;
+          font-size: 11px;
+          font-weight: 900;
+          letter-spacing: 0.1em;
+          text-transform: uppercase;
+        }
+        .academic-manager-field input,
+        .academic-manager-field textarea {
+          width: 100%;
+          border: 1px solid #E6DCD1;
+          border-radius: 12px;
+          background: #FBFAF8;
+          color: #1A1208;
+          font-size: 13px;
+          font-weight: 650;
+          outline: none;
+          padding: 12px 14px;
+          transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
+        }
+        .academic-manager-field input {
+          height: 46px;
+        }
+        .academic-manager-field textarea {
+          min-height: 94px;
+          resize: vertical;
+          line-height: 1.55;
+        }
+        .academic-manager-field input:focus,
+        .academic-manager-field textarea:focus {
+          border-color: #C7773D;
+          background: #FFFFFF;
+          box-shadow: 0 0 0 4px rgba(224, 123, 57, 0.13);
+        }
+        .academic-manager-save {
+          justify-self: start;
+          height: 42px;
+          border: 0;
+          border-radius: 11px;
+          padding: 0 16px;
+          color: #FFFFFF;
+          background: #6B3F1D;
+          box-shadow: 0 10px 20px rgba(107, 63, 29, 0.18);
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          font-size: 13px;
+          font-weight: 900;
+          cursor: pointer;
+          transition: transform 160ms ease, box-shadow 160ms ease;
+        }
+        .academic-manager-save:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 14px 26px rgba(107, 63, 29, 0.24);
+        }
+        .academic-programs-head {
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          gap: 14px;
+          margin-bottom: 16px;
+        }
+        .academic-programs-head h3 {
+          margin: 0;
+          color: #1A1208;
+          font-size: 18px;
+          line-height: 1.2;
+          font-weight: 900;
+        }
+        .academic-programs-head p {
+          margin: 5px 0 0;
+          color: #8A7A6A;
+          font-size: 13px;
+          font-weight: 650;
+        }
+        .academic-programs-wrap {
+          padding: 18px;
+        }
+        .academic-programs-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
+          gap: 16px;
+        }
+        .academic-program-card {
+          min-width: 0;
+          border: 1px solid #E8E0D8;
+          border-radius: 16px;
+          background: #FFFFFF;
+          box-shadow: 0 12px 28px rgba(65, 42, 22, 0.06);
+          padding: 14px;
+          display: flex;
+          flex-direction: column;
+          gap: 14px;
+          transition: transform 170ms ease, box-shadow 170ms ease, border-color 170ms ease;
+        }
+        .academic-program-card:hover {
+          transform: translateY(-2px);
+          border-color: #D7C3AE;
+          box-shadow: 0 18px 36px rgba(65, 42, 22, 0.11);
+        }
+        .academic-program-top {
+          display: grid;
+          grid-template-columns: 82px minmax(0, 1fr) auto;
+          gap: 13px;
+          align-items: start;
+        }
+        .academic-program-image {
+          width: 82px;
+          aspect-ratio: 1;
+          border-radius: 14px;
+          overflow: hidden;
+          background: #F3EFEA;
+          border: 1px solid #EFE7DF;
+          flex: 0 0 auto;
+        }
+        .academic-program-image img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          display: block;
+        }
+        .academic-program-main {
+          min-width: 0;
+        }
+        .academic-program-main h4 {
+          margin: 0;
+          color: #1A1208;
+          font-size: 15px;
+          line-height: 1.25;
+          font-weight: 900;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+        .academic-program-meta {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 7px;
+          margin-top: 9px;
+        }
+        .academic-program-pill {
+          border: 1px solid #E7DDD2;
+          border-radius: 999px;
+          padding: 6px 9px;
+          color: #6B3F1D;
+          background: #FFF8F1;
+          font-size: 11px;
+          font-weight: 900;
+          line-height: 1;
+        }
+        .academic-program-duration {
+          border: 1px solid #DDE7F2;
+          border-radius: 999px;
+          padding: 6px 9px;
+          color: #536C8D;
+          background: #F6FAFE;
+          font-size: 11px;
+          font-weight: 900;
+          line-height: 1;
+        }
+        .academic-program-actions {
+          display: flex;
+          align-items: center;
+          gap: 7px;
+        }
+        .academic-program-action {
+          width: 34px;
+          height: 34px;
+          border: 1px solid #E6DCD1;
+          border-radius: 10px;
+          background: #FBFAF8;
+          color: #1A1208;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          transition: transform 160ms ease, background 160ms ease, border-color 160ms ease, color 160ms ease;
+        }
+        .academic-program-action:hover {
+          transform: translateY(-1px);
+          background: #6B3F1D;
+          border-color: #6B3F1D;
+          color: #FFFFFF;
+        }
+        .academic-program-action.danger:hover {
+          background: #B42318;
+          border-color: #B42318;
+        }
+        .academic-program-desc {
+          margin: 0;
+          min-height: 42px;
+          color: #786859;
+          font-size: 12px;
+          font-weight: 600;
+          line-height: 1.55;
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
+        }
+        .academic-program-empty {
+          min-height: 260px;
+          border: 2px dashed #E6DCD1;
+          border-radius: 16px;
+          background: #FBFAF8;
+          text-align: center;
+          padding: 34px 20px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+        }
+        .academic-program-empty-icon {
+          width: 60px;
+          height: 60px;
+          border-radius: 18px;
+          color: #6B3F1D;
+          background: #FDF0E6;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          margin-bottom: 15px;
+        }
+        .academic-program-empty h4 {
+          margin: 0;
+          color: #1A1208;
+          font-size: 18px;
+          font-weight: 900;
+        }
+        .academic-program-empty p {
+          margin: 8px 0 18px;
+          max-width: 360px;
+          color: #786859;
+          font-size: 13px;
+          font-weight: 600;
+          line-height: 1.55;
+        }
+        @media (max-width: 980px) {
+          .academic-manager-hero {
+            grid-template-columns: 1fr;
+          }
+          .academic-manager-stats {
+            min-width: 0;
+          }
+          .academic-manager-top-actions {
+            align-items: stretch;
+            flex-direction: column;
+          }
+          .academic-manager-add {
+            width: 100%;
+          }
+        }
+        @media (max-width: 640px) {
+          .academic-manager-hero,
+          .academic-manager-panel-head,
+          .academic-manager-form,
+          .academic-programs-wrap {
+            padding: 14px;
+          }
+          .academic-manager-title {
+            font-size: 21px;
+          }
+          .academic-manager-title-row {
+            align-items: flex-start;
+          }
+          .academic-manager-stats {
+            grid-template-columns: 1fr;
+          }
+          .academic-manager-panel-head,
+          .academic-programs-head {
+            align-items: flex-start;
+            flex-direction: column;
+          }
+          .academic-programs-grid {
+            grid-template-columns: 1fr;
+          }
+          .academic-program-top {
+            grid-template-columns: 68px minmax(0, 1fr);
+          }
+          .academic-program-image {
+            width: 68px;
+          }
+          .academic-program-actions {
+            grid-column: 1 / -1;
+            width: 100%;
+            justify-content: flex-end;
+          }
+        }
+      `}</style>
+
+      <div className="academic-manager-hero">
+        <div>
+          <div className="academic-manager-title-row">
+            <div className="academic-manager-icon">
+              <BookOpen size={22} />
+            </div>
+            <div className="min-w-0">
+              <p className="academic-manager-kicker">Academic Content</p>
+              <h1 className="academic-manager-title">Academic Programs</h1>
+            </div>
+          </div>
+          <p className="academic-manager-subtitle">
+            Manage the public academic section copy and program cards from one focused workspace.
+          </p>
+        </div>
+
+        <div className="academic-manager-top-actions">
+          <div className="academic-manager-stats">
+            <div className="academic-manager-stat">
+              <strong>{programs.length}</strong>
+              <span>Programs</span>
+            </div>
+            <div className="academic-manager-stat">
+              <strong>{categoryCount}</strong>
+              <span>Categories</span>
+            </div>
+          </div>
+          <button type="button" className="academic-manager-add" onClick={openCreateProgram}>
+            <Plus size={16} />
+            Add New Program
+          </button>
+        </div>
+      </div>
+
+      <div className="academic-manager-panel">
+        <div className="academic-manager-panel-head">
+          <div className="academic-manager-panel-title">
+            <div className="academic-manager-panel-icon">
+              <FileText size={19} />
+            </div>
+            <div>
+              <h3>Section Banner Content</h3>
+              <p>Copy shown above academic programs on the public website</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="academic-manager-form">
+          <div className="academic-manager-field">
+            <label>Section Display Title</label>
+            <input
+              value={academicContent.title}
+              onChange={e => setAcademicContent({ ...academicContent, title: e.target.value })}
+              placeholder="Academic Programs"
+            />
+          </div>
+          <div className="academic-manager-field">
+            <label>Primary Description</label>
+            <textarea
+              rows={3}
+              value={academicContent.description1}
+              onChange={e => setAcademicContent({ ...academicContent, description1: e.target.value })}
+              placeholder="Primary description paragraph"
+            />
+          </div>
+          <div className="academic-manager-field">
+            <label>Secondary Description</label>
+            <textarea
+              rows={2}
+              value={academicContent.description2}
+              onChange={e => setAcademicContent({ ...academicContent, description2: e.target.value })}
+              placeholder="Secondary description paragraph"
+            />
+          </div>
+          <button
+            type="button"
+            className="academic-manager-save"
+            onClick={async () => {
+              try {
+                await axiosInstance.put("/content/academic", academicContent);
+                notify("Content Saved Successfully");
+              } catch {
+                notify("Failed to save content", "error");
+              }
+            }}
+          >
+            <Save size={15} />
+            Update Content
+          </button>
+        </div>
+      </div>
+
+      <div className="academic-manager-panel">
+        <div className="academic-programs-wrap">
+          <div className="academic-programs-head">
+            <div>
+              <h3>Program Cards</h3>
+              <p>These programs appear in the academic programs section.</p>
+            </div>
+          </div>
+
+          {programs.length === 0 ? (
+            <div className="academic-program-empty">
+              <div className="academic-program-empty-icon">
+                <BookOpen size={28} />
+              </div>
+              <h4>No programs registered yet</h4>
+              <p>Add the first program to start building the academic page.</p>
+              <button type="button" className="academic-manager-add" onClick={openCreateProgram}>
+                <Plus size={16} />
+                Add New Program
+              </button>
+            </div>
+          ) : (
+            <div className="academic-programs-grid">
+              {programs.map(p => (
+                <motion.div
+                  key={p._id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="academic-program-card"
+                >
+                  <div className="academic-program-top">
+                    <div className="academic-program-image">
+                      <img src={imgUrl(p.imageUrl)} alt={p.title} />
+                    </div>
+
+                    <div className="academic-program-main">
+                      <h4 title={p.title}>{p.title}</h4>
+                      <div className="academic-program-meta">
+                        {p.category && <span className="academic-program-pill">{p.category}</span>}
+                        {p.duration && <span className="academic-program-duration">{p.duration}</span>}
+                      </div>
+                    </div>
+
+                    <div className="academic-program-actions">
+                      <button type="button" className="academic-program-action" onClick={() => openEditProgram(p)} aria-label={`Edit ${p.title}`}>
+                        <Edit3 size={14} />
+                      </button>
+                      <button type="button" className="academic-program-action danger" onClick={() => del(`/programs/${p._id}`)} aria-label={`Delete ${p.title}`}>
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  </div>
+
+                  {p.description && <p className="academic-program-desc">{p.description}</p>}
+                </motion.div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const TestimonialsTab = ({ testimonials, testimonialForm, setTestimonialForm, openModal, del }) => (
-  <div className="space-y-6">
+  <div className="testimonial-manager-shell">
+    <style>{`
+      .testimonial-manager-shell {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+      }
+      .testimonial-manager-shell > div:first-of-type {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        gap: 18px !important;
+        padding: 22px !important;
+        border: 1px solid #E7DDD2 !important;
+        border-radius: 18px !important;
+        background:
+          linear-gradient(135deg, rgba(255,255,255,0.97), rgba(255,249,243,0.94)),
+          linear-gradient(135deg, #6B3F1D, #E07B39) !important;
+        box-shadow: 0 18px 42px rgba(65, 42, 22, 0.08) !important;
+      }
+      .testimonial-manager-shell > div:first-of-type h3 {
+        margin: 0 !important;
+        color: #1A1208 !important;
+        font-size: 24px !important;
+        line-height: 1.15 !important;
+        font-weight: 900 !important;
+        letter-spacing: 0 !important;
+      }
+      .testimonial-manager-shell > div:first-of-type p {
+        margin: 6px 0 0 !important;
+        color: #786859 !important;
+        font-size: 13px !important;
+        font-weight: 650 !important;
+      }
+      .testimonial-manager-shell > div:first-of-type button {
+        height: 44px !important;
+        border: 0 !important;
+        border-radius: 12px !important;
+        padding: 0 16px !important;
+        color: #FFFFFF !important;
+        background: linear-gradient(135deg, #6B3F1D 0%, #9B5A2D 100%) !important;
+        box-shadow: 0 12px 24px rgba(107, 63, 29, 0.2) !important;
+        font-size: 13px !important;
+        font-weight: 900 !important;
+      }
+      .testimonial-manager-shell > div:nth-of-type(2) {
+        display: grid !important;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)) !important;
+        gap: 16px !important;
+        padding: 18px !important;
+        border: 1px solid #E8E0D8 !important;
+        border-radius: 18px !important;
+        background: #FFFFFF !important;
+        box-shadow: 0 16px 38px rgba(65, 42, 22, 0.06) !important;
+      }
+      .testimonial-manager-shell > div:nth-of-type(2) > div {
+        min-width: 0 !important;
+      }
+      .testimonial-manager-shell > div:nth-of-type(2) > div:not(.col-span-full) {
+        border: 1px solid #E8E0D8 !important;
+        border-radius: 16px !important;
+        background: #FFFFFF !important;
+        box-shadow: 0 12px 28px rgba(65, 42, 22, 0.06) !important;
+        padding: 16px !important;
+      }
+      .testimonial-manager-shell img {
+        width: 56px !important;
+        height: 56px !important;
+        border-radius: 16px !important;
+        object-fit: cover !important;
+      }
+      .testimonial-manager-shell .col-span-full {
+        grid-column: 1 / -1 !important;
+      }
+      .testimonial-manager-shell .col-span-full > div {
+        min-height: 340px !important;
+        border: 2px dashed #E6DCD1 !important;
+        border-radius: 16px !important;
+        background: #FBFAF8 !important;
+        box-shadow: none !important;
+      }
+      @media (max-width: 640px) {
+        .testimonial-manager-shell > div:first-of-type {
+          align-items: stretch !important;
+          flex-direction: column !important;
+          padding: 14px !important;
+        }
+        .testimonial-manager-shell > div:nth-of-type(2) {
+          grid-template-columns: 1fr !important;
+          padding: 14px !important;
+        }
+      }
+    `}</style>
     <SectionHeader icon={Users} title="Student Testimonials" subtitle={`${testimonials.length} reviews published`}
       action={<AddBtn onClick={() => { setTestimonialForm({name:"",role:"",content:"",rating:5,image:null}); openModal("testimonial"); }}/>}/>
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -1274,7 +2492,14 @@ const AboutImageCard = ({ slot, linkedKey, label, aboutImages, setAboutImages, a
 };
 
 const AboutTab = ({ aboutSub, setAboutSub, collegeLogo, setCollegeLogo, logoFile, setLogoFile, deanMessage, setDeanMessage, deanPhotoFile, setDeanPhotoFile, milestones, milestoneForm, setMilestoneForm, openModal, setMilestones, visionMission, setVmForm, coreValues, setCvForm, aboutImages, setAboutImages, aboutImageFiles, setAboutImageFiles, historyContent, setHistoryContent, axiosInstance, notify, del }) => (
-  <div className="space-y-6">
+  <div className="about-manager-shell admin-clean-page">
+    <style>{`
+      .about-manager-shell {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+      }
+    `}</style>
     <SubTabs tabs={["Branding","Principal","Timeline","Vision & Mission","Core Values"]} active={aboutSub} onChange={setAboutSub}/>
     <AnimatePresence mode="wait">
       <motion.div key={aboutSub} initial={{ opacity:0, y:8 }} animate={{ opacity:1, y:0 }} exit={{ opacity:0, y:-8 }}>
@@ -1585,7 +2810,7 @@ const AboutTab = ({ aboutSub, setAboutSub, collegeLogo, setCollegeLogo, logoFile
 );
 
 const AdmissionTab = ({ admSub, setAdmSub, courses, openModal, setCourseForm, del, admissionSteps, setStepForm, admissionRules, setRuleForm, bonds, setBondForm, guidelines, setGuidelineForm }) => (
-  <div className="space-y-6">
+  <div className="admission-manager-shell admin-clean-page">
     <SubTabs tabs={["Courses","Procedure","Eligibility","Guidelines"]} active={admSub} onChange={setAdmSub}/>
     
     {admSub === "Courses" && (
@@ -1690,36 +2915,36 @@ const DepartmentsTab = ({ selectedDept, setSelectedDept, departments, deptForm, 
     <div className="space-y-6">
       <SectionHeader icon={Building2} title="Academic Departments" subtitle={`Managing ${departments.length} nursing specialties`}
         action={<AddBtn onClick={() => { setDeptForm({name:"",slug:"",category:"Nursing Department",description:"",overview:"",overview2:"",faculty:[],facilities:[],activities:[],logo:null}); openModal("department"); }} label="New Department"/>}/>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+      <div className="admin-department-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
         {departments.map(d => (
           <motion.div key={d._id} whileHover={{ y:-4 }}
-            className="p-6 rounded-3xl group transition-all relative overflow-hidden"
+            className="admin-department-card p-6 rounded-3xl group transition-all relative overflow-hidden"
             style={{ background: C.surface, border:`1px solid ${C.border}` }}>
             <div className={`absolute top-0 right-0 w-20 h-20 bg-amber-500 opacity-[0.02] rounded-bl-[80px] group-hover:opacity-[0.06] transition-all`}/>
             {/* Edit / Delete row */}
-            <div className="flex justify-end gap-1.5 mb-3">
-              <IconBtn onClick={e => { e.stopPropagation(); setDeptForm({...d, logo: null}); openModal("department", d); }}>
+            <div className="admin-card-actions flex justify-end gap-1.5 mb-3">
+              <IconBtn title="Edit department" onClick={e => { e.stopPropagation(); setDeptForm({...d, logo: null}); openModal("department", d); }}>
                 <Edit3 size={14}/>
               </IconBtn>
-              <IconBtn danger onClick={e => { e.stopPropagation(); del(`/departments/${d._id}`); }}>
+              <IconBtn danger title="Delete department" onClick={e => { e.stopPropagation(); del(`/departments/${d._id}`); }}>
                 <Trash2 size={14}/>
               </IconBtn>
             </div>
             {/* Card body — click to open detail editor */}
             <div className="cursor-pointer" onClick={() => { setSelectedDept(d); setDeptForm({...d}); setDeptSub("Overview"); }}>
-              <div className="flex items-center gap-4 mb-5">
+              <div className="admin-department-body flex items-center gap-4 mb-5">
                 {d.logoUrl ? (
-                  <img src={imgUrl(d.logoUrl)} className="w-12 h-12 rounded-xl object-cover shrink-0 border shadow-sm group-hover:scale-105 transition-transform duration-300" alt=""/>
+                  <img src={imgUrl(d.logoUrl)} className="admin-department-logo w-12 h-12 rounded-xl object-cover shrink-0 border shadow-sm group-hover:scale-105 transition-transform duration-300" alt=""/>
                 ) : (
                   <div className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl shrink-0" style={{ background: C.accentSoft }}>🏥</div>
                 )}
                 <div className="min-w-0">
-                  <p className="font-bold text-sm truncate leading-tight mb-1" style={{ color: C.text }}>{d.name}</p>
+                  <p className="admin-department-title font-bold text-sm truncate leading-tight mb-1" style={{ color: C.text }}>{d.name}</p>
                   <Pill color={C.brand}>{d.category}</Pill>
                 </div>
               </div>
-              <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-wider" style={{ color: C.muted }}>
-                <div className="flex gap-3">
+              <div className="admin-department-meta flex items-center justify-between text-[11px] font-bold uppercase tracking-wider" style={{ color: C.muted }}>
+                <div className="flex gap-2 flex-wrap">
                   <span>{d.faculty?.length||0} Staff</span>
                   <span>{d.facilities?.length||0} Labs</span>
                 </div>
@@ -2072,17 +3297,16 @@ const GalleryForm = ({ editItem, formState, setFormState, closeModal, fetchData,
 
 const GalleryTab = ({ galleryImages, galleryForm, setGalleryForm, openModal, del }) => (
   <div className="space-y-6">
-    <div className="flex items-center justify-between">
-      <div>
-        <h2 className="text-2xl font-bold" style={{ color: C.text }}>Photo &amp; Video Gallery</h2>
-        <p className="text-sm mt-1" style={{ color: C.muted }}>Manage all photos and videos in the gallery</p>
-      </div>
-      <button onClick={() => { setGalleryForm({ title:"", description:"", category:"college_campus_view", mediaType:"image", media:null }); openModal("gallery"); }} className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition hover:opacity-90 shadow-sm" style={{ background: C.accent, color: "#fff" }}><Plus size={16}/>Add Media</button>
-    </div>
+    <SectionHeader
+      icon={ImageIcon}
+      title="Photo & Video Gallery"
+      subtitle="Manage all photos and videos in the gallery"
+      action={<AddBtn onClick={() => { setGalleryForm({ title:"", description:"", category:"college_campus_view", mediaType:"image", media:null }); openModal("gallery"); }} label="Add Media"/>}
+    />
     <div className="grid grid-cols-1 gap-3">
       {galleryImages.map(img => (
         <RowItem key={img._id}
-          left={<div className="w-16 h-12 rounded-xl overflow-hidden border-2 shrink-0 shadow-sm relative" style={{ borderColor: C.border }}>
+          left={<div className="admin-media-thumb w-16 h-12 rounded-xl overflow-hidden border-2 shrink-0 shadow-sm relative" style={{ borderColor: C.border }}>
             {img.mediaType === 'video' ? (
               <div className="w-full h-full flex items-center justify-center" style={{ background: '#1a1a2e' }}>
                 <span style={{ fontSize: '20px' }}>🎬</span>
@@ -2288,6 +3512,10 @@ const SectionControlTab = ({ notify }) => {
   const [searchTerm, setSearchTerm] = useState("");
 
   const pages = ["Home Page", "About Us", "Admission", "Departments", "Gallery", "Institutes", "Contact Us", "All Pages"];
+  const pageCounts = pages.reduce((acc, page) => {
+    acc[page] = page === "All Pages" ? sectionsList.length : sectionsList.filter(s => s.page === page).length;
+    return acc;
+  }, {});
 
   const filteredSections = sectionsList.filter(s => {
     const matchesPage = selectedPage === "All Pages" || s.page === selectedPage;
@@ -2306,99 +3534,619 @@ const SectionControlTab = ({ notify }) => {
   const totalSections = sectionsList.length;
   const activeSections = sectionsList.filter(s => s.isVisible !== false).length;
   const hiddenSections = totalSections - activeSections;
+  const activePercent = totalSections ? Math.round((activeSections / totalSections) * 100) : 0;
 
   return (
-    <div className="space-y-6">
-      {/* Top Header Banner matching Ginera Brand Colors */}
-      <div className="p-6 sm:p-8 rounded-3xl text-white shadow-xl relative overflow-hidden"
-           style={{ background: "linear-gradient(135deg, #4A2B13 0%, #6B3F1D 50%, #8B4A26 100%)" }}>
-        {/* Glow ambient background */}
-        <div className="absolute -right-10 -bottom-10 w-72 h-72 rounded-full bg-amber-500/15 blur-3xl pointer-events-none" />
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div>
-            <div className="flex items-center gap-2 mb-2">
-              <span className="px-3 py-1 rounded-xl bg-amber-500/20 text-amber-300 font-bold text-xs uppercase tracking-wider flex items-center gap-2 border border-amber-400/30 backdrop-blur-md">
-                <Sliders size={14} /> Site Content Manager
-              </span>
-            </div>
-            <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-white">Section Visibility Control</h2>
-            <p className="text-amber-100/80 text-xs sm:text-sm mt-1 max-w-xl leading-relaxed">
-              Turn any website section ON (visible) or OFF (hidden) in real-time. Changes sync instantly across public pages.
-            </p>
-          </div>
+    <div className="section-control-shell">
+      <style>{`
+        .section-control-shell {
+          display: flex;
+          flex-direction: column;
+          gap: 20px;
+        }
+        .section-control-hero {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) auto;
+          gap: 22px;
+          align-items: stretch;
+          padding: 22px;
+          border: 1px solid #E7DDD2;
+          border-radius: 18px;
+          background:
+            linear-gradient(135deg, rgba(255,255,255,0.96), rgba(255,250,246,0.92)),
+            linear-gradient(135deg, #6B3F1D, #E07B39);
+          box-shadow: 0 18px 42px rgba(65, 42, 22, 0.08);
+        }
+        .section-control-title-row {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          min-width: 0;
+        }
+        .section-control-icon {
+          width: 46px;
+          height: 46px;
+          border-radius: 14px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          color: #FFFFFF;
+          background: linear-gradient(135deg, #6B3F1D 0%, #A85D2A 100%);
+          box-shadow: 0 12px 26px rgba(107, 63, 29, 0.22);
+          flex: 0 0 auto;
+        }
+        .section-control-kicker {
+          margin: 0 0 4px;
+          color: #8A7A6A;
+          font-size: 11px;
+          font-weight: 800;
+          letter-spacing: 0.12em;
+          text-transform: uppercase;
+        }
+        .section-control-title {
+          margin: 0;
+          color: #1A1208;
+          font-size: 26px;
+          line-height: 1.14;
+          font-weight: 900;
+          letter-spacing: 0;
+        }
+        .section-control-subtitle {
+          margin: 8px 0 0;
+          max-width: 660px;
+          color: #786859;
+          font-size: 13px;
+          font-weight: 600;
+          line-height: 1.55;
+        }
+        .section-control-metrics {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(92px, 1fr));
+          gap: 10px;
+          min-width: 340px;
+        }
+        .section-control-metric {
+          padding: 14px;
+          border: 1px solid #E8E0D8;
+          border-radius: 14px;
+          background: #FFFFFF;
+          box-shadow: 0 10px 24px rgba(65, 42, 22, 0.06);
+        }
+        .section-control-metric strong {
+          display: block;
+          color: #1A1208;
+          font-size: 25px;
+          line-height: 1;
+          font-weight: 900;
+        }
+        .section-control-metric span {
+          display: block;
+          margin-top: 7px;
+          color: #7A6A5B;
+          font-size: 10px;
+          font-weight: 900;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+        }
+        .section-control-progress {
+          grid-column: 1 / -1;
+          height: 8px;
+          overflow: hidden;
+          border-radius: 99px;
+          background: #EFE7DF;
+        }
+        .section-control-progress > span {
+          display: block;
+          height: 100%;
+          width: var(--section-progress, 0%);
+          border-radius: inherit;
+          background: linear-gradient(90deg, #16A34A, #E07B39);
+        }
+        .section-control-toolbar {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) minmax(260px, 360px);
+          gap: 16px;
+          align-items: start;
+          padding: 14px;
+          border: 1px solid #E8E0D8;
+          border-radius: 16px;
+          background: #FFFFFF;
+          box-shadow: 0 12px 30px rgba(65, 42, 22, 0.05);
+        }
+        .section-control-tabs {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 8px;
+          min-width: 0;
+        }
+        .section-control-tab {
+          min-height: 36px;
+          border: 1px solid #E6DCD1;
+          border-radius: 999px;
+          padding: 7px 12px;
+          color: #655646;
+          background: #FBFAF8;
+          font-size: 12px;
+          font-weight: 800;
+          line-height: 1;
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          cursor: pointer;
+          transition: transform 160ms ease, background 160ms ease, border-color 160ms ease, color 160ms ease, box-shadow 160ms ease;
+        }
+        .section-control-tab:hover {
+          transform: translateY(-1px);
+          border-color: #CFB69D;
+          background: #FFF7EF;
+        }
+        .section-control-tab.is-active {
+          color: #FFFFFF;
+          border-color: #6B3F1D;
+          background: #6B3F1D;
+          box-shadow: 0 10px 22px rgba(107, 63, 29, 0.18);
+        }
+        .section-control-count {
+          min-width: 22px;
+          height: 22px;
+          padding: 0 7px;
+          border-radius: 999px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          color: inherit;
+          background: rgba(255,255,255,0.65);
+          font-size: 11px;
+          font-weight: 900;
+        }
+        .section-control-tab.is-active .section-control-count {
+          background: rgba(255,255,255,0.18);
+        }
+        .section-control-search {
+          position: relative;
+          min-width: 0;
+        }
+        .section-control-search input {
+          width: 100%;
+          height: 42px;
+          border: 1px solid #E6DCD1;
+          border-radius: 12px;
+          background: #FBFAF8;
+          color: #1A1208;
+          font-size: 13px;
+          font-weight: 650;
+          outline: none;
+          padding: 0 38px 0 40px;
+          transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
+        }
+        .section-control-search input:focus {
+          border-color: #C7773D;
+          background: #FFFFFF;
+          box-shadow: 0 0 0 4px rgba(224, 123, 57, 0.13);
+        }
+        .section-control-search svg {
+          position: absolute;
+          left: 14px;
+          top: 50%;
+          transform: translateY(-50%);
+          color: #9A806B;
+        }
+        .section-control-clear {
+          position: absolute;
+          right: 8px;
+          top: 50%;
+          transform: translateY(-50%);
+          width: 26px;
+          height: 26px;
+          border-radius: 8px;
+          color: #8A7A6A;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+        }
+        .section-control-clear:hover {
+          background: #EFE7DF;
+          color: #1A1208;
+        }
+        .section-control-loading {
+          min-height: 280px;
+          border: 1px solid #E8E0D8;
+          border-radius: 18px;
+          background: #FFFFFF;
+          color: #8A7A6A;
+          font-size: 14px;
+          font-weight: 800;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 12px;
+        }
+        .section-control-spinner {
+          width: 22px;
+          height: 22px;
+          border-radius: 50%;
+          border: 3px solid #E8E0D8;
+          border-top-color: #6B3F1D;
+          animation: section-spin 800ms linear infinite;
+        }
+        @keyframes section-spin {
+          to { transform: rotate(360deg); }
+        }
+        .section-control-groups {
+          display: flex;
+          flex-direction: column;
+          gap: 18px;
+        }
+        .section-control-group {
+          border: 1px solid #E8E0D8;
+          border-radius: 18px;
+          background: #FFFFFF;
+          box-shadow: 0 16px 38px rgba(65, 42, 22, 0.06);
+          overflow: hidden;
+        }
+        .section-control-group-head {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 16px;
+          padding: 18px;
+          border-bottom: 1px solid #EFE7DF;
+          background: linear-gradient(180deg, #FFFFFF 0%, #FFFCFA 100%);
+        }
+        .section-control-group-title {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          min-width: 0;
+        }
+        .section-control-group-icon {
+          width: 40px;
+          height: 40px;
+          border-radius: 12px;
+          color: #6B3F1D;
+          background: #FDF0E6;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          flex: 0 0 auto;
+        }
+        .section-control-group-title h3 {
+          margin: 0;
+          color: #1A1208;
+          font-size: 16px;
+          line-height: 1.2;
+          font-weight: 900;
+        }
+        .section-control-group-title p {
+          margin: 4px 0 0;
+          color: #8A7A6A;
+          font-size: 12px;
+          font-weight: 700;
+        }
+        .section-control-actions {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          flex: 0 0 auto;
+        }
+        .section-control-action {
+          height: 34px;
+          border: 1px solid transparent;
+          border-radius: 10px;
+          padding: 0 12px;
+          font-size: 12px;
+          font-weight: 900;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 7px;
+          cursor: pointer;
+          transition: transform 160ms ease, background 160ms ease, border-color 160ms ease;
+        }
+        .section-control-action:hover {
+          transform: translateY(-1px);
+        }
+        .section-control-action.on {
+          color: #146C3E;
+          background: #ECFDF3;
+          border-color: #B8E7CA;
+        }
+        .section-control-action.off {
+          color: #A13434;
+          background: #FFF1F1;
+          border-color: #F4C7C7;
+        }
+        .section-control-list {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 12px;
+          padding: 16px;
+        }
+        .section-control-card {
+          position: relative;
+          min-width: 0;
+          min-height: 108px;
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) auto;
+          gap: 14px;
+          align-items: center;
+          padding: 16px 16px 16px 18px;
+          border: 1px solid #E8E0D8;
+          border-radius: 14px;
+          background: #FFFFFF;
+          transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
+        }
+        .section-control-card::before {
+          content: "";
+          position: absolute;
+          left: 0;
+          top: 12px;
+          bottom: 12px;
+          width: 4px;
+          border-radius: 0 999px 999px 0;
+          background: #16A34A;
+        }
+        .section-control-card:hover {
+          transform: translateY(-1px);
+          border-color: #D8C8B7;
+          box-shadow: 0 14px 28px rgba(65, 42, 22, 0.08);
+        }
+        .section-control-card.is-hidden {
+          background: #FBFAF8;
+        }
+        .section-control-card.is-hidden::before {
+          background: #D94B4B;
+        }
+        .section-control-card-copy {
+          min-width: 0;
+        }
+        .section-control-status-row {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          min-width: 0;
+          margin-bottom: 9px;
+        }
+        .section-control-status {
+          min-width: 72px;
+          border-radius: 999px;
+          padding: 5px 9px;
+          color: #146C3E;
+          background: #ECFDF3;
+          border: 1px solid #B8E7CA;
+          font-size: 10px;
+          font-weight: 950;
+          line-height: 1;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+          text-align: center;
+          flex: 0 0 auto;
+        }
+        .section-control-card.is-hidden .section-control-status {
+          color: #A13434;
+          background: #FFF1F1;
+          border-color: #F4C7C7;
+        }
+        .section-control-key {
+          min-width: 0;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+          border: 1px solid #E7DDD2;
+          border-radius: 8px;
+          padding: 4px 8px;
+          color: #725B45;
+          background: #FFF8F1;
+          font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+          font-size: 11px;
+          line-height: 1.2;
+        }
+        .section-control-card h4 {
+          margin: 0;
+          color: #1A1208;
+          font-size: 14px;
+          line-height: 1.25;
+          font-weight: 900;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+        .section-control-card p {
+          margin: 5px 0 0;
+          color: #756657;
+          font-size: 12px;
+          line-height: 1.45;
+          font-weight: 600;
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
+        }
+        .section-toggle {
+          width: 58px;
+          height: 32px;
+          border: 0;
+          border-radius: 999px;
+          background: #16A34A;
+          padding: 3px;
+          cursor: pointer;
+          display: inline-flex;
+          align-items: center;
+          justify-content: flex-end;
+          box-shadow: inset 0 0 0 1px rgba(0,0,0,0.08);
+          transition: background 180ms ease;
+        }
+        .section-toggle.is-off {
+          justify-content: flex-start;
+          background: #CBD5E1;
+        }
+        .section-toggle span {
+          width: 26px;
+          height: 26px;
+          border-radius: 50%;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          color: #16A34A;
+          background: #FFFFFF;
+          box-shadow: 0 3px 8px rgba(0,0,0,0.18);
+        }
+        .section-toggle.is-off span {
+          color: #64748B;
+        }
+        @media (max-width: 1180px) {
+          .section-control-hero,
+          .section-control-toolbar {
+            grid-template-columns: 1fr;
+          }
+          .section-control-metrics {
+            min-width: 0;
+          }
+        }
+        @media (max-width: 860px) {
+          .section-control-list {
+            grid-template-columns: 1fr;
+          }
+          .section-control-group-head {
+            align-items: flex-start;
+            flex-direction: column;
+          }
+          .section-control-actions {
+            width: 100%;
+          }
+          .section-control-action {
+            flex: 1 1 0;
+          }
+        }
+        @media (max-width: 560px) {
+          .section-control-hero,
+          .section-control-toolbar {
+            padding: 14px;
+            border-radius: 14px;
+          }
+          .section-control-title {
+            font-size: 21px;
+          }
+          .section-control-title-row {
+            align-items: flex-start;
+          }
+          .section-control-metrics {
+            grid-template-columns: 1fr;
+          }
+          .section-control-card {
+            grid-template-columns: 1fr;
+          }
+          .section-toggle {
+            width: 100%;
+            justify-content: flex-end;
+          }
+          .section-toggle.is-off {
+            justify-content: flex-start;
+          }
+          .section-control-tabs {
+            flex-wrap: nowrap;
+            overflow-x: auto;
+            padding-bottom: 2px;
+          }
+        }
+      `}</style>
 
-          <div className="flex items-center gap-3 shrink-0">
-            <div className="px-5 py-3.5 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 text-center min-w-[95px] shadow-sm">
-              <p className="text-2xl sm:text-3xl font-black text-emerald-400">{activeSections}</p>
-              <p className="text-[10px] text-amber-200 uppercase font-bold tracking-wider mt-0.5">ON (Visible)</p>
+      <div className="section-control-hero">
+        <div>
+          <div className="section-control-title-row">
+            <div className="section-control-icon">
+              <Sliders size={22} />
             </div>
-            <div className="px-5 py-3.5 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 text-center min-w-[95px] shadow-sm">
-              <p className="text-2xl sm:text-3xl font-black text-rose-300">{hiddenSections}</p>
-              <p className="text-[10px] text-amber-200 uppercase font-bold tracking-wider mt-0.5">OFF (Hidden)</p>
+            <div className="min-w-0">
+              <p className="section-control-kicker">Site Content Manager</p>
+              <h2 className="section-control-title">Section Visibility</h2>
             </div>
+          </div>
+          <p className="section-control-subtitle">
+            Live control for public page sections, grouped by page with quick search and bulk status actions.
+          </p>
+        </div>
+
+        <div className="section-control-metrics">
+          <div className="section-control-metric">
+            <strong>{totalSections}</strong>
+            <span>Total</span>
+          </div>
+          <div className="section-control-metric">
+            <strong style={{ color: "#16A34A" }}>{activeSections}</strong>
+            <span>Visible</span>
+          </div>
+          <div className="section-control-metric">
+            <strong style={{ color: "#D94B4B" }}>{hiddenSections}</strong>
+            <span>Hidden</span>
+          </div>
+          <div className="section-control-progress" style={{ "--section-progress": `${activePercent}%` }}>
+            <span />
           </div>
         </div>
       </div>
 
-      {/* Filter Bar & Search Box */}
-      <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
-        <div className="flex items-center gap-2 overflow-x-auto w-full md:w-auto pb-2 md:pb-0 scrollbar-hide">
+      <div className="section-control-toolbar">
+        <div className="section-control-tabs">
           {pages.map(page => {
             const active = selectedPage === page;
             return (
               <button
                 key={page}
+                type="button"
                 onClick={() => setSelectedPage(page)}
-                className={`px-4 py-2.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
-                  active
-                    ? "text-white shadow-md scale-[1.02]"
-                    : "bg-white text-gray-700 hover:bg-amber-50/60 border border-gray-200 hover:border-amber-300"
-                }`}
-                style={active ? { background: "linear-gradient(135deg, #6B3F1D 0%, #E07B39 100%)" } : {}}
+                className={`section-control-tab ${active ? "is-active" : ""}`}
               >
                 {page}
+                <span className="section-control-count">{pageCounts[page]}</span>
               </button>
             );
           })}
         </div>
 
-        <div className="relative w-full md:w-80 shrink-0">
+        <div className="section-control-search">
+          <Search size={16} />
           <input
             type="text"
-            placeholder="Search section name or key..."
+            placeholder="Search sections..."
             value={searchTerm}
             onChange={e => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 bg-white text-xs font-medium focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500 outline-none shadow-xs transition-all placeholder:text-gray-400"
           />
-          <Search size={16} className="absolute left-3.5 top-3 text-amber-800/60" />
+          {searchTerm && (
+            <button type="button" className="section-control-clear" onClick={() => setSearchTerm("")} aria-label="Clear search">
+              <X size={15} />
+            </button>
+          )}
         </div>
       </div>
 
-      {/* Sections List */}
       {loading ? (
-        <div className="py-16 text-center text-gray-400 font-semibold text-sm">Loading visibility settings...</div>
+        <div className="section-control-loading">
+          <span className="section-control-spinner" />
+          Loading visibility settings...
+        </div>
       ) : Object.keys(grouped).length === 0 ? (
         <EmptyState icon={EyeOff} text="No sections found matching filter search." />
       ) : (
-        <div className="space-y-8">
+        <div className="section-control-groups">
           {Object.entries(grouped).map(([pageName, secs]) => {
             return (
-              <div key={pageName} className="p-5 sm:p-6 rounded-3xl bg-white border border-[#E8E0D8] shadow-sm space-y-4">
-                {/* Page Group Header */}
-                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 pb-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-2xl flex items-center justify-center font-bold text-white shadow-md"
-                         style={{ background: "linear-gradient(135deg, #6B3F1D, #E07B39)" }}>
+              <div key={pageName} className="section-control-group">
+                <div className="section-control-group-head">
+                  <div className="section-control-group-title">
+                    <div className="section-control-group-icon">
                       <Layers size={20} />
                     </div>
                     <div>
-                      <h3 className="font-bold text-gray-900 text-base">{pageName}</h3>
-                      <p className="text-xs text-gray-400 font-medium">{secs.length} Sections configured</p>
+                      <h3>{pageName}</h3>
+                      <p>{secs.length} sections configured</p>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2">
+                  <div className="section-control-actions">
                     <button
+                      type="button"
                       onClick={async () => {
                         try {
                           await togglePageSections(pageName, true);
@@ -2407,12 +4155,13 @@ const SectionControlTab = ({ notify }) => {
                           notify("Update failed", "error");
                         }
                       }}
-                      className="px-3.5 py-2 rounded-xl text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 transition-all border border-emerald-200 shadow-2xs flex items-center gap-1.5"
+                      className="section-control-action on"
                     >
-                      <CheckCircle2 size={14} /> Turn All ON
+                      <CheckCircle2 size={14} /> All ON
                     </button>
 
                     <button
+                      type="button"
                       onClick={async () => {
                         try {
                           await togglePageSections(pageName, false);
@@ -2421,42 +4170,38 @@ const SectionControlTab = ({ notify }) => {
                           notify("Update failed", "error");
                         }
                       }}
-                      className="px-3.5 py-2 rounded-xl text-xs font-bold text-rose-700 bg-rose-50 hover:bg-rose-100 transition-all border border-rose-200 shadow-2xs flex items-center gap-1.5"
+                      className="section-control-action off"
                     >
-                      <X size={14} /> Turn All OFF
+                      <X size={14} /> All OFF
                     </button>
                   </div>
                 </div>
 
-                {/* Section Toggle Cards */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="section-control-list">
                   {secs.map(sec => {
                     const isVisible = sec.isVisible !== false;
 
                     return (
                       <div
                         key={sec.sectionKey}
-                        className={`p-4 rounded-2xl border transition-all flex items-center justify-between gap-4 ${
-                          isVisible
-                            ? "bg-gradient-to-r from-emerald-50/40 to-emerald-50/10 border-emerald-300/70 shadow-2xs hover:shadow-xs"
-                            : "bg-gray-50/80 border-gray-200/80 opacity-75"
-                        }`}
+                        className={`section-control-card ${isVisible ? "" : "is-hidden"}`}
                       >
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1.5">
-                            <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${
-                              isVisible ? "bg-emerald-100 text-emerald-800 border border-emerald-300/50" : "bg-rose-100 text-rose-800 border border-rose-300/50"
-                            }`}>
-                              {isVisible ? "VISIBLE (ON)" : "HIDDEN (OFF)"}
+                        <div className="section-control-card-copy">
+                          <div className="section-control-status-row">
+                            <span className="section-control-status">
+                              {isVisible ? "Visible" : "Hidden"}
                             </span>
-                            <span className="text-[10px] font-mono text-amber-950/50 truncate bg-amber-50/60 px-1.5 py-0.5 rounded-md border border-amber-200/40">{sec.sectionKey}</span>
+                            <span className="section-control-key">{sec.sectionKey}</span>
                           </div>
 
-                          <h4 className="font-bold text-sm text-gray-900 truncate">{sec.sectionName}</h4>
-                          <p className="text-xs text-gray-500 line-clamp-1 mt-0.5">{sec.description}</p>
+                          <h4>{sec.sectionName}</h4>
+                          {sec.description && <p>{sec.description}</p>}
                         </div>
 
                         <button
+                          type="button"
+                          aria-pressed={isVisible}
+                          aria-label={`Toggle ${sec.sectionName}`}
                           onClick={async () => {
                             try {
                               await toggleSection(sec.sectionKey, !isVisible);
@@ -2465,19 +4210,13 @@ const SectionControlTab = ({ notify }) => {
                               notify("Update failed", "error");
                             }
                           }}
-                          className={`relative inline-flex h-8 w-14 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                            isVisible ? "bg-[#E07B39]" : "bg-gray-300"
-                          }`}
+                          className={`section-toggle ${isVisible ? "" : "is-off"}`}
                         >
-                          <span
-                            className={`pointer-events-none inline-block h-7 w-7 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out flex items-center justify-center ${
-                              isVisible ? "translate-x-6" : "translate-x-0"
-                            }`}
-                          >
+                          <span>
                             {isVisible ? (
-                              <CheckCircle2 size={15} className="text-emerald-600" />
+                              <CheckCircle2 size={15} />
                             ) : (
-                              <X size={15} className="text-gray-400" />
+                              <X size={15} />
                             )}
                           </span>
                         </button>
@@ -2698,6 +4437,22 @@ const AdminPanel = ({ onLogout }) => {
           height: 100dvh !important;
           max-height: 100dvh !important;
           overflow: hidden !important;
+          background:
+            linear-gradient(180deg, #6B3F1D 0%, #633815 46%, #4E2B12 100%) !important;
+          box-shadow: inset -1px 0 0 rgba(255,255,255,0.07);
+        }
+        .admin-sidebar nav button {
+          min-height: 46px;
+          border: 1px solid transparent;
+        }
+        .admin-sidebar nav button:hover {
+          background: rgba(255,255,255,0.09) !important;
+          color: rgba(255,255,255,0.9) !important;
+          border-color: rgba(255,255,255,0.08);
+        }
+        .admin-sidebar nav button[style*="rgba(255,255,255,0.12)"] {
+          background: rgba(255,255,255,0.15) !important;
+          box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08), 0 12px 24px rgba(37, 22, 10, 0.16);
         }
         .admin-main {
           display: flex !important;
@@ -2720,6 +4475,10 @@ const AdminPanel = ({ onLogout }) => {
           overflow-x: hidden !important;
           overscroll-behavior: contain;
         }
+        .admin-page-inner {
+          width: 100%;
+          max-width: 1580px !important;
+        }
         @media (max-width: 1023px) {
           .admin-header {
             height: 56px !important;
@@ -2737,6 +4496,218 @@ const AdminPanel = ({ onLogout }) => {
         .admin-scroll::-webkit-scrollbar-thumb { background: #C4A882; border-radius: 10px; border: 2px solid #F4F1EE; }
         .admin-scroll::-webkit-scrollbar-thumb:hover { background: #6B3F1D; }
         .admin-scroll { scrollbar-width: thin; scrollbar-color: #C4A882 #F4F1EE; -webkit-overflow-scrolling: touch; }
+        .admin-header {
+          background:
+            linear-gradient(180deg, rgba(255,255,255,0.98), rgba(255,252,249,0.96)) !important;
+          box-shadow: 0 1px 0 rgba(232, 224, 216, 0.78), 0 10px 30px rgba(65, 42, 22, 0.04);
+        }
+        .admin-header h2 {
+          letter-spacing: 0;
+        }
+        .admin-header-chip {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          height: 32px;
+          padding: 0 12px;
+          border: 1px solid #EEE2D6;
+          border-radius: 999px;
+          color: #6B3F1D;
+          background: #FFF8F1;
+          font-size: 12px;
+          font-weight: 800;
+        }
+        .admin-header-dot {
+          width: 8px;
+          height: 8px;
+          border-radius: 999px;
+          background: #16A34A;
+          box-shadow: 0 0 0 4px rgba(22, 163, 74, 0.12);
+        }
+        .admin-content-scroll {
+          background:
+            radial-gradient(circle at top right, rgba(224, 123, 57, 0.07), transparent 34%),
+            linear-gradient(180deg, #F8F6F3 0%, #F4F1EE 100%);
+        }
+        .admin-section-header,
+        .admin-row-item,
+        .admin-department-card {
+          border-radius: 18px !important;
+          box-shadow: 0 14px 32px rgba(65, 42, 22, 0.055);
+        }
+        .admin-section-header {
+          min-height: 76px;
+          background:
+            linear-gradient(135deg, rgba(255,255,255,0.98), rgba(255,248,241,0.88)) !important;
+        }
+        .admin-section-icon,
+        .admin-row-icon {
+          box-shadow: inset 0 0 0 1px rgba(224, 123, 57, 0.12);
+        }
+        .admin-section-title,
+        .admin-row-title,
+        .admin-department-title {
+          letter-spacing: 0;
+        }
+        .admin-section-subtitle,
+        .admin-row-subtitle {
+          font-weight: 600;
+        }
+        .admin-add-btn {
+          min-height: 38px;
+          border-radius: 999px !important;
+          padding-inline: 16px !important;
+          background: linear-gradient(135deg, #6B3F1D 0%, #8A4E23 100%) !important;
+          box-shadow: 0 12px 22px rgba(107, 63, 29, 0.18);
+          white-space: nowrap;
+        }
+        .admin-icon-btn {
+          width: 36px;
+          height: 36px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          border: 1px solid rgba(226, 217, 208, 0.82);
+          border-radius: 12px !important;
+          box-shadow: 0 6px 14px rgba(17, 24, 39, 0.04);
+        }
+        .admin-icon-btn.is-danger {
+          border-color: rgba(254, 226, 226, 0.95);
+        }
+        .admin-row-item {
+          min-height: 82px;
+          background: rgba(255,255,255,0.96) !important;
+          transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+        }
+        .admin-row-item:hover {
+          transform: translateY(-2px);
+          border-color: #D8C6B4 !important;
+          box-shadow: 0 18px 38px rgba(65, 42, 22, 0.085);
+        }
+        .admin-row-actions {
+          padding-left: 12px;
+        }
+        .admin-pill {
+          border-radius: 999px !important;
+          text-transform: none !important;
+          letter-spacing: 0 !important;
+          font-size: 12px !important;
+          line-height: 1.15;
+          padding: 5px 10px !important;
+        }
+        .admin-department-grid {
+          align-items: stretch;
+        }
+        .admin-department-card {
+          min-height: 178px;
+          background: rgba(255,255,255,0.96) !important;
+          cursor: default;
+          transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+        }
+        .admin-department-card:hover {
+          border-color: #D8C6B4 !important;
+          box-shadow: 0 20px 44px rgba(65, 42, 22, 0.1);
+        }
+        .admin-department-body {
+          align-items: flex-start;
+        }
+        .admin-department-body > :first-child,
+        .admin-media-thumb {
+          box-shadow: 0 8px 18px rgba(65, 42, 22, 0.08);
+        }
+        .admin-department-title {
+          white-space: normal !important;
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
+          min-height: 38px;
+          font-size: 15px !important;
+          line-height: 1.28 !important;
+        }
+        .admin-department-meta {
+          margin-top: auto;
+          padding-top: 14px;
+          border-top: 1px solid #F0E7DF;
+          letter-spacing: 0 !important;
+          text-transform: none !important;
+          font-size: 13px !important;
+        }
+        .admin-department-meta span {
+          display: inline-flex;
+          align-items: center;
+          min-height: 24px;
+          padding: 4px 9px;
+          border-radius: 999px;
+          color: #6F6254;
+          background: #F7F2ED;
+        }
+        .admin-media-thumb {
+          width: 72px !important;
+          height: 52px !important;
+          border-width: 1px !important;
+        }
+        .admin-subtabs {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 8px;
+          padding: 10px;
+          border: 1px solid #E8E0D8;
+          border-radius: 16px;
+          background: #FFFFFF;
+          box-shadow: 0 12px 30px rgba(65, 42, 22, 0.05);
+        }
+        .admin-subtabs button {
+          min-height: 38px;
+          border: 1px solid #E6DCD1;
+          border-radius: 999px;
+          padding: 8px 15px;
+          color: #655646;
+          background: #FBFAF8;
+          font-size: 13px;
+          font-weight: 850;
+          line-height: 1;
+          cursor: pointer;
+          white-space: nowrap;
+          transition: transform 160ms ease, background 160ms ease, border-color 160ms ease, color 160ms ease, box-shadow 160ms ease;
+        }
+        .admin-subtabs button:hover {
+          transform: translateY(-1px);
+          border-color: #CFB69D;
+          background: #FFF7EF;
+        }
+        .admin-subtabs button.is-active {
+          color: #FFFFFF;
+          border-color: #6B3F1D;
+          background: #6B3F1D;
+          box-shadow: 0 10px 22px rgba(107, 63, 29, 0.18);
+        }
+        @media (max-width: 640px) {
+          .admin-section-header {
+            padding: 16px !important;
+          }
+          .admin-add-btn {
+            width: 100%;
+            justify-content: center;
+          }
+          .admin-row-item {
+            align-items: flex-start;
+            gap: 12px;
+            padding: 14px !important;
+          }
+          .admin-row-actions {
+            opacity: 1 !important;
+            padding-left: 0;
+          }
+          .admin-icon-btn {
+            width: 34px;
+            height: 34px;
+          }
+          .admin-subtabs {
+            flex-wrap: nowrap;
+            overflow-x: auto;
+          }
+        }
       `}</style>
 
       <Toast note={note}/>
@@ -2748,7 +4719,7 @@ const AdminPanel = ({ onLogout }) => {
         <Header setSidebarOpen={setSidebarOpen} selectedDept={selectedDept} activeTab={activeTab}/>
         
         <div className="admin-content-scroll flex-1 min-h-0 overflow-y-auto admin-scroll p-4 md:p-6 lg:p-8">
-          <div className="max-w-7xl mx-auto pb-24">
+          <div className="admin-page-inner max-w-7xl mx-auto pb-24">
             {loading && (
               <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/60 backdrop-blur-sm">
                 <div className="w-10 h-10 border-4 border-t-transparent rounded-full animate-spin" />

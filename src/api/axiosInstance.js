@@ -9,8 +9,11 @@ const baseURL = `${API_ORIGIN}/api`;
 
 export const getMediaUrl = (url, fallback = '/placeholder.png') => {
   if (!url) return fallback;
-  if (url.startsWith('http')) return url;
-  return `${API_ORIGIN}${url.startsWith('/') ? url : `/${url}`}`;
+  if (url.startsWith('http') || url.startsWith('data:') || url.startsWith('blob:')) return url;
+  if (url.startsWith('uploads') || url.startsWith('/uploads')) {
+    return `${API_ORIGIN}${url.startsWith('/') ? url : `/${url}`}`;
+  }
+  return url;
 };
 
 const axiosInstance = axios.create({

@@ -28,8 +28,6 @@ export function CollegePhotos() {
   const [collegeImages, setCollegeImages] = useState([]);
   const [additionalImages, setAdditionalImages] = useState([]);
 
-  if (!isSectionVisible('gallery_college')) return <SectionOffNotice name="College Photos" />;
-
   useEffect(() => {
     const fetchGallery = async () => {
       try {
@@ -43,6 +41,8 @@ export function CollegePhotos() {
     };
     fetchGallery();
   }, []);
+
+  if (!isSectionVisible('gallery_college')) return <SectionOffNotice name="College Photos" />;
 
   return (
     <motion.div
@@ -188,8 +188,6 @@ export function HospitalPhotos() {
   const [hospitalImages, setHospitalImages] = useState([]);
   const [hospitalFacilities, setHospitalFacilities] = useState([]);
 
-  if (!isSectionVisible('gallery_hospital')) return <SectionOffNotice name="Hospital Photos" />;
-
   useEffect(() => {
     const fetchGallery = async () => {
       try {
@@ -203,6 +201,8 @@ export function HospitalPhotos() {
     };
     fetchGallery();
   }, []);
+
+  if (!isSectionVisible('gallery_hospital')) return <SectionOffNotice name="Hospital Photos" />;
 
   return (
     <motion.div
@@ -385,8 +385,6 @@ export function EventsPhotos() {
   const [eventImages, setEventImages] = useState([]);
   const [eventCategories, setEventCategories] = useState([]);
 
-  if (!isSectionVisible('gallery_events')) return <SectionOffNotice name="Events & Activities Photos" />;
-
   useEffect(() => {
     const fetchGallery = async () => {
       try {
@@ -423,6 +421,8 @@ export function EventsPhotos() {
     };
     fetchGallery();
   }, []);
+
+  if (!isSectionVisible('gallery_events')) return <SectionOffNotice name="Events & Activities Photos" />;
 
   return (
     <motion.div

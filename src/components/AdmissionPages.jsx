@@ -148,8 +148,6 @@ export function CoursesOffered() {
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  if (!isSectionVisible('admission_courses')) return <SectionOffNotice name="Courses Offered" />;
-
   useEffect(() => {
     const fetchCourses = async () => {
       try {
@@ -173,6 +171,8 @@ export function CoursesOffered() {
     };
     fetchCourses();
   }, []);
+
+  if (!isSectionVisible('admission_courses')) return <SectionOffNotice name="Courses Offered" />;
 
   if (loading) {
     return <LoadingScreen />;
@@ -556,8 +556,7 @@ export function AdmissionProcedure() {
   const { isSectionVisible } = useSectionVisibility();
   const [steps, setSteps] = useState([]);
   const [loading, setLoading] = useState(true);
-
-  if (!isSectionVisible('admission_procedure')) return <SectionOffNotice name="Admission Procedure & Steps" />;
+  const [expandedProcedureSteps, setExpandedProcedureSteps] = useState([]);
 
   const getIcon = (iconName) => {
     switch (iconName) {
@@ -586,7 +585,7 @@ export function AdmissionProcedure() {
     fetchSteps();
   }, []);
 
-  const [expandedProcedureSteps, setExpandedProcedureSteps] = useState([]);
+  if (!isSectionVisible('admission_procedure')) return <SectionOffNotice name="Admission Procedure & Steps" />;
 
   if (loading) {
     return (
@@ -2129,8 +2128,6 @@ export function Instructions() {
   const [guidelines, setGuidelines] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  if (!isSectionVisible('admission_instructions')) return <SectionOffNotice name="Instructions & Guidelines" />;
-
   useEffect(() => {
     const fetchGuidelines = async () => {
       try {
@@ -2144,6 +2141,8 @@ export function Instructions() {
     };
     fetchGuidelines();
   }, []);
+
+  if (!isSectionVisible('admission_instructions')) return <SectionOffNotice name="Instructions & Guidelines" />;
 
   const staggerContainer = {
     hidden: { opacity: 0 },
