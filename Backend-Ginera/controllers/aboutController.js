@@ -38,7 +38,7 @@ const ensureAboutImageSlots = async () => {
 // ─── MILESTONES ────────────────────────────────────────────────────────────────
 exports.getMilestones = async (req, res) => {
   try {
-    const milestones = await Milestone.find().sort({ order: 1, year: 1 });
+    const milestones = await Milestone.find().sort({ order: -1, year: -1 });
     res.json(milestones);
   } catch (err) { res.status(500).json({ message: err.message }); }
 };
@@ -46,9 +46,10 @@ exports.getMilestones = async (req, res) => {
 exports.createMilestone = async (req, res) => {
   try {
     const count = await Milestone.countDocuments();
+    const requestedOrder = Number(req.body.order);
     const milestone = new Milestone({ 
       ...req.body, 
-      order: (req.body.order !== undefined && req.body.order !== '') ? Number(req.body.order) : count 
+      order: Number.isFinite(requestedOrder) ? Math.max(0, requestedOrder) : count + 1
     });
     await milestone.save();
     res.status(201).json(milestone);
@@ -57,7 +58,12 @@ exports.createMilestone = async (req, res) => {
 
 exports.updateMilestone = async (req, res) => {
   try {
-    const milestone = await Milestone.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    const updates = { ...req.body };
+    if (updates.order !== undefined) {
+      const requestedOrder = Number(updates.order);
+      updates.order = Number.isFinite(requestedOrder) ? Math.max(0, requestedOrder) : 0;
+    }
+    const milestone = await Milestone.findByIdAndUpdate(req.params.id, updates, { new: true, runValidators: true });
     if (!milestone) return res.status(404).json({ message: 'Not found' });
     res.json(milestone);
   } catch (err) { res.status(400).json({ message: err.message }); }

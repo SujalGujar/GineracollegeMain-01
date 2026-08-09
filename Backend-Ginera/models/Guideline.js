@@ -4,7 +4,7 @@ const guidelineSchema = new mongoose.Schema({
     category: {
         type: String,
         required: true,
-        enum: ['General Guidelines', 'Code of Conduct', 'Academic Requirements', 'For Parents/Guardians', 'Contact Information']
+        enum: ['General Guidelines', 'Code of Conduct', 'Academic Requirements', 'For Parents/Guardians', 'Contact Information', 'Required Documents', 'Additional Documents']
     },
     subCategory: {
         type: String,

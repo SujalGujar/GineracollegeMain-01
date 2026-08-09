@@ -486,6 +486,7 @@ import { Badge } from "./ui/badge";
 import { AnimatePresence } from "framer-motion";
 import { useSectionVisibility } from "../context/SectionVisibilityContext";
 import SectionOffNotice from "./SectionOffNotice";
+import HeroSection from "../Homepages/HeroSection";
 
 const imgUrl = (url) =>
   !url ? "/placeholder.png"
@@ -1006,7 +1007,9 @@ export function GenericDepartment({ slug, category }) {
   }, [slug]);
 
   if (!isSectionVisible(sectionKey)) {
-    return <SectionOffNotice name="Department Section" />;
+    const deptObj = department || allDepartments[slug];
+    const deptName = deptObj?.name || 'Department Section';
+    return <SectionOffNotice name={deptName} />;
   }
 
   if (loading) {
@@ -1025,7 +1028,12 @@ export function GenericDepartment({ slug, category }) {
     finalDept.category = category;
   }
   
-  return <DepartmentPage department={finalDept} sliders={sliders} />;
+  return (
+    <>
+      <HeroSection departmentName={slug} />
+      <DepartmentPage department={finalDept} sliders={sliders} />
+    </>
+  );
 }
 
 // Also export individual department components for backward compatibility

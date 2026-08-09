@@ -56,19 +56,37 @@ const IconBtn = ({ onClick, danger, children, className = "", title }) => (
   </button>
 );
 
-const Toast = ({ note }) => (
+const Toast = ({ note, onDismiss }) => (
   <AnimatePresence>
     {note && (
       <motion.div
-        initial={{ opacity: 0, y: 24, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 24, scale: 0.95 }}
-        className="fixed bottom-6 right-6 z-[9999] flex items-center gap-3 px-5 py-4 rounded-2xl shadow-2xl border text-sm font-semibold"
+        role="status"
+        aria-live="polite"
+        initial={{ opacity: 0, y: -18, scale: 0.97 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -18, scale: 0.97 }}
+        transition={{ type: "spring", stiffness: 420, damping: 28 }}
+        className="mx-4 mt-4 flex max-w-2xl items-center gap-3 rounded-2xl border p-3 shadow-lg md:mx-6 lg:mx-8"
         style={{
-          background: note.type === "error" ? C.dangerSoft : C.successSoft,
-          borderColor: note.type === "error" ? "#FCA5A5" : "#86EFAC",
-          color: note.type === "error" ? C.danger : C.success,
+          background: "#FFFFFF",
+          borderColor: note.type === "error" ? "#FECACA" : "#BBF7D0",
+          boxShadow: "0 18px 40px rgba(26, 18, 8, 0.18)",
         }}>
-        {note.type === "error" ? <AlertCircle size={18}/> : <CheckCircle2 size={18}/>}
-        {note.message}
+        <div
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"
+          style={{
+            background: note.type === "error" ? C.dangerSoft : C.successSoft,
+            color: note.type === "error" ? C.danger : C.success,
+          }}>
+          {note.type === "error" ? <AlertCircle size={21}/> : <CheckCircle2 size={21}/>}
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-xs font-extrabold uppercase tracking-[0.12em]" style={{ color: note.type === "error" ? C.danger : C.success }}>
+            {note.type === "error" ? "Action needs attention" : "Saved successfully"}
+          </p>
+          <p className="mt-0.5 break-words text-sm font-semibold leading-snug" style={{ color: C.text }}>{note.message}</p>
+        </div>
+        <button onClick={onDismiss} type="button" aria-label="Dismiss notification" className="shrink-0 rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-700">
+          <X size={17}/>
+        </button>
       </motion.div>
     )}
   </AnimatePresence>
@@ -345,13 +363,13 @@ const Modal = ({ show, onClose, title, subtitle, children }) => {
 const fileLabelCls = "flex items-center gap-2 px-4 py-3 rounded-xl border-2 border-dashed bg-white cursor-pointer hover:bg-amber-50 hover:border-amber-400 transition-all text-sm font-medium";
 
 const FormActions = ({ onCancel, submitLabel = "Save Changes" }) => (
-  <div className="admin-form-actions flex gap-3 pt-5 mt-1 border-t" style={{ borderColor: '#EDE9E4' }}>
+  <div className="admin-form-actions flex flex-col-reverse gap-3 pt-5 mt-2 border-t sm:flex-row sm:items-center sm:justify-end" style={{ borderColor: '#EDE9E4' }}>
     <button type="button" onClick={onCancel}
-      className={formBtnSecondary} style={{ borderColor: '#D1C7BC', minWidth: '110px' }}>
+      className={`${formBtnSecondary} w-full sm:w-auto`} style={{ borderColor: '#D1C7BC', minWidth: '120px' }}>
       Cancel
     </button>
-    <button type="submit" className={`${formBtnPrimary} flex-[2]`}
-      style={{ background: 'linear-gradient(135deg, #6B3F1D 0%, #9B6A43 100%)' }}>
+    <button type="submit" className={`${formBtnPrimary} w-full sm:w-auto sm:min-w-[180px]`}
+      style={{ background: 'linear-gradient(135deg, #6B3F1D 0%, #9B6A43 100%)', justifyContent: 'center' }}>
       <Save size={16}/>{submitLabel}
     </button>
   </div>
@@ -476,7 +494,7 @@ const MilestoneForm = ({ editItem, milestoneForm, setMilestoneForm, closeModal, 
         <FInput value={milestoneForm.icon} onChange={e=>setMilestoneForm({...milestoneForm,icon:e.target.value})}/>
       </Field>
       <Field label="Sort Order">
-        <FInput type="number" value={milestoneForm.order} onChange={e=>setMilestoneForm({...milestoneForm,order:parseInt(e.target.value)||0})}/>
+        <FInput type="number" min="0" step="1" value={milestoneForm.order} onChange={e=>setMilestoneForm({...milestoneForm,order:Math.max(0, parseInt(e.target.value, 10) || 0)})}/>
       </Field>
     </div>
     <Field label="Event Title" required>
@@ -727,7 +745,7 @@ const GuidelineForm = ({ editItem, guidelineForm, setGuidelineForm, closeModal, 
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
       <Field label="Category">
         <FSelect value={guidelineForm.category} onChange={e=>setGuidelineForm({...guidelineForm,category:e.target.value})}>
-          {["General Guidelines","Code of Conduct","Academic Requirements","For Parents/Guardians","Contact Information"].map(c=><option key={c}>{c}</option>)}
+          {["General Guidelines","Code of Conduct","Academic Requirements","For Parents/Guardians","Contact Information","Required Documents","Additional Documents"].map(c=><option key={c}>{c}</option>)}
         </FSelect>
       </Field>
       <Field label="Sub-Category / Title" required>
@@ -2667,13 +2685,14 @@ const AboutTab = ({ aboutSub, setAboutSub, collegeLogo, setCollegeLogo, logoFile
               <textarea rows={2} className={`${inputCls} resize-none font-medium italic`} style={inputStyle}
                 placeholder="A powerful summary statement..." value={deanMessage.highlight||""} onChange={e=>setDeanMessage({...deanMessage,highlight:e.target.value})}/>
             </Field>
-            <div className="flex items-center gap-5 p-4 rounded-2xl bg-gray-50 border border-dashed" style={{ borderColor: C.border }}>
+            <div className="flex flex-col gap-4 p-4 rounded-2xl bg-gray-50 border border-dashed sm:flex-row sm:items-center" style={{ borderColor: C.border }}>
               <div className="w-16 h-16 rounded-2xl overflow-hidden border-2 shadow-sm shrink-0" style={{ borderColor: C.brand + "40" }}>
                 {deanMessage.photoUrl ? <img src={imgUrl(deanMessage.photoUrl)} className="w-full h-full object-cover" alt=""/> : <div className="w-full h-full bg-white flex items-center justify-center"><Users size={24} style={{ color: C.muted }}/></div>}
               </div>
-              <label className="flex-1 flex items-center gap-2 px-4 py-2.5 bg-white rounded-xl border text-xs font-bold cursor-pointer hover:shadow-sm transition-all shadow-sm"
-                     style={{ borderColor: C.border, color: C.text }}>
-                <Upload size={14}/> {deanPhotoFile ? deanPhotoFile.name : "Replace Official Photo"}
+              <label className="flex min-w-0 flex-1 items-center gap-3 rounded-xl border-2 border-dashed px-4 py-3 text-sm font-bold cursor-pointer transition-all hover:border-amber-400 hover:bg-amber-50"
+                     style={{ borderColor: deanPhotoFile ? C.accent : C.border, color: C.text, background: deanPhotoFile ? C.accentSoft : '#FFFFFF' }}>
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg" style={{ background: C.accentSoft, color: C.accent }}><Upload size={17}/></span>
+                <span className="min-w-0 flex-1"><span className="block text-[11px] uppercase tracking-wider" style={{ color: C.muted }}>Principal photo</span><span className="block truncate mt-0.5">{deanPhotoFile ? deanPhotoFile.name : "Choose or replace photo"}</span></span>
                 <input type="file" className="hidden" accept="image/*" onChange={e=>setDeanPhotoFile(e.target.files[0])}/>
               </label>
             </div>
@@ -2928,7 +2947,11 @@ const AboutTab = ({ aboutSub, setAboutSub, collegeLogo, setCollegeLogo, logoFile
   </div>
 );
 
-const AdmissionTab = ({ admSub, setAdmSub, courses, openModal, setCourseForm, del, admissionSteps, setStepForm, admissionRules, setRuleForm, bonds, setBondForm, guidelines, setGuidelineForm }) => (
+const AdmissionTab = ({ admSub, setAdmSub, courses, openModal, setCourseForm, del, admissionSteps, setStepForm, admissionRules, setRuleForm, bonds, setBondForm, guidelines, setGuidelineForm }) => {
+  const [courseCategory, setCourseCategory] = useState('All');
+  const courseCategories = ['All', ...Array.from(new Set(courses.map(course => course.category).filter(Boolean)))];
+  const visibleCourses = courseCategory === 'All' ? courses : courses.filter(course => course.category === courseCategory);
+  return (
   <div className="admission-manager-shell admin-clean-page">
     <SubTabs tabs={["Courses","Procedure","Eligibility","Guidelines"]} active={admSub} onChange={setAdmSub}/>
     
@@ -2936,8 +2959,11 @@ const AdmissionTab = ({ admSub, setAdmSub, courses, openModal, setCourseForm, de
       <div className="space-y-6">
         <SectionHeader icon={GraduationCap} title="Program Offerings" subtitle={`${courses.length} courses listed`}
           action={<AddBtn onClick={() => { setCourseForm({category:"Undergraduate Programs",name:"",duration:"",seats:"",eligibility:"",description:"",icon:"👨‍⚕️",highlights:"",fees:"",admission:"",websiteLink:""}); openModal("course"); }} label="Add Course"/>}/>
+        <div className="flex flex-wrap gap-2">
+          {courseCategories.map(category => <button key={category} type="button" onClick={() => setCourseCategory(category)} className="px-3 py-2 rounded-xl text-xs font-bold border transition-all" style={{ background: courseCategory === category ? C.brand : C.surface, color: courseCategory === category ? '#fff' : C.muted, borderColor: C.border }}>{category}</button>)}
+        </div>
         <div className="grid grid-cols-1 gap-3">
-          {courses.map(c => <RowItem key={c._id} icon={c.icon} badge={c.category} title={c.name} sub={`${c.duration} | ${c.seats} Seats`}
+          {visibleCourses.map(c => <RowItem key={c._id} icon={c.icon} badge={c.category} title={c.name} sub={`${c.duration} | ${c.seats} Seats`}
             onEdit={() => { setCourseForm({...c,highlights:c.highlights?.join(", ")||""}); openModal("course",c); }} onDelete={() => del(`/courses/${c._id}`)}/>)}
         </div>
       </div>
@@ -2993,7 +3019,7 @@ const AdmissionTab = ({ admSub, setAdmSub, courses, openModal, setCourseForm, de
       <div className="space-y-6">
         <SectionHeader icon={Info} title="Guidelines & Conduct" subtitle="Rules for students and guardians"
           action={<AddBtn onClick={() => { setGuidelineForm({category:"General Guidelines",subCategory:"",points:"",order:0}); openModal("guideline"); }} label="Add Section"/>}/>
-        {["General Guidelines","Code of Conduct","Academic Requirements","For Parents/Guardians","Contact Information"].map(cat => {
+        {["General Guidelines","Code of Conduct","Academic Requirements","For Parents/Guardians","Contact Information","Required Documents","Additional Documents"].map(cat => {
           const items = guidelines.filter(g=>g.category===cat);
           if (!items.length) return null;
           return (
@@ -3023,7 +3049,8 @@ const AdmissionTab = ({ admSub, setAdmSub, courses, openModal, setCourseForm, de
       </div>
     )}
   </div>
-);
+  );
+};
 
 const DepartmentsTab = ({ selectedDept, setSelectedDept, departments, deptForm, setDeptForm, deptSub, setDeptSub, deptFacultyForm, setDeptFacultyForm, deptFacilityInput, setDeptFacilityInput, deptActivityInput, setDeptActivityInput, sliders, axiosInstance, fetchData, notify, openModal, del, handleSliderUpload }) => {
   const [editingFacultyIdx, setEditingFacultyIdx] = useState(null);
@@ -3374,6 +3401,7 @@ const GalleryForm = ({ editItem, formState, setFormState, closeModal, fetchData,
     
     {/* File Upload Area */}
     <Field label={formState.mediaType === 'video' ? 'Video File' : 'Image File'}>
+      <p className="mb-2 text-xs font-semibold" style={{ color: C.muted }}>Recommended file size: 2–5 MB. Files larger than 5 MB are not accepted.</p>
       <label className="flex items-center gap-3 px-4 py-3 rounded-xl border-2 border-dashed cursor-pointer hover:bg-gray-50 transition" style={{ borderColor: formState.media ? C.accent : C.border }}>
         <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: C.accentSoft }}>
           {formState.mediaType === 'video' ? <span>🎬</span> : <ImageIcon size={16} style={{ color: C.accent }}/>}
@@ -4844,13 +4872,13 @@ const AdminPanel = ({ onLogout }) => {
         }
       `}</style>
 
-      <Toast note={note}/>
       <Sidebar isMobile={isMobile} sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} activeTab={activeTab} setActiveTab={setActiveTab} selectedDept={selectedDept} setSelectedDept={setSelectedDept} navItems={navItems} onLogout={onLogout} />
       
       <main
         className="admin-main flex-1 flex flex-col min-w-0 h-full overflow-hidden bg-gray-50"
         style={{ height: '100dvh', minHeight: 0, overflow: 'hidden' }}>
         <Header setSidebarOpen={setSidebarOpen} selectedDept={selectedDept} activeTab={activeTab}/>
+        <Toast note={note} onDismiss={() => setNote(null)}/>
         
         <div className="admin-content-scroll flex-1 min-h-0 overflow-y-auto admin-scroll p-4 md:p-6 lg:p-8">
           <div className="admin-page-inner max-w-7xl mx-auto pb-24">

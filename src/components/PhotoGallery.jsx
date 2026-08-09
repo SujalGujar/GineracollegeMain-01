@@ -262,14 +262,14 @@ export function HospitalPhotos() {
       {hospitalImages.length > 1 && (
         <motion.div
           variants={containerVariants}
-          className="grid md:grid-cols-3 gap-6 mt-10"
+          className={eventImages.length > 4 ? "flex gap-6 mt-10 overflow-x-auto pb-4 snap-x snap-mandatory" : "grid md:grid-cols-3 gap-6 mt-10"}
         >
           {hospitalImages.slice(1).map((image) => (
             <motion.div
               key={image.id}
               variants={cardVariants}
               whileHover="hover"
-              className="rounded-lg overflow-hidden shadow-md cursor-pointer bg-white"
+              className={`rounded-lg overflow-hidden shadow-md cursor-pointer bg-white ${eventImages.length > 4 ? "min-w-[280px] sm:min-w-[320px] snap-start" : ""}`}
             >
               <div className="aspect-video overflow-hidden">
                 {image.mediaType === 'video' ? (

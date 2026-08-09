@@ -5,7 +5,9 @@ import { SectionOffNotice } from "./SectionOffNotice";
 
 // ─── Individual document card ─────────────────────────────────────────────────
 function DocumentCard({ section }) {
-  const [expanded, setExpanded] = useState(true);
+  const [expanded, setExpanded] = useState(false);
+  const items = Array.isArray(section.items) ? section.items : [];
+  const visibleItems = expanded ? items : items.slice(0, 3);
 
   return (
     <div
@@ -102,9 +104,9 @@ function DocumentCard({ section }) {
       )}
 
       {/* Document list */}
-      {expanded && Array.isArray(section.items) && section.items.length > 0 && (
+      {items.length > 0 && (
         <ul style={{ margin: 0, padding: 0, listStyle: "none" }}>
-          {section.items.map((item, i) => (
+          {visibleItems.map((item, i) => (
             <li
               key={i}
               style={{
@@ -136,7 +138,13 @@ function DocumentCard({ section }) {
         </ul>
       )}
 
-      {!expanded && (
+      {items.length > 3 && (
+        <button type="button" onClick={() => setExpanded(value => !value)} style={{ marginTop: "14px", width: "100%", border: `1px solid ${section.borderColor || "#FCD34D"}`, borderRadius: "10px", padding: "9px", background: "rgba(255,255,255,0.72)", color: section.color || "#D97706", fontWeight: 700, cursor: "pointer" }}>
+          {expanded ? "Read less" : `Read more (${items.length - 3} more)`}
+        </button>
+      )}
+
+      {!expanded && items.length === 0 && (
         <p style={{ margin: 0, fontSize: "13px", color: "#94a3b8", textAlign: "center" }}>
           {(section.items || []).length} document{(section.items || []).length !== 1 ? "s" : ""} required — click ▼ to expand
         </p>

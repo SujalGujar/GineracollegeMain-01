@@ -6,7 +6,7 @@ const milestoneSchema = new mongoose.Schema({
   icon: { type: String, default: '🎯' },
   color: { type: String, default: '#1e3a8a' },
   description: { type: String, required: true },
-  order: { type: Number, default: 0 }
+  order: { type: Number, default: 0, min: 0 }
 }, { timestamps: true });
 
 module.exports = mongoose.model('Milestone', milestoneSchema);

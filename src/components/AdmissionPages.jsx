@@ -245,7 +245,7 @@ export function CoursesOffered() {
               <div className="flex items-center gap-3">
                 <motion.div
                   className="w-12 h-12 rounded-full flex items-center justify-center text-white text-xl"
-                  style={{ backgroundColor: "#f59e0b" }}
+                  style={{ backgroundColor: "#f59e0b", display: "none" }}
                   initial={{ scale: 0 }}
                   whileInView={{ scale: 1 }}
                   transition={{ type: "spring", duration: 0.6 }}
@@ -271,7 +271,7 @@ export function CoursesOffered() {
                 <div className="flex items-center gap-3">
                   <motion.div
                     className="w-12 h-12 rounded-full flex items-center justify-center text-white text-xl"
-                    style={{ backgroundColor: "#f59e0b" }}
+                  style={{ backgroundColor: "#f59e0b", display: "none" }}
                     initial={{ scale: 0 }}
                     whileInView={{ scale: 1 }}
                     transition={{ type: "spring", duration: 0.6 }}
@@ -555,6 +555,7 @@ export function CoursesOffered() {
 export function AdmissionProcedure() {
   const { isSectionVisible } = useSectionVisibility();
   const [steps, setSteps] = useState([]);
+  const [documentSections, setDocumentSections] = useState([]);
   const [loading, setLoading] = useState(true);
   const [expandedProcedureSteps, setExpandedProcedureSteps] = useState([]);
 
@@ -574,8 +575,12 @@ export function AdmissionProcedure() {
   useEffect(() => {
     const fetchSteps = async () => {
       try {
-        const response = await axiosInstance.get("/admission-steps");
-        setSteps(response.data);
+        const [stepsResponse, guidelinesResponse] = await Promise.all([
+          axiosInstance.get("/admission-steps"),
+          axiosInstance.get("/guidelines")
+        ]);
+        setSteps(stepsResponse.data);
+        setDocumentSections(Array.isArray(guidelinesResponse.data) ? guidelinesResponse.data : []);
       } catch (err) {
         console.error("Error fetching admission steps:", err);
       } finally {
@@ -610,18 +615,12 @@ export function AdmissionProcedure() {
   };
 
 
-  const requiredDocs = [
-
-    "Class 10th & 12th Marksheet and Certificates",
-    "Transfer Certificate",
-    "Birthdate Proof(Birth Certificate or 10th Certificate)"
-  ];
-  const additionalDocs = [
-    "Caste Certificate (if applicable)",
-
-    "Medical Fitness Certificate",
-    "Passport Size Photographs",
-  ];
+  const documentsFor = (category, fallback) => {
+    const saved = documentSections.filter(section => section.category === category).flatMap(section => section.points || []);
+    return saved.length ? saved : fallback;
+  };
+  const requiredDocs = documentsFor("Required Documents", ["Class 10th & 12th Marksheet and Certificates", "Transfer Certificate", "Birthdate Proof (Birth Certificate or 10th Certificate)"]);
+  const additionalDocs = documentsFor("Additional Documents", ["Caste Certificate (if applicable)", "Medical Fitness Certificate", "Passport Size Photographs"]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-amber-50 to-orange-50 py-16 relative">

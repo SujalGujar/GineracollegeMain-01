@@ -783,6 +783,7 @@ import HeroSection from "../Homepages/HeroSection";
 import ImageSlider from "./ImageSlider";
 import axiosInstance from "../api/axiosInstance";
 import { useSectionVisibility } from "../context/SectionVisibilityContext";
+import SectionOffNotice from "./SectionOffNotice";
 // ─────────────────────────────────────────────────────────────────────────────
 
 /* ═══════════════════════════════════════════════════════
@@ -1093,6 +1094,7 @@ const cardVariant = {
 const HomePage=({ onNavigate }) => {
   const { isSectionVisible } = useSectionVisibility();
   const [testimonialsIndex, setTestimonialsIndex] = useState(0);
+  const [isTestimonialExpanded, setIsTestimonialExpanded] = useState(false);
   const [logoOffset, setLogoOffset] = useState(0);
   const [programsVisible, setProgramsVisible] = useState(false);
   const [expandedProgram, setExpandedProgram] = useState(null);
@@ -1187,6 +1189,15 @@ const HomePage=({ onNavigate }) => {
   };
   
   const current = testimonialsToDisplay[testimonialsIndex] || {};
+  const testimonialText = current.content || "";
+  const testimonialNeedsToggle = testimonialText.length > 260;
+  const visibleTestimonialText = testimonialNeedsToggle && !isTestimonialExpanded
+    ? `${testimonialText.slice(0, 260).trimEnd()}...`
+    : testimonialText;
+
+  useEffect(() => {
+    setIsTestimonialExpanded(false);
+  }, [testimonialsIndex]);
 
   const toggleReadMore = (programId) => {
     setExpandedProgram(expandedProgram === programId ? null : programId);
@@ -1203,6 +1214,16 @@ const HomePage=({ onNavigate }) => {
     const el = document.getElementById("programs-slider");
     if (el) el.scrollBy({ left: dir * 400, behavior: 'smooth' });
   };
+
+  const hasAnyVisibleSection = 
+    isSectionVisible('home_hero') || 
+    isSectionVisible('home_academic') || 
+    isSectionVisible('home_testimonials') || 
+    isSectionVisible('home_institutes');
+
+  if (!hasAnyVisibleSection) {
+    return <SectionOffNotice name="Home Page" />;
+  }
 
   return (
     <>
@@ -1553,9 +1574,20 @@ const HomePage=({ onNavigate }) => {
                               </div>
                             )}
                           </div>
-                          <p style={{ fontSize: 17, color: "#374151", lineHeight: 1.75, fontStyle: "italic", marginBottom: 28 }}>
-                            "{current.content}"
-                          </p>
+                          <div style={{ marginBottom: 28 }}>
+                            <p style={{ fontSize: 17, color: "#374151", lineHeight: 1.75, fontStyle: "italic", margin: 0 }}>
+                              "{visibleTestimonialText}"
+                            </p>
+                            {testimonialNeedsToggle && (
+                              <button
+                                type="button"
+                                onClick={() => setIsTestimonialExpanded(value => !value)}
+                                style={{ marginTop: 12, border: 0, padding: 0, background: "transparent", color: "#1e3a8a", fontSize: 14, fontWeight: 700, cursor: "pointer" }}
+                              >
+                                {isTestimonialExpanded ? "Read less" : "Read more"}
+                              </button>
+                            )}
+                          </div>
                           <div style={{ borderTop: "1px solid #e5e7eb", paddingTop: 20 }}>
                             <p style={{ fontWeight: 700, fontSize: 18, color: "#111827", marginBottom: 4 }}>
                               {current.name}

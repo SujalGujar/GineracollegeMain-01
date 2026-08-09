@@ -42,15 +42,10 @@ export default function App() {
     return localStorage.getItem('adminAuthenticated') === 'true';
   });
 
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [pageLoading, setPageLoading] = useState(false);
-  const navTimerRef = React.useRef(null);
 
-  const openPageWithLoader = (page, updateUrl = true) => {
-    if (navTimerRef.current) {
-      clearTimeout(navTimerRef.current);
-    }
-
+  const openPageWithLoader = (page: string, updateUrl = true) => {
     if (updateUrl) {
       if (page === 'home') {
         window.history.pushState(null, '', window.location.pathname);
@@ -58,29 +53,9 @@ export default function App() {
         window.history.pushState(null, '', '#/' + page);
       }
     }
-
-    setPageLoading(true);
+    setCurrentPage(page);
     window.scrollTo(0, 0);
-
-    navTimerRef.current = setTimeout(() => {
-      setCurrentPage(page);
-      setPageLoading(false);
-    }, PAGE_LOADER_DELAY);
   };
-
-  useEffect(() => {
-    // Initial page load screen transition
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 1200);
-    return () => clearTimeout(timer);
-  }, []);
-
-  useEffect(() => {
-    return () => {
-      if (navTimerRef.current) clearTimeout(navTimerRef.current);
-    };
-  }, []);
 
   useEffect(() => {
     const handleHashChange = () => {
@@ -88,13 +63,16 @@ export default function App() {
     };
     window.addEventListener('hashchange', handleHashChange);
     return () => window.removeEventListener('hashchange', handleHashChange);
-  }, [currentPage]);
+  }, []);
 
-  const handleNavigation = (page) => {
+  const handleNavigation = (page: string) => {
     openPageWithLoader(page);
   };
 
   const renderCurrentPage = () => {
+    if (currentPage.startsWith('department-')) {
+      return <GenericDepartment slug={currentPage.replace('department-', '')} category="Nursing Department" />;
+    }
     switch (currentPage) {
       case 'home':
         return <HomePage onNavigate={handleNavigation} />;
@@ -147,6 +125,7 @@ export default function App() {
 
       // Other pages
       case 'affiliated-institutes':
+      case 'institutes':
         return <AffiliatedInstitutes onNavigate={handleNavigation} />;
       case 'student-corner':
         return <StudentCorner onNavigate={handleNavigation} />;
@@ -207,11 +186,6 @@ export default function App() {
           >
             <Header currentPage={currentPage} onNavigate={handleNavigation} />
             <main className="flex-1">
-              {currentPage.startsWith('department-') && (
-                <HeroSection
-                  departmentName={currentPage.replace('department-', '')}
-                />
-              )}
               {renderCurrentPage()}
             </main>
 
