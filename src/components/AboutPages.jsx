@@ -266,7 +266,7 @@ export function AboutLogo({ onNavigate }) {
           <CardContent className="space-y-20 px-6 md:px-14 pb-20 pt-16">
             {/* --- GROUP 1: LEFT TEXT + RIGHT IMAGE --- */}
             <motion.div
-              className="grid md:grid-cols-2 gap-12 items-stretch min-h-[500px]"
+              className="grid md:grid-cols-2 gap-12 items-start"
               initial={{ opacity: 0, y: 40 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
@@ -298,7 +298,8 @@ export function AboutLogo({ onNavigate }) {
 
               {/* RIGHT IMAGE */}
               <motion.div
-                className="rounded-2xl shadow-lg overflow-hidden h-full"
+                className="rounded-2xl shadow-lg overflow-hidden"
+                style={{ aspectRatio: "4 / 3", maxHeight: "420px" }}
                 initial={{ x: 80, opacity: 0 }}
                 whileInView={{ x: 0, opacity: 1 }}
                 viewport={{ once: true }}
@@ -307,14 +308,14 @@ export function AboutLogo({ onNavigate }) {
                 <img
                   src={imageFor('missionValues', libraryImage)}
                   alt={altFor('missionValues', 'Mission & Values')}
-                  className="w-full h-full object-cover transform hover:scale-105 transition-transform duration-500"
+                  className="w-full h-full object-cover object-center transform hover:scale-105 transition-transform duration-500"
                 />
               </motion.div>
             </motion.div>
 
             {/* --- GROUP 2: RIGHT TEXT + LEFT IMAGE --- */}
             <motion.div
-              className="grid md:grid-cols-2 gap-12 items-stretch min-h-[500px]"
+              className="grid md:grid-cols-2 gap-12 items-start"
               initial={{ opacity: 0, y: 40 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
@@ -322,7 +323,8 @@ export function AboutLogo({ onNavigate }) {
             >
               {/* LEFT IMAGE */}
               <motion.div
-                className="rounded-2xl shadow-lg overflow-hidden h-full order-1 md:order-none"
+                className="rounded-2xl shadow-lg overflow-hidden order-1 md:order-none"
+                style={{ aspectRatio: "4 / 3", maxHeight: "420px" }}
                 initial={{ x: -80, opacity: 0 }}
                 whileInView={{ x: 0, opacity: 1 }}
                 viewport={{ once: true }}
@@ -331,7 +333,7 @@ export function AboutLogo({ onNavigate }) {
                 <img
                   src={imageFor('visionGoals', laboratoryImage)}
                   alt={altFor('visionGoals', 'Vision & Goals')}
-                  className="w-full h-full object-cover transform hover:scale-105 transition-transform duration-500"
+                  className="w-full h-full object-cover object-center transform hover:scale-105 transition-transform duration-500"
                 />
               </motion.div>
 
@@ -782,7 +784,7 @@ export function History() {
     >
       {/* ---------- HERO IMAGE ---------- */}
       <motion.div
-        className="relative w-full h-96 mb-16 overflow-hidden rounded-xl"
+        className="relative w-full h-64 sm:h-80 lg:h-96 mb-16 overflow-hidden rounded-xl"
         initial={{ opacity: 0 }}
         whileInView={{ opacity: 1 }}
         transition={{ duration: 1 }}
@@ -815,13 +817,13 @@ export function History() {
           {/* Image Section */}
           <motion.div
             variants={imageAnimation}
-            className="flex flex-col  items-center justify-center"
+            className="flex flex-col items-center justify-center"
           >
             <motion.img
-              style={{ marginTop: '70px' }}
               src={historyTimelineImg}
               alt={historyTimelineSlot?.alt || "Institutional Timeline"}
-              className="rounded-2xl shadow-2xl w-full max-w-md h-84   object-cover border-4 border-white"
+              className="rounded-2xl shadow-2xl w-full max-w-md object-cover object-center border-4 border-white"
+              style={{ aspectRatio: "4 / 3", height: "auto" }}
               whileHover={{
                 scale: 1.05,
                 boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
@@ -906,7 +908,8 @@ export function History() {
             <motion.img
               src={historyLegacyImg}
               alt={historyLegacySlot?.alt || "Legacy of Excellence"}
-              className="rounded-2xl shadow-2xl w-full max-w-md h-80 object-cover border-4 border-white"
+              className="rounded-2xl shadow-2xl w-full max-w-md object-cover object-center border-4 border-white"
+              style={{ aspectRatio: "4 / 3", height: "auto" }}
               whileHover={{
                 scale: 1.05,
                 boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
@@ -1471,18 +1474,18 @@ export function VisionMission() {
             variants={containerVariants}
             initial="hidden"
             animate="visible"
-            className="grid lg:grid-cols-2 gap-8 mb-16 items-stretch min-h-[500px]"
+            className="grid lg:grid-cols-2 gap-8 mb-16 items-start"
           >
             {/* Vision Image - Left Side */}
             <motion.div
               variants={imageVariants}
-              className="order-1 lg:order-1 h-full"
+              className="order-1 lg:order-1"
             >
-              <div className="rounded-2xl overflow-hidden shadow-2xl bg-gradient-to-br from-amber-100 to-orange-100 h-full">
+              <div className="rounded-2xl overflow-hidden shadow-2xl bg-gradient-to-br from-amber-100 to-orange-100" style={{ aspectRatio: "4 / 3", maxHeight: "420px" }}>
                 <img
                   src={imageFor('visionMain', ourVisionImage)}
                   alt={altFor('visionMain', 'Our Vision for Medical Excellence')}
-                  className="w-full h-full object-cover hover:scale-105 transition-transform duration-700"
+                  className="w-full h-full object-cover object-center hover:scale-105 transition-transform duration-700"
                   onError={(e) => {
                     // If image fails to load, show fallback content
                     e.target.style.display = "none";
@@ -1568,7 +1571,7 @@ export function VisionMission() {
             variants={containerVariants}
             initial="hidden"
             animate="visible"
-            className="grid lg:grid-cols-2 gap-8 mb-16 items-stretch min-h-[500px]"
+            className="grid lg:grid-cols-2 gap-8 mb-16 items-start"
           >
             {/* Mission Content - Left Side */}
             <motion.div
@@ -1645,13 +1648,13 @@ export function VisionMission() {
             {/* Mission Image - Right Side */}
             <motion.div
               variants={imageVariants}
-              className="order-1 lg:order-2 h-full"
+              className="order-1 lg:order-2"
             >
-              <div className="rounded-2xl overflow-hidden shadow-2xl bg-gradient-to-br from-orange-100 to-amber-100 h-full">
+              <div className="rounded-2xl overflow-hidden shadow-2xl bg-gradient-to-br from-orange-100 to-amber-100" style={{ aspectRatio: "4 / 3", maxHeight: "420px" }}>
                 <img
                   src={imageFor('missionMain', ourMissionImage)}
                   alt={altFor('missionMain', 'Our Mission in Action')}
-                  className="w-full h-full object-cover hover:scale-105 transition-transform duration-700"
+                  className="w-full h-full object-cover object-center hover:scale-105 transition-transform duration-700"
                   onError={(e) => {
                     // If image fails to load, show fallback content
                     e.target.style.display = "none";

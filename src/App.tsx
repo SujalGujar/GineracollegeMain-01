@@ -18,6 +18,7 @@ import { ContactPage } from './components/ContactPage';
 import AdminPanel from './components/AdminPanel';
 import { LoginPage } from './components/LoginPage';
 import LoadingScreen from './components/LoadingScreen';
+import { StudentCorner } from './components/StudentCorner';
 
 const PAGE_LOADER_DELAY = 900;
 
@@ -147,6 +148,8 @@ export default function App() {
       // Other pages
       case 'affiliated-institutes':
         return <AffiliatedInstitutes onNavigate={handleNavigation} />;
+      case 'student-corner':
+        return <StudentCorner onNavigate={handleNavigation} />;
       case 'contact':
         return <ContactPage onNavigate={handleNavigation} />;
       case 'admin':
@@ -249,6 +252,7 @@ export default function App() {
                       <button onClick={() => handleNavigation('admission-procedure')} className="block text-gray-300 hover:text-white hover:translate-x-1 transition-all text-sm">Admissions</button>
                       <button onClick={() => handleNavigation('courses')} className="block text-gray-300 hover:text-white hover:translate-x-1 transition-all text-sm">Courses</button>
                       <button onClick={() => handleNavigation('achievements')} className="block text-gray-300 hover:text-white hover:translate-x-1 transition-all text-sm">Achievements</button>
+                      <button onClick={() => handleNavigation('student-corner')} className="block text-gray-300 hover:text-white hover:translate-x-1 transition-all text-sm">Student Corner</button>
                     </div>
                   </div>
                   <div>

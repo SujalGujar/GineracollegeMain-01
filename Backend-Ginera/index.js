@@ -41,6 +41,7 @@ const galleryRoutes = require('./routes/galleryRoutes');
 const instituteRoutes = require('./routes/instituteRoutes');
 const contactRoutes = require('./routes/contactRoutes');
 const sectionVisibilityRoutes = require('./routes/sectionVisibilityRoutes');
+const studentCornerRoutes = require('./routes/studentCornerRoutes');
 
 app.use('/api/sliders', sliderRoutes);
 app.use('/api/gallery', galleryRoutes);
@@ -57,6 +58,7 @@ app.use('/api/departments', departmentRoutes);
 app.use('/api/institutes', instituteRoutes);
 app.use('/api/contact', contactRoutes);
 app.use('/api/section-visibility', sectionVisibilityRoutes);
+app.use('/api/student-corner', studentCornerRoutes);
 
 // MongoDB Connection
 mongoose.set('bufferCommands', false);

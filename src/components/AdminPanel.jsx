@@ -791,6 +791,125 @@ const DeptForm = ({ editItem, deptForm, setDeptForm, closeModal, fetchData, noti
   </form>
 );
 
+// ── STUDENT CORNER SECTION FORM ──────────────────────────────────────────────
+const StudentCornerForm = ({ editItem, scForm, setScForm, closeModal, fetchData, notify }) => {
+  const addItem = () => setScForm(f => ({ ...f, items: [...(f.items || []), ''] }));
+  const removeItem = (i) => setScForm(f => ({ ...f, items: f.items.filter((_, idx) => idx !== i) }));
+  const updateItem = (i, val) => setScForm(f => { const items = [...(f.items || [])]; items[i] = val; return { ...f, items }; });
+  return (
+    <form onSubmit={async e => {
+      e.preventDefault();
+      const url = editItem ? `/student-corner/${editItem._id}` : '/student-corner';
+      try {
+        if (editItem) await axiosInstance.put(url, scForm);
+        else await axiosInstance.post(url, scForm);
+        notify(editItem ? 'Section updated' : 'Section created');
+        closeModal(); fetchData();
+      } catch { notify('Failed to save section', 'error'); }
+    }} className="space-y-5">
+      <FormSection title="Section Details">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <Field label="Section Title" required><FInput required value={scForm.title} onChange={e=>setScForm({...scForm,title:e.target.value})} placeholder="e.g. Documents for Transcript"/></Field>
+          <Field label="Subtitle"><FInput value={scForm.subtitle} onChange={e=>setScForm({...scForm,subtitle:e.target.value})} placeholder="e.g. All Xerox Copies Required"/></Field>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <Field label="Tag / Badge Label"><FInput value={scForm.tag} onChange={e=>setScForm({...scForm,tag:e.target.value})} placeholder="e.g. GNM Students"/></Field>
+          <Field label="Icon (emoji)"><FInput value={scForm.icon} onChange={e=>setScForm({...scForm,icon:e.target.value})} placeholder="📄"/></Field>
+          <Field label="Sort Order"><FInput type="number" value={scForm.order} onChange={e=>setScForm({...scForm,order:parseInt(e.target.value)||0})}/></Field>
+        </div>
+        <Field label="Extra Description / Note" hint="Optional note shown below the badge on the public page">
+          <FTextarea rows={2} value={scForm.description} onChange={e=>setScForm({...scForm,description:e.target.value})} placeholder="e.g. For GNM students completing their final year only"/>
+        </Field>
+      </FormSection>
+      <FormSection title="Colors">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <Field label="Main Color" hint="Card accent & icon background">
+            <div className="flex gap-3 items-center">
+              <input type="color" value={scForm.color} onChange={e=>setScForm({...scForm,color:e.target.value})} className="w-12 h-11 rounded-xl border-2 cursor-pointer shrink-0" style={{borderColor:'#E8E4DF'}}/>
+              <FInput value={scForm.color} onChange={e=>setScForm({...scForm,color:e.target.value})}/>
+            </div>
+          </Field>
+          <Field label="Border Color">
+            <div className="flex gap-3 items-center">
+              <input type="color" value={scForm.borderColor} onChange={e=>setScForm({...scForm,borderColor:e.target.value})} className="w-12 h-11 rounded-xl border-2 cursor-pointer shrink-0" style={{borderColor:'#E8E4DF'}}/>
+              <FInput value={scForm.borderColor} onChange={e=>setScForm({...scForm,borderColor:e.target.value})}/>
+            </div>
+          </Field>
+          <Field label="Badge Color">
+            <div className="flex gap-3 items-center">
+              <input type="color" value={scForm.badgeColor} onChange={e=>setScForm({...scForm,badgeColor:e.target.value})} className="w-12 h-11 rounded-xl border-2 cursor-pointer shrink-0" style={{borderColor:'#E8E4DF'}}/>
+              <FInput value={scForm.badgeColor} onChange={e=>setScForm({...scForm,badgeColor:e.target.value})}/>
+            </div>
+          </Field>
+        </div>
+      </FormSection>
+      <FormSection title="Document Items">
+        <div className="space-y-2">
+          {(scForm.items||[]).map((item,i)=>(
+            <div key={i} className="flex gap-2 items-center">
+              <span className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0" style={{background:scForm.color||'#F59E0B'}}>{i+1}</span>
+              <FInput value={item} onChange={e=>updateItem(i,e.target.value)} placeholder={`Document item ${i+1}`} className="flex-1"/>
+              <button type="button" onClick={()=>removeItem(i)} className="p-2 rounded-lg bg-red-50 text-red-500 hover:bg-red-100 transition-all shrink-0"><Trash2 size={15}/></button>
+            </div>
+          ))}
+          <button type="button" onClick={addItem} className="w-full py-2.5 rounded-xl border-2 border-dashed text-sm font-semibold transition-all hover:bg-amber-50" style={{borderColor:'#D1C7BC',color:'#8A7A6A'}}>
+            <Plus size={15} className="inline mr-1"/> Add Document Item
+          </button>
+        </div>
+      </FormSection>
+      <FormActions onCancel={closeModal} submitLabel={editItem?'Save Changes':'Create Section'}/>
+    </form>
+  );
+};
+
+// ── STUDENT CORNER TAB ────────────────────────────────────────────────────────
+const StudentCornerTab = ({ sections, openModal, setScForm, del }) => {
+  const DEFAULT_SC = {title:'',subtitle:'',tag:'',icon:'📄',color:'#F59E0B',borderColor:'#FCD34D',badgeColor:'#D97706',items:[],description:'',order:0};
+  return (
+    <div className="space-y-6">
+      <SectionHeader icon={GraduationCap} title="Student Corner — Document Sections" subtitle="Manage document requirement notices shown on the Student Corner page"
+        action={<AddBtn label="Add Section" onClick={()=>{setScForm({...DEFAULT_SC,order:sections.length+1});openModal('studentCorner');}}/>}
+      />
+      {sections.length===0 ? (
+        <EmptyState icon={GraduationCap} text="No document sections yet — click 'Add Section' to create one"/>
+      ) : (
+        <div className="space-y-3">
+          {sections.map((s,idx)=>(
+            <div key={s._id} className="flex items-center gap-4 p-4 rounded-2xl group transition-all hover:shadow-sm" style={{background:'#FFFFFF',border:'1px solid #E8E0D8'}}>
+              <div style={{width:'48px',height:'48px',borderRadius:'14px',background:s.color||'#F59E0B',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'22px',flexShrink:0,boxShadow:`0 4px 12px ${(s.color||'#F59E0B')}44`}}>{s.icon||'📄'}</div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap mb-0.5">
+                  {s.tag&&<span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md" style={{background:(s.badgeColor||'#D97706')+'22',color:s.badgeColor||'#D97706'}}>{s.tag}</span>}
+                  <span className="text-[11px] font-semibold text-gray-400">#{idx+1} · {(s.items||[]).length} items</span>
+                </div>
+                <p className="font-bold text-sm truncate" style={{color:'#1A1208'}}>{s.title}</p>
+                {s.subtitle&&<p className="text-xs truncate mt-0.5" style={{color:'#8A7A6A'}}>{s.subtitle}</p>}
+              </div>
+              <div className="hidden sm:flex gap-1.5 shrink-0">
+                {['color','borderColor','badgeColor'].map(k=><div key={k} style={{width:16,height:16,borderRadius:'50%',background:s[k]||'#ccc',border:'2px solid #F4F1EE'}} title={k}/>)}
+              </div>
+              <div className="flex gap-1.5 opacity-0 group-hover:opacity-100 sm:opacity-100 transition-opacity shrink-0">
+                <IconBtn title="Edit" onClick={()=>{setScForm({title:s.title||'',subtitle:s.subtitle||'',tag:s.tag||'',icon:s.icon||'📄',color:s.color||'#F59E0B',borderColor:s.borderColor||'#FCD34D',badgeColor:s.badgeColor||'#D97706',items:Array.isArray(s.items)?[...s.items]:[],description:s.description||'',order:s.order||0});openModal('studentCorner',s);}}><Edit3 size={15}/></IconBtn>
+                <IconBtn danger title="Delete" onClick={()=>del(`/student-corner/${s._id}`)}><Trash2 size={15}/></IconBtn>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+      <div className="p-4 rounded-2xl flex items-start gap-3" style={{background:'#FFF7ED',border:'1.5px solid #FDE68A'}}>
+        <span className="text-xl shrink-0">💡</span>
+        <div>
+          <p className="text-sm font-bold" style={{color:'#92400e'}}>Tips</p>
+          <ul className="text-xs mt-1 space-y-1" style={{color:'#78350f'}}>
+            <li>• Use <strong>Sort Order</strong> when editing to control display order on the public page.</li>
+            <li>• To hide Student Corner from the site, go to <strong>Section Control</strong> and toggle it off.</li>
+            <li>• Each section supports its own emoji icon, custom colors, badge label, and unlimited document items.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const SubTabs = ({ tabs, active, onChange }) => (
   <div className="admin-subtabs">
@@ -860,7 +979,7 @@ const EmptyState = ({ icon: Icon, text }) => (
 // ── SIDEBAR COMPONENTS ───────────────────────────────────
 
 const SidebarContent = ({ onClose, activeTab, setActiveTab, selectedDept, setSelectedDept, navItems, onLogout }) => (
-  <div className="flex flex-col h-full min-h-0">
+  <div className="flex flex-col min-h-0" style={{ height: '100dvh', maxHeight: '100dvh' }}>
     <div className="flex items-center gap-3 p-6 border-b border-white/10 shrink-0">
       <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center shadow-inner">
         <LayoutDashboard size={20} className="text-white"/>
@@ -876,7 +995,7 @@ const SidebarContent = ({ onClose, activeTab, setActiveTab, selectedDept, setSel
       )}
     </div>
 
-    <nav className="flex-1 min-h-0 overflow-y-auto py-6 px-4 space-y-1 scrollbar-hide">
+    <nav className="flex-1 min-h-0 overflow-y-auto py-6 px-4 space-y-1 scrollbar-hide" style={{ overscrollBehavior: 'contain' }}>
       {navItems.map(({ name, icon: Icon }) => {
         const active = activeTab === name && !selectedDept;
         return (
@@ -3511,7 +3630,7 @@ const SectionControlTab = ({ notify }) => {
   const [selectedPage, setSelectedPage] = useState("Home Page");
   const [searchTerm, setSearchTerm] = useState("");
 
-  const pages = ["Home Page", "About Us", "Admission", "Departments", "Gallery", "Institutes", "Contact Us", "All Pages"];
+  const pages = ["Home Page", "About Us", "Admission", "Departments", "Gallery", "Institutes", "Student Corner", "Contact Us", "All Pages"];
   const pageCounts = pages.reduce((acc, page) => {
     acc[page] = page === "All Pages" ? sectionsList.length : sectionsList.filter(s => s.page === page).length;
     return acc;
@@ -4301,6 +4420,8 @@ const AdminPanel = ({ onLogout }) => {
   const [galleryForm, setGalleryForm] = useState({ title:"", description:"", category:"college_campus_view", image:null });
   const [keyPersonForm, setKeyPersonForm] = useState({ name:"",position:"",qualification:"",phone:"",email:"",hours:"",icon:"👨‍⚕️",color:"from-blue-500 to-blue-600",responsibilities:"" });
   const [contactDeptForm, setContactDeptForm] = useState({ name:"",phone:"",email:"",icon:"📚" });
+  const [studentCornerSections, setStudentCornerSections] = useState([]);
+  const [scForm, setScForm] = useState({ title:'',subtitle:'',tag:'',icon:'📄',color:'#F59E0B',borderColor:'#FCD34D',badgeColor:'#D97706',items:[],description:'',order:0 });
 
   const notify = (message, type = "success") => {
     setNote({ message, type });
@@ -4312,6 +4433,8 @@ const AdminPanel = ({ onLogout }) => {
   const fetchData = async () => {
     setLoading(true);
     try {
+      // Student Corner is fetched independently below. This ensures it still
+      // appears if an unrelated admin endpoint is temporarily unavailable.
       const r = await Promise.all([
         axiosInstance.get("/programs"),
         axiosInstance.get("/testimonials"),
@@ -4344,7 +4467,16 @@ const AdminPanel = ({ onLogout }) => {
       setInstitutes(r[17].data); setKeyPersons(r[18].data); setContactDepartments(r[19].data); setContactInfo(r[20].data);
       if (r[21]?.data) setHistoryContent(r[21].data);
     } catch { notify("Error fetching data", "error"); }
-    finally { setLoading(false); }
+    finally {
+      try {
+        const { data } = await axiosInstance.get("/student-corner");
+        setStudentCornerSections(Array.isArray(data) ? data : []);
+      } catch {
+        setStudentCornerSections([]);
+        notify("Unable to load Student Corner data", "error");
+      }
+      setLoading(false);
+    }
   };
 
   const del = async (url, refetch = true) => {
@@ -4384,9 +4516,10 @@ const AdminPanel = ({ onLogout }) => {
     { name: "Admission",    icon: Layers },
     { name: "Departments",  icon: Building2 },
     { name: "Institutes",   icon: Building2 },
-    { name: "Gallery",      icon: ImageIcon },
-    { name: "Contact Us",   icon: Phone },
-    { name: "Settings",     icon: Settings },
+    { name: "Gallery",         icon: ImageIcon },
+    { name: "Student Corner",  icon: GraduationCap },
+    { name: "Contact Us",      icon: Phone },
+    { name: "Settings",        icon: Settings },
   ];
 
   const modalMeta = {
@@ -4405,6 +4538,7 @@ const AdminPanel = ({ onLogout }) => {
     institute:    { title: editItem ? "Edit Institute"  : "Add Institute",  subtitle: "Affiliated institute details" },
     keyPerson:    { title: editItem ? "Edit Contact"    : "Add Contact",    subtitle: "Key administrative contact" },
     contactDept:  { title: editItem ? "Edit Dept"       : "Add Dept",       subtitle: "Contact department" },
+    studentCorner:{ title: editItem ? "Edit Section"    : "Add Section",    subtitle: "Student Corner document section" },
   }[modalType] || {};
 
   return (
@@ -4736,6 +4870,7 @@ const AdminPanel = ({ onLogout }) => {
                   {activeTab === "Departments" && <DepartmentsTab selectedDept={selectedDept} setSelectedDept={setSelectedDept} departments={departments} deptForm={deptForm} setDeptForm={setDeptForm} deptSub={deptSub} setDeptSub={setDeptSub} deptFacultyForm={deptFacultyForm} setDeptFacultyForm={setDeptFacultyForm} deptFacilityInput={deptFacilityInput} setDeptFacilityInput={setDeptFacilityInput} deptActivityInput={deptActivityInput} setDeptActivityInput={setDeptActivityInput} sliders={sliders} axiosInstance={axiosInstance} fetchData={fetchData} notify={notify} openModal={openModal} del={del} handleSliderUpload={handleSliderUpload}/>}
                   {activeTab === "Gallery" && <GalleryTab galleryImages={galleryImages} galleryForm={galleryForm} setGalleryForm={setGalleryForm} openModal={openModal} del={del} />}
                   {activeTab === "Institutes" && <InstitutesTab institutes={institutes} openModal={openModal} del={del} />}
+                  {activeTab === "Student Corner" && <StudentCornerTab sections={studentCornerSections} openModal={openModal} setScForm={setScForm} del={del}/>}
                   {activeTab === "Contact Us" && <ContactTab contactSub={contactSub} setContactSub={setContactSub} keyPersons={keyPersons} setKeyPersonForm={setKeyPersonForm} contactDepartments={contactDepartments} setContactDeptForm={setContactDeptForm} contactInfo={contactInfo} setContactInfo={setContactInfo} openModal={openModal} del={del} notify={notify} axiosInstance={axiosInstance} />}
                   {activeTab === "Settings" && (
                     <div className="flex flex-col items-center justify-center py-32 text-center text-slate-400">
@@ -4765,6 +4900,7 @@ const AdminPanel = ({ onLogout }) => {
         {modalType === "institute" && <InstituteForm editItem={editItem} closeModal={closeModal} fetchData={fetchData} notify={notify}/>}
         {modalType === "keyPerson" && <KeyPersonForm editItem={editItem} keyPersonForm={keyPersonForm} setKeyPersonForm={setKeyPersonForm} closeModal={closeModal} fetchData={fetchData} notify={notify} axiosInstance={axiosInstance}/>}
         {modalType === "contactDept" && <ContactDeptForm editItem={editItem} contactDeptForm={contactDeptForm} setContactDeptForm={setContactDeptForm} closeModal={closeModal} fetchData={fetchData} notify={notify} axiosInstance={axiosInstance}/>}
+        {modalType === "studentCorner" && <StudentCornerForm editItem={editItem} scForm={scForm} setScForm={setScForm} closeModal={closeModal} fetchData={fetchData} notify={notify}/>}
       </Modal>
     </div>
   );

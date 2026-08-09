@@ -5,6 +5,7 @@ import { Menu, User, ChevronDown } from "lucide-react";
 import gineraLogo2 from "../images/ginera-logo2.png";
 import gineraLogo from "../images/ginera-logo.png";
 import axiosInstance from "../api/axiosInstance";
+import { useSectionVisibility } from "../context/SectionVisibilityContext";
 
 let departmentItems = [
   {
@@ -68,6 +69,7 @@ const NAV_ITEMS = [
     ],
   },
   { key: "affiliated-institutes", label: "Affiliated Institutes", subpages: [] },
+  { key: "student-corner", label: "Student Corner", subpages: [] },
   { key: "contact", label: "Contact Us", subpages: [] },
 ];
 
@@ -88,6 +90,8 @@ const PAGE_SECTION_MAP = {
   "college-photos": "gallery",
   "hospital-photos": "gallery",
   "events-photos": "gallery",
+
+  "student-corner": "student-corner",
 };
 
 export function Header({ currentPage, onNavigate }) {
@@ -96,6 +100,13 @@ export function Header({ currentPage, onNavigate }) {
   const [mobileOpenSections, setMobileOpenSections] = React.useState({});
   const dropdownRef = React.useRef(null);
   const [dynamicNavItems, setDynamicNavItems] = React.useState(NAV_ITEMS);
+  const { isSectionVisible } = useSectionVisibility();
+
+  // Filter nav items based on section visibility
+  const visibleNavItems = dynamicNavItems.filter(item => {
+    if (item.key === 'student-corner') return isSectionVisible('student_corner');
+    return true;
+  });
 
   React.useEffect(() => {
     const fetchDepartments = async () => {
@@ -192,7 +203,7 @@ export function Header({ currentPage, onNavigate }) {
             {/* Desktop Navigation */}
             <div className="hidden lg:flex items-center space-x-1" ref={dropdownRef}>
               <nav className="flex items-center space-x-1">
-                {dynamicNavItems.map((item) => {
+                {visibleNavItems.map((item) => {
                   const hasSubpages = item.subpages.length > 0;
                   const isOpen = openDropdown === item.key;
                   const isActive =
@@ -321,7 +332,7 @@ export function Header({ currentPage, onNavigate }) {
                     </div>
 
                     {/* Mobile Nav Items */}
-                    {dynamicNavItems.map((item) => {
+                    {visibleNavItems.map((item) => {
                       const hasSubpages = item.subpages.length > 0;
                       const isMobileOpen = mobileOpenSections[item.key];
                       const isActive =

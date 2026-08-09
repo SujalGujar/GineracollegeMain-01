@@ -48,7 +48,10 @@ const DEFAULT_SECTIONS = [
   { sectionKey: 'contact_key_persons', page: 'Contact Us', sectionName: 'Key Administrative Personnel', description: 'Directory of key staff and officials' },
   { sectionKey: 'contact_departments', page: 'Contact Us', sectionName: 'Department Directory', description: 'Phone numbers for individual departments' },
   { sectionKey: 'contact_feedback_form', page: 'Contact Us', sectionName: 'Feedback / Inquiry Form', description: 'Interactive contact & feedback form' },
-  { sectionKey: 'contact_map', page: 'Contact Us', sectionName: 'Campus Google Map Location', description: 'Interactive embedded Google map' }
+  { sectionKey: 'contact_map', page: 'Contact Us', sectionName: 'Campus Google Map Location', description: 'Interactive embedded Google map' },
+
+  // Student Corner
+  { sectionKey: 'student_corner', page: 'Student Corner', sectionName: 'Student Corner Page', description: 'Document requirements notice board for students (Transcript, Refund, Foreign Verification)' }
 ];
 
 exports.getAllSectionVisibility = async (req, res) => {
