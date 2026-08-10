@@ -1,83 +1,37 @@
 import React from 'react';
-import { motion } from 'framer-motion';
+import { createPortal } from 'react-dom';
 import gineraLogo2 from '../images/ginera-logo2.png';
 
-const LoadingScreen = () => {
-  return (
-    <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-white">
-      <motion.div
-        initial={{ opacity: 0, scale: 0.8 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{
-          duration: 0.5,
-          ease: "easeOut"
-        }}
-        className="relative flex flex-col items-center"
-      >
-        {/* Logo Container with Pulse Effect */}
-        <div className="relative mb-8">
-          <motion.div
-            animate={{
-              scale: [1, 1.1, 1],
-              opacity: [0.3, 0.6, 0.3],
-            }}
-            transition={{
-              duration: 2,
-              repeat: Infinity,
-              ease: "easeInOut"
-            }}
-            className="absolute inset-0 bg-orange-400 rounded-full blur-2xl"
-          />
-          <img 
-            src={gineraLogo2} 
-            alt="Logo" 
-            className="relative w-16 h-16 object-contain z-10"
-          />
-        </div>
-
-        {/* Branded Text */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2, duration: 0.5 }}
-          className="text-center"
-        >
-          <h2 className="text-2xl font-bold text-gray-900 tracking-tight">Ginera Nursing College</h2>
-          <div className="mt-2 flex items-center justify-center gap-1.5">
-            {[0, 1, 2].map((i) => (
-              <motion.div
-                key={i}
-                animate={{
-                  scale: [1, 1.5, 1],
-                  opacity: [0.3, 1, 0.3],
-                }}
-                transition={{
-                  duration: 1,
-                  repeat: Infinity,
-                  delay: i * 0.2,
-                }}
-                className="w-1.5 h-1.5 bg-orange-500 rounded-full"
-              />
-            ))}
-          </div>
-        </motion.div>
-      </motion.div>
-
-      {/* Progress Line at Bottom */}
-      <div className="absolute bottom-0 left-0 w-full h-1 bg-gray-100 overflow-hidden">
-        <motion.div
-          initial={{ x: "-100%" }}
-          animate={{ x: "100%" }}
-          transition={{
-            duration: 1.5,
-            repeat: Infinity,
-            ease: "linear"
-          }}
-          className="w-1/2 h-full bg-gradient-to-r from-transparent via-orange-500 to-transparent"
-        />
+// Render into document.body so page animation/stacking contexts can never
+// cover this loader. It is deliberately high-contrast and visible on every
+// navigation while the destination page is fetching its API data.
+const LoadingScreen = () => createPortal(
+  <div
+    role="status"
+    aria-live="polite"
+    aria-label="Loading page data"
+    style={{
+      position: 'fixed', inset: 0, zIndex: 2147483647,
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      background: 'rgba(15, 23, 42, 0.92)', backdropFilter: 'blur(5px)',
+    }}
+  >
+    <div style={{ width: 'min(440px, calc(100vw - 40px))', textAlign: 'center', color: '#fff' }}>
+      <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 90, height: 90, borderRadius: 24, background: '#fff', boxShadow: '0 18px 50px rgba(0,0,0,.35)' }}>
+        <img src={gineraLogo2} alt="Ginera College" style={{ width: 70, height: 70, objectFit: 'contain' }} />
+      </div>
+      <div style={{ margin: '24px auto 14px', width: 48, height: 48, border: '5px solid rgba(255,255,255,.28)', borderTopColor: '#f59e0b', borderRadius: '50%', animation: 'ginera-loader-spin .8s linear infinite' }} />
+      <h2 style={{ margin: 0, fontSize: 24, fontWeight: 800 }}>Loading page data…</h2>
+      <p style={{ margin: '9px 0 24px', color: '#cbd5e1', fontSize: 15 }}>Please wait while we load the latest information.</p>
+      <div style={{ display: 'grid', gap: 10 }}>
+        {[100, 82, 68].map((width, index) => (
+          <div key={index} style={{ width: `${width}%`, height: 13, margin: '0 auto', borderRadius: 99, background: 'linear-gradient(90deg, #334155 25%, #64748b 50%, #334155 75%)', backgroundSize: '200% 100%', animation: `ginera-skeleton 1.2s ease-in-out ${index * .12}s infinite` }} />
+        ))}
       </div>
     </div>
-  );
-};
+    <style>{`@keyframes ginera-loader-spin { to { transform: rotate(360deg); } } @keyframes ginera-skeleton { from { background-position: 200% 0; } to { background-position: -200% 0; } }`}</style>
+  </div>,
+  document.body,
+);
 
 export default LoadingScreen;
