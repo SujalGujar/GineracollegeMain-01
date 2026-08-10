@@ -1096,7 +1096,7 @@ const HomePage=({ onNavigate }) => {
   const [testimonialsIndex, setTestimonialsIndex] = useState(0);
   const [isTestimonialExpanded, setIsTestimonialExpanded] = useState(false);
   const [logoOffset, setLogoOffset] = useState(0);
-  const [programsVisible, setProgramsVisible] = useState(false);
+  const [programsVisible, setProgramsVisible] = useState(true);
   const [expandedProgram, setExpandedProgram] = useState(null);
 
   const [dynamicPrograms, setDynamicPrograms] = useState([]);
@@ -1108,7 +1108,7 @@ const HomePage=({ onNavigate }) => {
     description2: "Programs span 4 years (Undergraduate), 3 years (Diploma), 2 years (Masters in Nursing), and 1 year (Post-Basic Diploma)."
   });
 
-  const testimonialsToDisplay = dynamicTestimonials;
+  const testimonialsToDisplay = dynamicTestimonials.length > 0 ? dynamicTestimonials : TESTIMONIALS;
 
   useEffect(() => {
     if (testimonialsToDisplay.length === 0) return;
@@ -1437,9 +1437,9 @@ const HomePage=({ onNavigate }) => {
               </div>
             </div>
             <motion.div
-              variants={fadeUp} custom={3}
-              initial="hidden"
-              animate={programsVisible ? "visible" : "hidden"}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.2 }}
               style={{ textAlign: "center", marginTop: 32 }}
             >
               <ViewAllButton onClick={() => onNavigate('courses')} />
@@ -1450,7 +1450,7 @@ const HomePage=({ onNavigate }) => {
           </div>
         </section>
         )}
-        {isSectionVisible('home_testimonials') && dynamicTestimonials.length > 0 && (
+        {isSectionVisible('home_testimonials') && testimonialsToDisplay.length > 0 && (
         <section style={{
           position: "relative",
           padding: "48px 0 64px",
@@ -1477,7 +1477,10 @@ const HomePage=({ onNavigate }) => {
           />
           <div style={{ maxWidth: 1100, margin: "0 auto", padding: "0 24px", position: "relative", zIndex: 1 }}>
             <motion.div
-              variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }}
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, amount: 0.1 }}
+              transition={{ duration: 0.6 }}
               style={{ textAlign: "center", marginBottom: 32 }}
             >
               <div className="section-badge" style={{ background: "#fef2f2", color: "#dc2626" }}>
