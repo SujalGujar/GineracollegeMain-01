@@ -110,7 +110,13 @@ export function AboutLogo({ onNavigate }) {
 
   const displayLogo = collegeBranding?.logoUrl ? getMediaUrl(collegeBranding.logoUrl) : gineraLogo;
   const imageFor = (key, fallback = null) => {
-    const image = aboutImages.find(item => item.key === key);
+    let image = aboutImages.find(item => item.key === key);
+    if (!image) {
+      const aliasKey = key === 'missionValues' ? 'missionMain' : key === 'visionGoals' ? 'visionMain' : null;
+      if (aliasKey) {
+        image = aboutImages.find(item => item.key === aliasKey);
+      }
+    }
     if (image?.imageUrl) return getMediaUrl(image.imageUrl);
     return fallback;
   };
@@ -294,6 +300,7 @@ export function AboutLogo({ onNavigate }) {
                 <img
                   src={imageFor('missionValues', libraryImage)}
                   alt={altFor('missionValues', 'Mission & Values')}
+                  onError={(e) => { e.currentTarget.src = libraryImage; }}
                   className="w-full h-full object-cover object-center transform hover:scale-105 transition-transform duration-500"
                 />
               </motion.div>
@@ -317,6 +324,7 @@ export function AboutLogo({ onNavigate }) {
                 <img
                   src={imageFor('visionGoals', laboratoryImage)}
                   alt={altFor('visionGoals', 'Vision & Goals')}
+                  onError={(e) => { e.currentTarget.src = laboratoryImage; }}
                   className="w-full h-full object-cover object-center transform hover:scale-105 transition-transform duration-500"
                 />
               </motion.div>
