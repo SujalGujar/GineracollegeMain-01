@@ -1631,7 +1631,7 @@ const HomePage=({ onNavigate }) => {
           />
           <div style={{ position: "relative", zIndex: 1 }}>
             <motion.p
-              variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }}
+              variants={fadeUp} initial="hidden" animate="visible"
               style={{ textAlign: "center", color: "#6b7280", fontSize: 15, marginBottom: 36, letterSpacing: "0.02em" }}
             >
               Trusted by leading organizations and institutions worldwide

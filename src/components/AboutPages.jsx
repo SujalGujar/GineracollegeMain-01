@@ -35,8 +35,7 @@ function MissionStatementItem({ text, index, direction = 1 }) {
   return (
     <motion.div
       initial={{ x: direction * -30, opacity: 0 }}
-      whileInView={{ x: 0, opacity: 1 }}
-      viewport={{ once: true }}
+      animate={{ x: 0, opacity: 1 }}
       transition={{
         duration: 0.5,
         delay: index * 0.15,
@@ -233,8 +232,7 @@ export function AboutLogo({ onNavigate }) {
           <CardHeader className="text-center py-20 space-y-6 bg-gradient-to-r from-amber-500 to-orange-500">
             <motion.div
               initial={{ opacity: 0, y: -30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
+              animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8 }}
             >
               <CardTitle className="text-4xl font-bold text-white">
@@ -243,9 +241,8 @@ export function AboutLogo({ onNavigate }) {
               <motion.div
                 className="h-1 bg-white/50 rounded-full mx-auto my-4 max-w-md"
                 initial={{ width: 0 }}
-                whileInView={{ width: "100%" }}
+                animate={{ width: "100%" }}
                 transition={{ delay: 0.5, duration: 1 }}
-                viewport={{ once: true }}
               />
               <p className="max-w-2xl mx-auto text-white/90 text-lg leading-relaxed">
                 We are dedicated to fostering academic excellence and holistic
@@ -260,8 +257,7 @@ export function AboutLogo({ onNavigate }) {
             <motion.div
               className="grid md:grid-cols-2 gap-12 items-start"
               initial={{ opacity: 0, y: 40 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
+              animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8 }}
             >
               {/* LEFT TEXT */}
@@ -269,8 +265,7 @@ export function AboutLogo({ onNavigate }) {
                 <motion.h3
                   className="text-2xl font-semibold flex items-center mb-8 text-[#78350f]"
                   initial={{ x: -50, opacity: 0 }}
-                  whileInView={{ x: 0, opacity: 1 }}
-                  viewport={{ once: true }}
+                  animate={{ x: 0, opacity: 1 }}
                   transition={{ duration: 0.6 }}
                 >
                   <motion.span
@@ -293,8 +288,7 @@ export function AboutLogo({ onNavigate }) {
                 className="rounded-2xl shadow-lg overflow-hidden"
                 style={{ aspectRatio: "4 / 3", maxHeight: "420px" }}
                 initial={{ x: 80, opacity: 0 }}
-                whileInView={{ x: 0, opacity: 1 }}
-                viewport={{ once: true }}
+                animate={{ x: 0, opacity: 1 }}
                 transition={{ duration: 0.8 }}
               >
                 <img
@@ -309,8 +303,7 @@ export function AboutLogo({ onNavigate }) {
             <motion.div
               className="grid md:grid-cols-2 gap-12 items-start"
               initial={{ opacity: 0, y: 40 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
+              animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8 }}
             >
               {/* LEFT IMAGE */}
@@ -318,8 +311,7 @@ export function AboutLogo({ onNavigate }) {
                 className="rounded-2xl shadow-lg overflow-hidden order-1 md:order-none"
                 style={{ aspectRatio: "4 / 3", maxHeight: "420px" }}
                 initial={{ x: -80, opacity: 0 }}
-                whileInView={{ x: 0, opacity: 1 }}
-                viewport={{ once: true }}
+                animate={{ x: 0, opacity: 1 }}
                 transition={{ duration: 0.8 }}
               >
                 <img
@@ -334,8 +326,7 @@ export function AboutLogo({ onNavigate }) {
                 <motion.h3
                   className="text-2xl font-semibold flex items-center mb-8 text-[#78350f]"
                   initial={{ x: 50, opacity: 0 }}
-                  whileInView={{ x: 0, opacity: 1 }}
-                  viewport={{ once: true }}
+                  animate={{ x: 0, opacity: 1 }}
                   transition={{ duration: 0.6 }}
                 >
                   <motion.span
@@ -358,8 +349,7 @@ export function AboutLogo({ onNavigate }) {
             <motion.div
               className="pt-8 text-center"
               initial={{ opacity: 0, y: 40 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
+              animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8 }}
             >
               <p className="text-gray-600 mb-6 text-lg">
@@ -791,7 +781,7 @@ export function History() {
       <motion.div
         className="relative w-full h-64 sm:h-80 lg:h-96 mb-16 overflow-hidden rounded-xl"
         initial={{ opacity: 0 }}
-        whileInView={{ opacity: 1 }}
+        animate={{ opacity: 1 }}
         transition={{ duration: 1 }}
       >
         <motion.img
@@ -1847,8 +1837,7 @@ export function Achievements() {
       <motion.div
         className="container mx-auto px-4 relative z-10"
         initial="hidden"
-        whileInView="visible"
-        viewport={{ once: true }}
+        animate="visible"
         variants={containerVariants}
         style={{ marginTop: "70px" }}
       >
@@ -1856,7 +1845,7 @@ export function Achievements() {
         <motion.h1
           className="text-4xl font-bold text-center mb-16"
           initial={{ opacity: 0, y: -30 }}
-          whileInView={{ opacity: 1, y: 0 }}
+          animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, ease: "easeOut" }}
           style={{ color: "#1E3A8A" }}
         >
@@ -1873,13 +1862,12 @@ export function Achievements() {
               key={index}
               variants={cardVariants}
               initial={{ opacity: 0, y: 40, scale: 0.95 }}
-              whileInView={{ opacity: 1, y: 0, scale: 1 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
               transition={{
                 duration: 0.6,
                 delay: index * 0.2,
                 ease: "easeOut",
               }}
-              viewport={{ once: true }}
             >
               <Card className="group h-full border-0 shadow-md hover:shadow-2xl transition-all duration-500 rounded-2xl bg-white/90 backdrop-blur-md hover:scale-[1.03]">
                 {/* Header */}
@@ -1920,9 +1908,8 @@ export function Achievements() {
                                   key={itemIndex}
                                   className="flex items-start gap-2.5 text-gray-700 text-sm hover:translate-x-1 transition-transform duration-300 font-medium"
                                   initial={{ opacity: 0, x: -10 }}
-                                  whileInView={{ opacity: 1, x: 0 }}
+                                  animate={{ opacity: 1, x: 0 }}
                                   transition={{ duration: 0.4 }}
-                                  viewport={{ once: true }}
                                 >
                                   <span className="text-[#A2632E] text-base leading-none select-none">•</span>
                                   <span className="leading-relaxed flex-1">{parentText}</span>
@@ -1951,9 +1938,8 @@ export function Achievements() {
                                 key={itemIndex}
                                 className="flex items-start gap-2.5 text-gray-700 text-sm hover:translate-x-1 transition-transform duration-300"
                                 initial={{ opacity: 0, x: -10 }}
-                                whileInView={{ opacity: 1, x: 0 }}
+                                animate={{ opacity: 1, x: 0 }}
                                 transition={{ duration: 0.4, delay: itemIndex * 0.05 }}
-                                viewport={{ once: true }}
                               >
                                 <span className="text-[#A2632E] text-base leading-none select-none">•</span>
                                 <span className="leading-relaxed flex-1">{item}</span>
@@ -1969,9 +1955,8 @@ export function Achievements() {
                           key={itemIndex}
                           className="flex items-start gap-3 transition-all duration-300 group/item hover:translate-x-1"
                           initial={{ opacity: 0, x: -20 }}
-                          whileInView={{ opacity: 1, x: 0 }}
+                          animate={{ opacity: 1, x: 0 }}
                           transition={{ duration: 0.4, delay: itemIndex * 0.1 }}
-                          viewport={{ once: true }}
                         >
                           <Badge
                             variant="outline"
@@ -1996,8 +1981,7 @@ export function Achievements() {
         <motion.div
           className="max-w-6xl mx-auto"
           initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true }}
+          animate="visible"
           variants={containerVariants}
         >
           <Card className="shadow-lg border-0 bg-white/90 backdrop-blur-md rounded-2xl">

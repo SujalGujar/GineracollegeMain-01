@@ -247,9 +247,8 @@ export function CoursesOffered() {
                   className="w-12 h-12 rounded-full flex items-center justify-center text-white text-xl"
                   style={{ backgroundColor: "#f59e0b", display: "none" }}
                   initial={{ scale: 0 }}
-                  whileInView={{ scale: 1 }}
+                  animate={{ scale: 1 }}
                   transition={{ type: "spring", duration: 0.6 }}
-                  viewport={{ once: true }}
                 >
                   {courseType.icon}
                 </motion.div>
@@ -258,9 +257,8 @@ export function CoursesOffered() {
                   className="text-3xl font-bold"
                   style={{ color: "#78350f" }}
                   initial={{ opacity: 0, x: -40 }}
-                  whileInView={{ opacity: 1, x: 0 }}
+                  animate={{ opacity: 1, x: 0 }}
                   transition={{ duration: 0.6 }}
-                  viewport={{ once: true }}
                 >
                   {courseType.type}
                 </motion.h2>
@@ -273,9 +271,8 @@ export function CoursesOffered() {
                     className="w-12 h-12 rounded-full flex items-center justify-center text-white text-xl"
                   style={{ backgroundColor: "#f59e0b", display: "none" }}
                     initial={{ scale: 0 }}
-                    whileInView={{ scale: 1 }}
+                    animate={{ scale: 1 }}
                     transition={{ type: "spring", duration: 0.6 }}
-                    viewport={{ once: true }}
                   >
                     {courseType.icon}
                   </motion.div>
@@ -284,9 +281,8 @@ export function CoursesOffered() {
                     className="text-3xl font-bold"
                     style={{ color: "#78350f" }}
                     initial={{ opacity: 0, x: 40 }}
-                    whileInView={{ opacity: 1, x: 0 }}
+                    animate={{ opacity: 1, x: 0 }}
                     transition={{ duration: 0.6 }}
-                    viewport={{ once: true }}
                   >
                     {courseType.type2}
                   </motion.h2>
@@ -318,7 +314,7 @@ export function CoursesOffered() {
                           className="w-12 h-12 rounded-xl bg-orange-500/20 flex items-center justify-center text-2xl"
                           style={{ color: "#b45309" }}
                           initial={{ rotateY: 90 }}
-                          whileInView={{ rotateY: 0 }}
+                          animate={{ rotateY: 0 }}
                           transition={{ duration: 0.6 }}
                         >
                           {program.icon}
@@ -339,7 +335,7 @@ export function CoursesOffered() {
                         className="text-lg font-bold leading-tight"
                         style={{ color: "#78350f" }}
                         initial={{ opacity: 0, y: 20 }}
-                        whileInView={{ opacity: 1, y: 0 }}
+                        animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.5, delay: 0.1 }}
                       >
                         {program.name}
@@ -349,7 +345,7 @@ export function CoursesOffered() {
                       <motion.p
                         className="text-sm mt-2 text-gray-700"
                         initial={{ opacity: 0 }}
-                        whileInView={{ opacity: 1 }}
+                        animate={{ opacity: 1 }}
                         transition={{ duration: 0.6, delay: 0.2 }}
                       >
                         {program.description ? (
@@ -412,9 +408,8 @@ export function CoursesOffered() {
                             key={i}
                             className="flex items-center gap-3"
                             initial={{ opacity: 0, x: -20 }}
-                            whileInView={{ opacity: 1, x: 0 }}
+                            animate={{ opacity: 1, x: 0 }}
                             transition={{ duration: 0.4, delay: i * 0.1 }}
-                            viewport={{ once: true }}
                           >
                             {item.icon}
                             <div>
@@ -428,9 +423,8 @@ export function CoursesOffered() {
                         <motion.div
                           className="flex flex-col gap-1"
                           initial={{ opacity: 0, x: -20 }}
-                          whileInView={{ opacity: 1, x: 0 }}
+                          animate={{ opacity: 1, x: 0 }}
                           transition={{ duration: 0.4, delay: 0.2 }}
-                          viewport={{ once: true }}
                         >
                           <div className="flex items-center gap-3">
                             <FileText className="w-4 h-4" style={{ color: "#b45309" }} />
@@ -462,7 +456,7 @@ export function CoursesOffered() {
                       <motion.div
                         className="pt-4 border-t border-orange-200"
                         initial={{ opacity: 0 }}
-                        whileInView={{ opacity: 1 }}
+                        animate={{ opacity: 1 }}
                         transition={{ duration: 0.6 }}
                       >
                         <h4 className="font-semibold text-sm mb-3 text-gray-800 flex items-center gap-2">
@@ -486,7 +480,7 @@ export function CoursesOffered() {
                         <motion.div
                           className="pt-4 border-t border-orange-200"
                           initial={{ opacity: 0 }}
-                          whileInView={{ opacity: 1 }}
+                          animate={{ opacity: 1 }}
                           transition={{ duration: 0.6 }}
                         >
                           <a

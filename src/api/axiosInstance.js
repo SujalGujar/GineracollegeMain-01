@@ -42,7 +42,7 @@ export const getMediaUrl = (url, fallback = '/placeholder.png') => {
 
 const axiosInstance = axios.create({
   baseURL,
-  timeout: 15000,
+  timeout: 45000,
 });
 
 let activeRequests = 0;
@@ -86,7 +86,13 @@ axiosInstance.interceptors.response.use((response) => {
     return Promise.reject(new Error("API returned HTML instead of JSON"));
   }
   return response;
-}, (error) => {
+}, async (error) => {
+  const config = error.config;
+  if (config && (!config._retryCount || config._retryCount < 2) && (error.code === 'ECONNABORTED' || !error.response || error.response.status >= 500)) {
+    config._retryCount = (config._retryCount || 0) + 1;
+    await new Promise(r => setTimeout(r, 1200 * config._retryCount));
+    return axiosInstance(config);
+  }
   activeRequests = Math.max(0, activeRequests - 1);
   notifyLoadingListeners();
   return Promise.reject(error);
