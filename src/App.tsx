@@ -48,6 +48,7 @@ export default function App() {
 
   const [pageLoading, setPageLoading] = useState(true);
   const navigationId = useRef(0);
+  const [pageInstance, setPageInstance] = useState(0);
 
   const openPageWithLoader = (page: string, updateUrl = true) => {
     const requestId = ++navigationId.current;
@@ -60,26 +61,23 @@ export default function App() {
       }
     }
     setCurrentPage(page);
+    // A page visit must always be a fresh instance, even when the visitor
+    // returns to Home. This restarts its data requests and animations.
+    setPageInstance(instance => instance + 1);
     window.scrollTo(0, 0);
-
-    const minLoadTimer = new Promise((resolve) => setTimeout(resolve, 650));
-    // Give the new route time to mount its effects before deciding that the
-    // API is idle. The loader remains an overlay so those effects and
-    // IntersectionObserver animations can run normally underneath it.
-    Promise.all([waitForApiIdle(150), minLoadTimer]).then(() => {
-      if (navigationId.current === requestId) {
-        setPageLoading(false);
-      }
-    });
   };
 
   useEffect(() => {
-    const requestId = ++navigationId.current;
-    const minLoadTimer = new Promise((resolve) => setTimeout(resolve, 650));
-    Promise.all([waitForApiIdle(150), minLoadTimer]).then(() => {
-      if (navigationId.current === requestId) setPageLoading(false);
+    const requestId = navigationId.current;
+    let active = true;
+    // This effect runs after the replacement page has mounted. Its requests
+    // are therefore included before the global loader is allowed to finish.
+    const minLoadTimer = new Promise((resolve) => setTimeout(resolve, 1200));
+    Promise.all([waitForApiIdle(250), minLoadTimer]).then(() => {
+      if (active && navigationId.current === requestId) setPageLoading(false);
     });
-  }, []);
+    return () => { active = false; };
+  }, [currentPage, pageInstance]);
 
   useEffect(() => {
     const handleHashChange = () => {
@@ -196,7 +194,7 @@ export default function App() {
             <main
               className="flex-1 min-h-0 flex flex-col overflow-hidden w-full"
               style={{ minHeight: 0, height: '100%' }}>
-              {renderCurrentPage()}
+              <React.Fragment key={pageInstance}>{renderCurrentPage()}</React.Fragment>
             </main>
             <Toaster />
           </div>
@@ -210,7 +208,7 @@ export default function App() {
           >
             <Header currentPage={currentPage} onNavigate={handleNavigation} />
             <main className="flex-1">
-              {renderCurrentPage()}
+              <React.Fragment key={pageInstance}>{renderCurrentPage()}</React.Fragment>
             </main>
 
             {/* Footer */}
