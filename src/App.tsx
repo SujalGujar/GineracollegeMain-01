@@ -63,7 +63,10 @@ export default function App() {
     window.scrollTo(0, 0);
 
     const minLoadTimer = new Promise((resolve) => setTimeout(resolve, 650));
-    Promise.all([waitForApiIdle(), minLoadTimer]).then(() => {
+    // Give the new route time to mount its effects before deciding that the
+    // API is idle. The loader remains an overlay so those effects and
+    // IntersectionObserver animations can run normally underneath it.
+    Promise.all([waitForApiIdle(150), minLoadTimer]).then(() => {
       if (navigationId.current === requestId) {
         setPageLoading(false);
       }
@@ -73,7 +76,7 @@ export default function App() {
   useEffect(() => {
     const requestId = ++navigationId.current;
     const minLoadTimer = new Promise((resolve) => setTimeout(resolve, 650));
-    Promise.all([waitForApiIdle(), minLoadTimer]).then(() => {
+    Promise.all([waitForApiIdle(150), minLoadTimer]).then(() => {
       if (navigationId.current === requestId) setPageLoading(false);
     });
   }, []);
@@ -183,7 +186,7 @@ export default function App() {
           <div
             className="flex flex-col w-screen h-screen overflow-hidden bg-gray-50"
             style={{
-              display: showLoader ? 'none' : 'flex',
+              display: 'flex',
               width: '100vw',
               height: '100dvh',
               minHeight: '100dvh',
@@ -203,7 +206,7 @@ export default function App() {
           {showLoader && <LoadingScreen />}
           <div 
             className="min-h-screen bg-background flex flex-col"
-            style={{ display: showLoader ? 'none' : 'flex' }}
+            style={{ display: 'flex' }}
           >
             <Header currentPage={currentPage} onNavigate={handleNavigation} />
             <main className="flex-1">

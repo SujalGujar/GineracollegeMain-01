@@ -1478,8 +1478,7 @@ const HomePage=({ onNavigate }) => {
           <div style={{ maxWidth: 1100, margin: "0 auto", padding: "0 24px", position: "relative", zIndex: 1 }}>
             <motion.div
               initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, amount: 0.1 }}
+              animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6 }}
               style={{ textAlign: "center", marginBottom: 32 }}
             >
