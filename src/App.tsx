@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ThemeProvider } from './components/ThemeProvider';
 import { Header } from './components/Header';
 import { Toaster } from './components/ui/sonner';
@@ -19,8 +19,7 @@ import AdminPanel from './components/AdminPanel';
 import { LoginPage } from './components/LoginPage';
 import LoadingScreen from './components/LoadingScreen';
 import { StudentCorner } from './components/StudentCorner';
-
-const PAGE_LOADER_DELAY = 900;
+import { waitForApiIdle } from './api/axiosInstance';
 
 export default function App() {
   const getPageFromLocation = () => {
@@ -42,10 +41,12 @@ export default function App() {
     return localStorage.getItem('adminAuthenticated') === 'true';
   });
 
-  const [isLoading, setIsLoading] = useState(false);
-  const [pageLoading, setPageLoading] = useState(false);
+  const [pageLoading, setPageLoading] = useState(true);
+  const navigationId = useRef(0);
 
   const openPageWithLoader = (page: string, updateUrl = true) => {
+    const requestId = ++navigationId.current;
+    setPageLoading(true);
     if (updateUrl) {
       if (page === 'home') {
         window.history.pushState(null, '', window.location.pathname);
@@ -55,7 +56,21 @@ export default function App() {
     }
     setCurrentPage(page);
     window.scrollTo(0, 0);
+    requestAnimationFrame(() => {
+      waitForApiIdle().then(() => {
+        if (navigationId.current === requestId) setPageLoading(false);
+      });
+    });
   };
+
+  useEffect(() => {
+    const requestId = ++navigationId.current;
+    requestAnimationFrame(() => {
+      waitForApiIdle().then(() => {
+        if (navigationId.current === requestId) setPageLoading(false);
+      });
+    });
+  }, []);
 
   useEffect(() => {
     const handleHashChange = () => {
@@ -151,7 +166,7 @@ export default function App() {
 
   // For admin page: use a fully isolated full-screen layout
   const isAdmin = currentPage === 'admin';
-  const showLoader = isLoading || pageLoading;
+  const showLoader = pageLoading;
 
   return (
     <ThemeProvider>
@@ -226,7 +241,6 @@ export default function App() {
                       <button onClick={() => handleNavigation('admission-procedure')} className="block text-gray-300 hover:text-white hover:translate-x-1 transition-all text-sm">Admissions</button>
                       <button onClick={() => handleNavigation('courses')} className="block text-gray-300 hover:text-white hover:translate-x-1 transition-all text-sm">Courses</button>
                       <button onClick={() => handleNavigation('achievements')} className="block text-gray-300 hover:text-white hover:translate-x-1 transition-all text-sm">Achievements</button>
-                      <button onClick={() => handleNavigation('student-corner')} className="block text-gray-300 hover:text-white hover:translate-x-1 transition-all text-sm">Student Corner</button>
                     </div>
                   </div>
                   <div>

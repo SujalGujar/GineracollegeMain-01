@@ -69,7 +69,6 @@ const NAV_ITEMS = [
     ],
   },
   { key: "affiliated-institutes", label: "Affiliated Institutes", subpages: [] },
-  { key: "student-corner", label: "Student Corner", subpages: [] },
   { key: "contact", label: "Contact Us", subpages: [] },
 ];
 

@@ -4,11 +4,8 @@ import { Badge } from "./ui/badge";
 import CollegeMap from "./CollegeMap";
 import { IoMdArrowForward } from "react-icons/io";
 import { motion } from "framer-motion";
-import logo from "../images/Gineralogoimage.jpg";
 import laboratoryImage from "../images/laboratory1.jpg";
 import libraryImage from "../images/library1.jpg";
-import ourVisionImage from "../images/ourvision.jpg";
-import ourMissionImage from "../images/ourmision.jpg";
 import collegeImage1 from "../images/collegeimage1.jpg";
 import backgroundImage4 from "../images/backgroundImage(4).png";
 import backgroundImage from "../images/backgroundImage (2).jpg";
@@ -111,18 +108,11 @@ export function AboutLogo({ onNavigate }) {
   const visionPoints = visionMission.filter(v => v.type === 'vision').map(v => v.content);
   const missionPoints = visionMission.filter(v => v.type === 'mission').map(v => v.content);
 
-  const displayLogo = collegeBranding?.logoUrl
-    ? getMediaUrl(collegeBranding.logoUrl)
-    : logo;
-  const imageFor = (key, fallback) => {
+  const displayLogo = collegeBranding?.logoUrl ? getMediaUrl(collegeBranding.logoUrl) : null;
+  const imageFor = (key) => {
     const image = aboutImages.find(item => item.key === key);
     if (image?.imageUrl) return getMediaUrl(image.imageUrl);
-    const altKey = key === 'missionValues' ? 'missionMain' : key === 'visionGoals' ? 'visionMain' : null;
-    if (altKey) {
-      const altImage = aboutImages.find(item => item.key === altKey);
-      if (altImage?.imageUrl) return getMediaUrl(altImage.imageUrl);
-    }
-    return fallback;
+    return null;
   };
   const altFor = (key, fallback) => {
     const image = aboutImages.find(item => item.key === key);
@@ -184,7 +174,7 @@ export function AboutLogo({ onNavigate }) {
               }}
               transition={{ duration: 0.4 }}
             >
-              <motion.img
+              {displayLogo && <motion.img
                 src={displayLogo}
                 alt={collegeBranding?.collegeName || 'College Logo'}
                 className="object-contain"
@@ -197,7 +187,7 @@ export function AboutLogo({ onNavigate }) {
                 }}
                 whileHover={{ scale: 1.04 }}
                 transition={{ duration: 0.3 }}
-              />
+              />}
             </motion.div>
           </motion.div>
 
@@ -1379,16 +1369,13 @@ export function VisionMission() {
     "This includes developing nurses who can serve diverse communities, promote health, prevent illness, and contribute to the advancement of the nursing profession both locally and globally",
     "Deliver compassionate, ethical, and evidence-based healthcare services",
   ];
-  const imageFor = (key, fallback) => {
+  const imageFor = (key) => {
     const image = aboutImages.find(item => item.key === key);
     if (image?.imageUrl) return getMediaUrl(image.imageUrl);
-    const altKey = key === 'missionMain' ? 'missionValues' : key === 'visionMain' ? 'visionGoals' : null;
-    if (altKey) {
-      const altImage = aboutImages.find(item => item.key === altKey);
-      if (altImage?.imageUrl) return getMediaUrl(altImage.imageUrl);
-    }
-    return fallback;
+    return null;
   };
+  const visionImage = imageFor('visionMain');
+  const missionImage = imageFor('missionMain');
   const altFor = (key, fallback) => {
     const image = aboutImages.find(item => item.key === key);
     if (image?.alt) return image.alt;
@@ -1477,16 +1464,18 @@ export function VisionMission() {
             className="grid lg:grid-cols-2 gap-8 mb-16 items-start"
           >
             {/* Vision Image - Left Side */}
-            <motion.div
+            {visionImage && <motion.div
               variants={imageVariants}
               className="order-1 lg:order-1"
             >
               <div className="rounded-2xl overflow-hidden shadow-2xl bg-gradient-to-br from-amber-100 to-orange-100" style={{ aspectRatio: "4 / 3", maxHeight: "420px" }}>
                 <img
-                  src={imageFor('visionMain', ourVisionImage)}
+                  src={visionImage}
                   alt={altFor('visionMain', 'Our Vision for Medical Excellence')}
                   className="w-full h-full object-cover object-center hover:scale-105 transition-transform duration-700"
                   onError={(e) => {
+                    e.currentTarget.closest('.order-1')?.remove();
+                    return;
                     // If image fails to load, show fallback content
                     e.target.style.display = "none";
                     const fallback = e.target.parentElement;
@@ -1502,7 +1491,7 @@ export function VisionMission() {
                   }}
                 />
               </div>
-            </motion.div>
+            </motion.div>}
 
             {/* Vision Content - Right Side */}
             <motion.div
@@ -1646,16 +1635,18 @@ export function VisionMission() {
             </motion.div>
 
             {/* Mission Image - Right Side */}
-            <motion.div
+            {missionImage && <motion.div
               variants={imageVariants}
               className="order-1 lg:order-2"
             >
               <div className="rounded-2xl overflow-hidden shadow-2xl bg-gradient-to-br from-orange-100 to-amber-100" style={{ aspectRatio: "4 / 3", maxHeight: "420px" }}>
                 <img
-                  src={imageFor('missionMain', ourMissionImage)}
+                  src={missionImage}
                   alt={altFor('missionMain', 'Our Mission in Action')}
                   className="w-full h-full object-cover object-center hover:scale-105 transition-transform duration-700"
                   onError={(e) => {
+                    e.currentTarget.closest('.order-1')?.remove();
+                    return;
                     // If image fails to load, show fallback content
                     e.target.style.display = "none";
                     const fallback = e.target.parentElement;
@@ -1671,7 +1662,7 @@ export function VisionMission() {
                   }}
                 />
               </div>
-            </motion.div>
+            </motion.div>}
           </motion.div>
           {/* Core Values */}
           <motion.div
