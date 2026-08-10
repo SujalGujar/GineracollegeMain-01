@@ -1273,8 +1273,9 @@ const HomePage=({ onNavigate }) => {
           ))}
           <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 24px", position: "relative", zIndex: 1 }}>
             <motion.div
-              variants={fadeUp} initial="hidden"
-              animate={programsVisible ? "visible" : "hidden"}
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6 }}
               style={{ textAlign: "center", marginBottom: 64 }}
             >
               <div className="section-badge">
@@ -1354,10 +1355,9 @@ const HomePage=({ onNavigate }) => {
                 return (
                   <motion.div
                     key={programId}
-                    custom={i}
-                    variants={cardVariant}
-                    initial="hidden"
-                    animate={programsVisible ? "visible" : "hidden"}
+                    initial={{ opacity: 0, y: 30 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: i * 0.12 }}
                     whileHover={{ y: -8, transition: { duration: 0.3 } }}
                     style={{
                       background: "#fff",

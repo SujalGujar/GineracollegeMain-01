@@ -28,7 +28,12 @@ export default function App() {
       return 'admin';
     }
     if (hash && hash.startsWith('#/')) {
-      return hash.substring(2);
+      let raw = hash.substring(2);
+      try {
+        raw = decodeURIComponent(raw);
+      } catch (e) {}
+      const pageKey = raw.trim().toLowerCase().replace(/\s+/g, '-');
+      return pageKey || 'home';
     }
     return 'home';
   };
@@ -56,19 +61,20 @@ export default function App() {
     }
     setCurrentPage(page);
     window.scrollTo(0, 0);
-    requestAnimationFrame(() => {
-      waitForApiIdle().then(() => {
-        if (navigationId.current === requestId) setPageLoading(false);
-      });
+
+    const minLoadTimer = new Promise((resolve) => setTimeout(resolve, 650));
+    Promise.all([waitForApiIdle(), minLoadTimer]).then(() => {
+      if (navigationId.current === requestId) {
+        setPageLoading(false);
+      }
     });
   };
 
   useEffect(() => {
     const requestId = ++navigationId.current;
-    requestAnimationFrame(() => {
-      waitForApiIdle().then(() => {
-        if (navigationId.current === requestId) setPageLoading(false);
-      });
+    const minLoadTimer = new Promise((resolve) => setTimeout(resolve, 650));
+    Promise.all([waitForApiIdle(), minLoadTimer]).then(() => {
+      if (navigationId.current === requestId) setPageLoading(false);
     });
   }, []);
 
