@@ -17,6 +17,7 @@ import { Button } from "./ui/button";
 import principleImage from "../images/principleImage.jpeg"
 import axiosInstance, { getMediaUrl } from "../api/axiosInstance";
 import campusLocationImg from "../images/coll.jpeg";
+import gineraLogo from "../images/ginera-logo.png";
 import { useSectionVisibility } from "../context/SectionVisibilityContext";
 import SectionOffNotice from "./SectionOffNotice";
 
@@ -108,11 +109,11 @@ export function AboutLogo({ onNavigate }) {
   const visionPoints = visionMission.filter(v => v.type === 'vision').map(v => v.content);
   const missionPoints = visionMission.filter(v => v.type === 'mission').map(v => v.content);
 
-  const displayLogo = collegeBranding?.logoUrl ? getMediaUrl(collegeBranding.logoUrl) : null;
-  const imageFor = (key) => {
+  const displayLogo = collegeBranding?.logoUrl ? getMediaUrl(collegeBranding.logoUrl) : gineraLogo;
+  const imageFor = (key, fallback = null) => {
     const image = aboutImages.find(item => item.key === key);
     if (image?.imageUrl) return getMediaUrl(image.imageUrl);
-    return null;
+    return fallback;
   };
   const altFor = (key, fallback) => {
     const image = aboutImages.find(item => item.key === key);
@@ -174,9 +175,10 @@ export function AboutLogo({ onNavigate }) {
               }}
               transition={{ duration: 0.4 }}
             >
-              {displayLogo && <motion.img
+              <motion.img
                 src={displayLogo}
                 alt={collegeBranding?.collegeName || 'College Logo'}
+                onError={(e) => { e.currentTarget.src = gineraLogo; }}
                 className="object-contain"
                 style={{
                   width: "100%",
@@ -187,7 +189,7 @@ export function AboutLogo({ onNavigate }) {
                 }}
                 whileHover={{ scale: 1.04 }}
                 transition={{ duration: 0.3 }}
-              />}
+              />
             </motion.div>
           </motion.div>
 
@@ -604,7 +606,7 @@ export function DeanMessage() {
                   className="text-center mb-8"
                   variants={textVariants}
                   initial="hidden"
-                  whileInView="visible"
+                  animate="visible"
                 >
                   <p className="text-2xl font-semibold text-gray-800 mb-2">{deanGreeting}</p>
                   <div className="w-24 h-1 bg-[#A2632E] rounded-full mx-auto"></div>
@@ -615,7 +617,7 @@ export function DeanMessage() {
                   className="space-y-8"
                   variants={containerVariants}
                   initial="hidden"
-                  whileInView="visible"
+                  animate="visible"
                 >
                   {deanParagraphs.filter(p => p && p.trim() !== "").map((text, i) => (
                     <motion.p key={i} className="text-gray-700 leading-relaxed text-lg text-justify" variants={textVariants}>
@@ -1382,13 +1384,13 @@ export function VisionMission() {
     "This includes developing nurses who can serve diverse communities, promote health, prevent illness, and contribute to the advancement of the nursing profession both locally and globally",
     "Deliver compassionate, ethical, and evidence-based healthcare services",
   ];
-  const imageFor = (key) => {
+  const imageFor = (key, fallback = null) => {
     const image = aboutImages.find(item => item.key === key);
     if (image?.imageUrl) return getMediaUrl(image.imageUrl);
-    return null;
+    return fallback;
   };
-  const visionImage = imageFor('visionMain');
-  const missionImage = imageFor('missionMain');
+  const visionImage = imageFor('visionMain', libraryImage);
+  const missionImage = imageFor('missionMain', laboratoryImage);
   const altFor = (key, fallback) => {
     const image = aboutImages.find(item => item.key === key);
     if (image?.alt) return image.alt;
@@ -1477,7 +1479,7 @@ export function VisionMission() {
             className="grid lg:grid-cols-2 gap-8 mb-16 items-start"
           >
             {/* Vision Image - Left Side */}
-            {visionImage && <motion.div
+            <motion.div
               variants={imageVariants}
               className="order-1 lg:order-1"
             >
@@ -1487,24 +1489,11 @@ export function VisionMission() {
                   alt={altFor('visionMain', 'Our Vision for Medical Excellence')}
                   className="w-full h-full object-cover object-center hover:scale-105 transition-transform duration-700"
                   onError={(e) => {
-                    e.currentTarget.closest('.order-1')?.remove();
-                    return;
-                    // If image fails to load, show fallback content
-                    e.target.style.display = "none";
-                    const fallback = e.target.parentElement;
-                    fallback.innerHTML = `
-                      <div class="w-full h-full flex items-center justify-center">
-                        <div class="text-center p-8">
-                          <span class="text-6xl mb-4 block">🔭</span>
-                          <p class="text-2xl font-bold text-gray-700 mb-2">Our Vision</p>
-                          <p class="text-gray-600">Medical Excellence & Innovation</p>
-                        </div>
-                      </div>
-                    `;
+                    e.currentTarget.src = libraryImage;
                   }}
                 />
               </div>
-            </motion.div>}
+            </motion.div>
 
             {/* Vision Content - Right Side */}
             <motion.div
@@ -1648,7 +1637,7 @@ export function VisionMission() {
             </motion.div>
 
             {/* Mission Image - Right Side */}
-            {missionImage && <motion.div
+            <motion.div
               variants={imageVariants}
               className="order-1 lg:order-2"
             >
@@ -1658,24 +1647,11 @@ export function VisionMission() {
                   alt={altFor('missionMain', 'Our Mission in Action')}
                   className="w-full h-full object-cover object-center hover:scale-105 transition-transform duration-700"
                   onError={(e) => {
-                    e.currentTarget.closest('.order-1')?.remove();
-                    return;
-                    // If image fails to load, show fallback content
-                    e.target.style.display = "none";
-                    const fallback = e.target.parentElement;
-                    fallback.innerHTML = `
-                      <div class="w-full h-full flex items-center justify-center">
-                        <div class="text-center p-8">
-                          <span class="text-6xl mb-4 block">🎯</span>
-                          <p class="text-2xl font-bold text-gray-700 mb-2">Our Mission</p>
-                          <p class="text-gray-600">Healthcare Excellence & Service</p>
-                        </div>
-                      </div>
-                    `;
+                    e.currentTarget.src = laboratoryImage;
                   }}
                 />
               </div>
-            </motion.div>}
+            </motion.div>
 
 
           </motion.div>

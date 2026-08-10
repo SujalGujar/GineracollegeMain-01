@@ -1647,8 +1647,7 @@ export function AdmissionRules() {
           style={{ marginTop: "10px" }}
           variants={staggerContainer}
           initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, amount: 0.3 }}
+          animate="visible"
           className="max-w-6xl mx-auto space-y-8"
         >
           {/* MBBS Eligibility Card */}
