@@ -23,13 +23,8 @@ const LoadingScreen = () => createPortal(
       <div style={{ margin: '24px auto 14px', width: 48, height: 48, border: '5px solid rgba(255,255,255,.28)', borderTopColor: '#f59e0b', borderRadius: '50%', animation: 'ginera-loader-spin .8s linear infinite' }} />
       <h2 style={{ margin: 0, fontSize: 24, fontWeight: 800 }}>Loading page data…</h2>
       <p style={{ margin: '9px 0 24px', color: '#cbd5e1', fontSize: 15 }}>Please wait while we load the latest information.</p>
-      <div style={{ display: 'grid', gap: 10 }}>
-        {[100, 82, 68].map((width, index) => (
-          <div key={index} style={{ width: `${width}%`, height: 13, margin: '0 auto', borderRadius: 99, background: 'linear-gradient(90deg, #334155 25%, #64748b 50%, #334155 75%)', backgroundSize: '200% 100%', animation: `ginera-skeleton 1.2s ease-in-out ${index * .12}s infinite` }} />
-        ))}
-      </div>
     </div>
-    <style>{`@keyframes ginera-loader-spin { to { transform: rotate(360deg); } } @keyframes ginera-skeleton { from { background-position: 200% 0; } to { background-position: -200% 0; } }`}</style>
+    <style>{`@keyframes ginera-loader-spin { to { transform: rotate(360deg); } }`}</style>
   </div>,
   document.body,
 );
