@@ -298,8 +298,8 @@ export function AboutLogo({ onNavigate }) {
                 transition={{ duration: 0.8 }}
               >
                 <img
-                  src={imageFor('missionValues', libraryImage)}
-                  alt={altFor('missionValues', 'Mission & Values')}
+                  src={imageFor('missionMain', libraryImage)}
+                  alt={altFor('missionMain', 'Mission & Values')}
                   onError={(e) => { e.currentTarget.src = libraryImage; }}
                   className="w-full h-full object-cover object-center transform hover:scale-105 transition-transform duration-500"
                 />
@@ -322,8 +322,8 @@ export function AboutLogo({ onNavigate }) {
                 transition={{ duration: 0.8 }}
               >
                 <img
-                  src={imageFor('visionGoals', laboratoryImage)}
-                  alt={altFor('visionGoals', 'Vision & Goals')}
+                  src={imageFor('visionMain', laboratoryImage)}
+                  alt={altFor('visionMain', 'Vision & Goals')}
                   onError={(e) => { e.currentTarget.src = laboratoryImage; }}
                   className="w-full h-full object-cover object-center transform hover:scale-105 transition-transform duration-500"
                 />
