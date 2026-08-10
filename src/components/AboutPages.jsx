@@ -539,6 +539,7 @@ export function DeanMessage() {
                 {deanPhoto ? (
                   <img
                     src={deanPhoto}
+                    onError={(e) => { e.currentTarget.src = principleImage; }}
                     className="w-full h-full object-cover relative z-10 rounded-full"
                     alt="Dean & Principal"
                   />
@@ -739,6 +740,18 @@ export function History() {
   }, []);
 
   if (!isSectionVisible('about_history')) return <SectionOffNotice name="History & Milestones" />;
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-amber-50/50">
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+          className="w-12 h-12 border-4 border-amber-600 border-t-transparent rounded-full"
+        />
+      </div>
+    );
+  }
 
   const milestonesToDisplay = dynamicMilestones;
 
@@ -972,7 +985,7 @@ export function History() {
                             <>
                               {expandedMilestones.includes(index)
                                 ? milestone.description
-                                : milestone.description.slice(0, 100) + "..."}
+                                : (milestone.description || '').slice(0, 100) + "..."}
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
@@ -1731,11 +1744,11 @@ export function VisionMission() {
                         animate={{ opacity: 1 }}
                         transition={{ delay: 1 + index * 0.1 }}
                       >
-                        {value.description.length > 80 ? (
+                        {(value.description || '').length > 80 ? (
                           <>
                             {expandedCoreValues.includes(value.title)
                               ? value.description
-                              : value.description.slice(0, 80) + "..."}
+                              : (value.description || '').slice(0, 80) + "..."}
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();

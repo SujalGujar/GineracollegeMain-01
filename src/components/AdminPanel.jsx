@@ -30,10 +30,7 @@ const C = {
 };
 
 /* ─── Tiny helpers ───────────────────────────────────────── */
-const imgUrl = (url) =>
-  !url ? "/placeholder.png"
-       : url.startsWith("http") ? url
-       : getMediaUrl(url);
+const imgUrl = (url) => getMediaUrl(url);
 
 const Pill = ({ children, color = C.accent }) => (
   <span style={{ background: color + "20", color }}

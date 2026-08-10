@@ -488,10 +488,7 @@ import { useSectionVisibility } from "../context/SectionVisibilityContext";
 import SectionOffNotice from "./SectionOffNotice";
 import HeroSection from "../Homepages/HeroSection";
 
-const imgUrl = (url) =>
-  !url ? "/placeholder.png"
-       : url.startsWith("http") ? url
-       : getMediaUrl(url);
+const imgUrl = (url) => getMediaUrl(url);
 
 const ImageSlider = ({ images }) => {
   const [index, setIndex] = useState(0);

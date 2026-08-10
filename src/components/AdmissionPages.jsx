@@ -357,11 +357,11 @@ export function CoursesOffered() {
                             {/* Show truncated or full description based on expanded state */}
                             {expandedIds.includes(`${courseType.type}-${programIndex}`)
                               ? program.description
-                              : program.description.slice(0, 80) +
-                              (program.description.length > 80 ? "..." : "")}
+                              : (program.description || '').slice(0, 80) +
+                              ((program.description || '').length > 80 ? "..." : "")}
 
                             {/* Show toggle only if longer than 80 */}
-                            {program.description.length > 80 && (
+                            {(program.description || '').length > 80 && (
                               <button
                                 onClick={() => {
                                   setExpandedIds((prev) =>
@@ -440,8 +440,8 @@ export function CoursesOffered() {
                           <p className="text-sm font-medium text-gray-800 ml-7">
                             {expandedIds.includes(`adm-${program.title}`)
                               ? program.admission
-                              : program.admission && program.admission.length > 100
-                                ? `${program.admission.slice(0, 100)}...`
+                              : program.admission && (program.admission || '').length > 100
+                                ? `${(program.admission || '').slice(0, 100)}...`
                                 : program.admission}
                           </p>
 
@@ -693,9 +693,9 @@ export function AdmissionProcedure() {
                         <>
                           {expandedProcedureSteps.includes(step.step)
                             ? step.description
-                            : step.description.slice(0, 100) +
-                            (step.description.length > 100 ? "..." : "")}
-                          {step.description.length > 100 && (
+                            : (step.description || '').slice(0, 100) +
+                            ((step.description || '').length > 100 ? "..." : "")}
+                          {(step.description || '').length > 100 && (
                             <button
                               onClick={() => toggleProcedureStep(step.step)}
                               className="text-orange-600 font-semibold hover:underline text-xs ml-1 focus:outline-none"

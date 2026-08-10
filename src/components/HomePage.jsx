@@ -781,7 +781,7 @@ import collegelogo3 from "../Logos/collegelogo3.webp";
 import collegelogo4 from "../Logos/collegelogo4.webp";
 import HeroSection from "../Homepages/HeroSection";
 import ImageSlider from "./ImageSlider";
-import axiosInstance from "../api/axiosInstance";
+import axiosInstance, { getMediaUrl } from "../api/axiosInstance";
 import { useSectionVisibility } from "../context/SectionVisibilityContext";
 import SectionOffNotice from "./SectionOffNotice";
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1057,18 +1057,6 @@ const TESTIMONIALS = [
 
 const LOGOS = [collegelogo1, collegelogo2, collegelogo3, collegelogo4];
 
-const getMediaUrl = (url, fallback = "/placeholder.png") => {
-  if (!url) return fallback;
-  if (url.startsWith("http") || url.startsWith("data:") || url.startsWith("blob:")) return url;
-  if (url.startsWith("uploads") || url.startsWith("/uploads")) {
-    const backendOrigin = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
-      ? "http://localhost:8080"
-      : "https://gineracollegemain-01.onrender.com";
-    return `${backendOrigin}${url.startsWith("/") ? url : `/${url}`}`;
-  }
-  return url;
-};
-
 /* ═══════════════════════════════════════════════════════
    ANIMATION VARIANTS
 ═══════════════════════════════════════════════════════ */
@@ -1208,7 +1196,7 @@ const HomePage=({ onNavigate }) => {
     return possibleLists.find((items) => Array.isArray(items) && items.length > 0) || [];
   };
 
-  const programsToDisplay = dynamicPrograms.length > 0 ? dynamicPrograms : PROGRAMS;
+  const programsToDisplay = dynamicPrograms.length > 0 ? dynamicPrograms : (loadingPrograms ? [] : PROGRAMS);
 
   const scrollPrograms = (dir) => {
     const el = document.getElementById("programs-slider");
@@ -1536,7 +1524,8 @@ const HomePage=({ onNavigate }) => {
                           <div style={{ position: "relative", minHeight: 320, overflow: "hidden" }}>
                             <img
                               src={getMediaUrl(current.imageUrl || current.image)}
-                              alt={current.name}
+                              alt={current.name || "Testimonial"}
+                              onError={(e) => { e.currentTarget.src = libraryImage; }}
                               style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
                             />
                             <div style={{

@@ -8,12 +8,36 @@ export const API_ORIGIN = isLocalhost
 const baseURL = `${API_ORIGIN}/api`;
 
 export const getMediaUrl = (url, fallback = '/placeholder.png') => {
-  if (!url) return fallback;
-  if (url.startsWith('http') || url.startsWith('data:') || url.startsWith('blob:')) return url;
-  if (url.startsWith('uploads') || url.startsWith('/uploads')) {
-    return `${API_ORIGIN}${url.startsWith('/') ? url : `/${url}`}`;
+  if (!url || typeof url !== 'string') return fallback;
+
+  let cleanUrl = url.replace(/\\/g, '/').trim();
+
+  // If DB contains absolute localhost / 127.0.0.1 or old backend URLs with /uploads/
+  if (cleanUrl.includes('/uploads/')) {
+    const uploadIndex = cleanUrl.indexOf('/uploads/');
+    const uploadPath = cleanUrl.substring(uploadIndex); // '/uploads/filename.ext'
+    return `${API_ORIGIN}${uploadPath}`;
   }
-  return url;
+
+  if (cleanUrl.startsWith('uploads/')) {
+    return `${API_ORIGIN}/${cleanUrl}`;
+  }
+
+  if (cleanUrl.startsWith('http://') || cleanUrl.startsWith('https://') || cleanUrl.startsWith('data:') || cleanUrl.startsWith('blob:')) {
+    if ((cleanUrl.includes('localhost') || cleanUrl.includes('127.0.0.1')) && cleanUrl.includes('uploads')) {
+      const idx = cleanUrl.indexOf('/uploads');
+      if (idx !== -1) {
+        return `${API_ORIGIN}${cleanUrl.substring(idx)}`;
+      }
+    }
+    return cleanUrl;
+  }
+
+  if (cleanUrl.startsWith('/')) {
+    return `${API_ORIGIN}${cleanUrl}`;
+  }
+
+  return `${API_ORIGIN}/${cleanUrl}`;
 };
 
 const axiosInstance = axios.create({
