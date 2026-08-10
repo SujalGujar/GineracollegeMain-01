@@ -183,7 +183,7 @@ exports.getDepartments = async (req, res) => {
   if (dbError) return dbError;
 
   try {
-    const departments = await Department.find().sort({ name: 1 });
+    const departments = await Department.find().sort({ name: 1 }).lean();
     res.status(200).json(departments);
   } catch (error) {
     res.status(500).json({ message: 'Error fetching departments', error: error.message });
@@ -192,7 +192,7 @@ exports.getDepartments = async (req, res) => {
 
 exports.getDepartmentBySlug = async (req, res) => {
   try {
-    const department = await Department.findOne({ slug: req.params.slug });
+    const department = await Department.findOne({ slug: req.params.slug }).lean();
     if (!department) return res.status(404).json({ message: 'Department not found' });
     res.status(200).json(department);
   } catch (error) {

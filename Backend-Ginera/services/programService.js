@@ -1,7 +1,7 @@
 const Program = require('../models/Program');
 
 exports.getAllPrograms = async () => {
-  return await Program.find().sort({ createdAt: -1 });
+  return await Program.find().sort({ createdAt: -1 }).lean();
 };
 
 exports.createProgram = async (programData) => {

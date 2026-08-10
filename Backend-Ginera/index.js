@@ -13,11 +13,45 @@ dotenv.config({ path: path.join(__dirname, '.env') });
 const app = express();
 const PORT = process.env.PORT || 8080;
 let lastMongoError = null;
+const publicApiCache = new Map();
+const PUBLIC_CACHE_TTL_MS = 30 * 1000;
 
 // Middleware
 app.use(cors());
 app.use(express.json());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// Public pages call the same read endpoints repeatedly (header, home and
+// subpages). Cache successful JSON GET responses briefly and clear the cache
+// after any admin write, so visitors get fast data without stale admin edits.
+app.use('/api', (req, res, next) => {
+  if (req.method !== 'GET') {
+    res.on('finish', () => {
+      if (res.statusCode < 400) publicApiCache.clear();
+    });
+    return next();
+  }
+
+  const requestUrl = new URL(req.originalUrl, 'http://localhost');
+  requestUrl.searchParams.delete('t'); // ignore frontend cache-busting timestamps
+  const key = requestUrl.pathname + requestUrl.search;
+  const cached = publicApiCache.get(key);
+  if (cached && cached.expiresAt > Date.now()) {
+    res.set('X-Cache', 'HIT');
+    return res.json(cached.body);
+  }
+
+  const sendJson = res.json.bind(res);
+  res.json = (body) => {
+    if (res.statusCode >= 200 && res.statusCode < 300) {
+      publicApiCache.set(key, { body, expiresAt: Date.now() + PUBLIC_CACHE_TTL_MS });
+      res.set('Cache-Control', 'public, max-age=30');
+      res.set('X-Cache', 'MISS');
+    }
+    return sendJson(body);
+  };
+  next();
+});
 
 // Create uploads directory if it doesn't exist
 const uploadsDir = path.join(__dirname, 'uploads');

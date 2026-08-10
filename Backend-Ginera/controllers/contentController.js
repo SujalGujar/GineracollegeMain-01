@@ -3,7 +3,7 @@ const Content = require('../models/Content');
 exports.getContent = async (req, res) => {
   try {
     const { section } = req.params;
-    let content = await Content.findOne({ section });
+    let content = await Content.findOne({ section }).lean();
     if (!content) {
         // Return default if not found
         if (section === 'academic') {

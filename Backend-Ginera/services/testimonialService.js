@@ -1,7 +1,7 @@
 const Testimonial = require('../models/Testimonial');
 
 exports.getAllTestimonials = async () => {
-  return await Testimonial.find().sort({ createdAt: -1 });
+  return await Testimonial.find().sort({ createdAt: -1 }).lean();
 };
 
 exports.createTestimonial = async (data) => {
