@@ -241,16 +241,16 @@ export function AboutLogo({ onNavigate }) {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8 }}
             >
-              <CardTitle className="text-4xl font-bold text-white">
+              <CardTitle className="text-4xl md:text-5xl font-black text-black tracking-tight">
                 About Us
               </CardTitle>
               <motion.div
-                className="h-1 bg-white/50 rounded-full mx-auto my-4 max-w-md"
+                className="h-1.5 bg-black/60 rounded-full mx-auto my-4 max-w-md"
                 initial={{ width: 0 }}
                 animate={{ width: "100%" }}
                 transition={{ delay: 0.5, duration: 1 }}
               />
-              <p className="max-w-2xl mx-auto text-white/90 text-lg leading-relaxed">
+              <p className="max-w-2xl mx-auto text-gray-900 font-semibold text-lg md:text-xl leading-relaxed">
                 We are dedicated to fostering academic excellence and holistic
                 development in a vibrant learning environment.
               </p>
