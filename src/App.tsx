@@ -24,16 +24,22 @@ import { waitForApiIdle } from './api/axiosInstance';
 export default function App() {
   const getPageFromLocation = () => {
     const hash = window.location.hash;
-    if (window.location.pathname === '/admin' || hash === '#/admin') {
+    if (window.location.pathname === '/admin' || hash === '#/admin' || hash === '#admin') {
       return 'admin';
     }
-    if (hash && hash.startsWith('#/')) {
-      let raw = hash.substring(2);
+    if (hash) {
+      let cleanHash = hash.split('?')[0].replace(/\/+$/, '');
+      let raw = '';
+      if (cleanHash.startsWith('#/')) {
+        raw = cleanHash.substring(2);
+      } else if (cleanHash.startsWith('#')) {
+        raw = cleanHash.substring(1);
+      }
       try {
         raw = decodeURIComponent(raw);
       } catch (e) {}
       const pageKey = raw.trim().toLowerCase().replace(/\s+/g, '-');
-      return pageKey || 'home';
+      if (pageKey && pageKey !== 'home') return pageKey;
     }
     return 'home';
   };
@@ -54,10 +60,9 @@ export default function App() {
     const requestId = ++navigationId.current;
     setPageLoading(true);
     if (updateUrl) {
-      if (page === 'home') {
-        window.history.pushState(null, '', window.location.pathname);
-      } else {
-        window.history.pushState(null, '', '#/' + page);
+      const targetHash = page === 'home' ? '' : '#/' + page;
+      if (window.location.hash !== targetHash) {
+        window.history.pushState(null, '', targetHash || window.location.pathname);
       }
     }
     setCurrentPage(page);
@@ -70,21 +75,29 @@ export default function App() {
   useEffect(() => {
     const requestId = navigationId.current;
     let active = true;
-    // This effect runs after the replacement page has mounted. Its requests
-    // are therefore included before the global loader is allowed to finish.
-    const minLoadTimer = new Promise((resolve) => setTimeout(resolve, 1200));
-    Promise.all([waitForApiIdle(250), minLoadTimer]).then(() => {
+    const minLoadTimer = new Promise((resolve) => setTimeout(resolve, 500));
+    const maxTimeoutTimer = new Promise((resolve) => setTimeout(resolve, 1500));
+    
+    Promise.all([
+      Promise.race([waitForApiIdle(200), maxTimeoutTimer]),
+      minLoadTimer
+    ]).then(() => {
       if (active && navigationId.current === requestId) setPageLoading(false);
     });
     return () => { active = false; };
   }, [currentPage, pageInstance]);
 
   useEffect(() => {
-    const handleHashChange = () => {
-      openPageWithLoader(getPageFromLocation(), false);
+    const handleLocationChange = () => {
+      const targetPage = getPageFromLocation();
+      openPageWithLoader(targetPage, false);
     };
-    window.addEventListener('hashchange', handleHashChange);
-    return () => window.removeEventListener('hashchange', handleHashChange);
+    window.addEventListener('hashchange', handleLocationChange);
+    window.addEventListener('popstate', handleLocationChange);
+    return () => {
+      window.removeEventListener('hashchange', handleLocationChange);
+      window.removeEventListener('popstate', handleLocationChange);
+    };
   }, []);
 
   const handleNavigation = (page: string) => {

@@ -87,14 +87,14 @@ axiosInstance.interceptors.response.use((response) => {
   }
   return response;
 }, async (error) => {
+  activeRequests = Math.max(0, activeRequests - 1);
+  notifyLoadingListeners();
   const config = error.config;
   if (config && (!config._retryCount || config._retryCount < 2) && (error.code === 'ECONNABORTED' || !error.response || error.response.status >= 500)) {
     config._retryCount = (config._retryCount || 0) + 1;
     await new Promise(r => setTimeout(r, 1200 * config._retryCount));
     return axiosInstance(config);
   }
-  activeRequests = Math.max(0, activeRequests - 1);
-  notifyLoadingListeners();
   return Promise.reject(error);
 });
 

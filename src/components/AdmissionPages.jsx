@@ -175,7 +175,11 @@ export function CoursesOffered() {
   if (!isSectionVisible('admission_courses')) return <SectionOffNotice name="Courses Offered" />;
 
   if (loading) {
-    return <LoadingScreen />;
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-amber-50">
+        <div className="animate-spin rounded-full h-12 w-12 border-4 border-orange-500 border-t-transparent" />
+      </div>
+    );
   }
 
   //   admission: "Through University Entrance Exam",

@@ -1017,10 +1017,8 @@ export function GenericDepartment({ slug, category }) {
     );
   }
 
-  if (!department) return null;
-
-  // Override the category if provided
-  const finalDept = { ...department };
+  const deptData = department || allDepartments[slug] || Object.values(allDepartments)[0];
+  const finalDept = { ...deptData };
   if (category) {
     finalDept.category = category;
   }
