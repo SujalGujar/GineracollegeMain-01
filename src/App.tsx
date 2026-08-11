@@ -23,10 +23,24 @@ import { waitForApiIdle } from './api/axiosInstance';
 
 export default function App() {
   const getPageFromLocation = () => {
+    const path = window.location.pathname.replace(/\/+$/, '');
     const hash = window.location.hash;
-    if (window.location.pathname === '/admin' || hash === '#/admin' || hash === '#admin') {
+
+    // Check pathname first (clean route without hashtag #)
+    if (path === '/admin' || hash === '#/admin' || hash === '#admin') {
       return 'admin';
     }
+
+    if (path && path !== '' && path !== '/') {
+      let rawPath = path.substring(1);
+      try {
+        rawPath = decodeURIComponent(rawPath);
+      } catch (e) {}
+      const pageKey = rawPath.trim().toLowerCase().replace(/\s+/g, '-');
+      if (pageKey && pageKey !== 'home') return pageKey;
+    }
+
+    // Check hash fallback for legacy # links
     if (hash) {
       let cleanHash = hash.split('?')[0].replace(/\/+$/, '');
       let raw = '';
@@ -41,6 +55,7 @@ export default function App() {
       const pageKey = raw.trim().toLowerCase().replace(/\s+/g, '-');
       if (pageKey && pageKey !== 'home') return pageKey;
     }
+
     return 'home';
   };
 
@@ -59,15 +74,15 @@ export default function App() {
   const openPageWithLoader = (page: string, updateUrl = true) => {
     const requestId = ++navigationId.current;
     setPageLoading(true);
+
     if (updateUrl) {
-      const targetHash = page === 'home' ? '' : '#/' + page;
-      if (window.location.hash !== targetHash) {
-        window.history.pushState(null, '', targetHash || window.location.pathname);
+      const targetUrl = page === 'home' ? '/' : '/' + page;
+      if (window.location.pathname !== targetUrl) {
+        window.history.pushState(null, '', targetUrl);
       }
     }
+
     setCurrentPage(page);
-    // A page visit must always be a fresh instance, even when the visitor
-    // returns to Home. This restarts its data requests and animations.
     setPageInstance(instance => instance + 1);
     window.scrollTo(0, 0);
   };
@@ -75,11 +90,12 @@ export default function App() {
   useEffect(() => {
     const requestId = navigationId.current;
     let active = true;
-    const minLoadTimer = new Promise((resolve) => setTimeout(resolve, 500));
-    const maxTimeoutTimer = new Promise((resolve) => setTimeout(resolve, 1500));
+    const minLoadTimer = new Promise((resolve) => setTimeout(resolve, 300));
+    // Extended max timeout timer (8s) so cold-start servers on Render return full API data
+    const maxTimeoutTimer = new Promise((resolve) => setTimeout(resolve, 8000));
     
     Promise.all([
-      Promise.race([waitForApiIdle(200), maxTimeoutTimer]),
+      Promise.race([waitForApiIdle(150), maxTimeoutTimer]),
       minLoadTimer
     ]).then(() => {
       if (active && navigationId.current === requestId) setPageLoading(false);
@@ -92,11 +108,22 @@ export default function App() {
       const targetPage = getPageFromLocation();
       openPageWithLoader(targetPage, false);
     };
-    window.addEventListener('hashchange', handleLocationChange);
     window.addEventListener('popstate', handleLocationChange);
+    window.addEventListener('hashchange', handleLocationChange);
+
+    // Auto-clean legacy hashtag # in browser URL bar if present
+    if (window.location.hash) {
+      const targetPage = getPageFromLocation();
+      if (targetPage && targetPage !== 'home') {
+        window.history.replaceState(null, '', '/' + targetPage);
+      } else {
+        window.history.replaceState(null, '', '/');
+      }
+    }
+
     return () => {
-      window.removeEventListener('hashchange', handleLocationChange);
       window.removeEventListener('popstate', handleLocationChange);
+      window.removeEventListener('hashchange', handleLocationChange);
     };
   }, []);
 
