@@ -1,5 +1,6 @@
 const sliderService = require('../services/sliderService');
 const mongoose = require('mongoose');
+const { uploadToCloudinary } = require('../utils/uploadToCloudinary');
 
 const checkDbConnection = (res) => {
   if (mongoose.connection.readyState !== 1) {
@@ -40,17 +41,20 @@ exports.uploadSliders = async (req, res) => {
       return res.status(400).json({ message: 'No images uploaded' });
     }
 
-    const sliderDataArray = req.files.map(file => {
-      let dept = req.body.department;
-      if (dept === 'null' || dept === 'undefined' || !dept) {
-        dept = null;
-      }
-      return {
-        title: req.body.title || 'Ginera College Slider',
-        imageUrl: `/uploads/${file.filename}`,
-        department: dept
-      };
-    });
+    const sliderDataArray = await Promise.all(
+      req.files.map(async (file) => {
+        let dept = req.body.department;
+        if (dept === 'null' || dept === 'undefined' || !dept) {
+          dept = null;
+        }
+        const cloudUrl = await uploadToCloudinary(file.path, 'ginera-sliders');
+        return {
+          title: req.body.title || 'Ginera College Slider',
+          imageUrl: cloudUrl || `/uploads/${file.filename}`,
+          department: dept,
+        };
+      })
+    );
 
     const savedSliders = await sliderService.createSliders(sliderDataArray);
     res.status(201).json(savedSliders);
@@ -67,7 +71,8 @@ exports.updateSlider = async (req, res) => {
     const { id } = req.params;
     let updateData = { ...req.body };
     if (req.file) {
-      updateData.imageUrl = `/uploads/${req.file.filename}`;
+      const cloudUrl = await uploadToCloudinary(req.file.path, 'ginera-sliders');
+      updateData.imageUrl = cloudUrl || `/uploads/${req.file.filename}`;
     }
     const slider = await sliderService.updateSlider(id, updateData);
     res.status(200).json(slider);

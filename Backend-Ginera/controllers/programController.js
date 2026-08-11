@@ -1,5 +1,6 @@
 const programService = require('../services/programService');
 const mongoose = require('mongoose');
+const { uploadToCloudinary } = require('../utils/uploadToCloudinary');
 
 const checkDbConnection = (res) => {
   if (mongoose.connection.readyState !== 1) {
@@ -28,7 +29,11 @@ exports.createProgram = async (req, res) => {
   if (dbError) return dbError;
 
   try {
-    const imageUrl = req.file ? `/uploads/${req.file.filename}` : '';
+    let imageUrl = '';
+    if (req.file) {
+      const cloudUrl = await uploadToCloudinary(req.file.path, 'ginera-programs');
+      imageUrl = cloudUrl || `/uploads/${req.file.filename}`;
+    }
     const programData = {
       ...req.body,
       imageUrl,
@@ -50,7 +55,8 @@ exports.updateProgram = async (req, res) => {
     const { id } = req.params;
     let updateData = { ...req.body };
     if (req.file) {
-      updateData.imageUrl = `/uploads/${req.file.filename}`;
+      const cloudUrl = await uploadToCloudinary(req.file.path, 'ginera-programs');
+      updateData.imageUrl = cloudUrl || `/uploads/${req.file.filename}`;
       updateData.imageUrls = [updateData.imageUrl];
     }
     if (req.body.courses) {

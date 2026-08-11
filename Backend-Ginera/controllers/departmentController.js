@@ -190,6 +190,8 @@ exports.getDepartments = async (req, res) => {
   }
 };
 
+const { uploadToCloudinary } = require('../utils/uploadToCloudinary');
+
 exports.getDepartmentBySlug = async (req, res) => {
   try {
     const department = await Department.findOne({ slug: req.params.slug }).lean();
@@ -203,7 +205,10 @@ exports.getDepartmentBySlug = async (req, res) => {
 exports.createDepartment = async (req, res) => {
   try {
     const data = { ...req.body };
-    if (req.file) data.logoUrl = `/uploads/${req.file.filename}`;
+    if (req.file) {
+      const cloudUrl = await uploadToCloudinary(req.file.path, 'ginera-departments');
+      data.logoUrl = cloudUrl || `/uploads/${req.file.filename}`;
+    }
     const department = new Department(data);
     await department.save();
     res.status(201).json(department);
@@ -215,7 +220,10 @@ exports.createDepartment = async (req, res) => {
 exports.updateDepartment = async (req, res) => {
   try {
     const data = { ...req.body };
-    if (req.file) data.logoUrl = `/uploads/${req.file.filename}`;
+    if (req.file) {
+      const cloudUrl = await uploadToCloudinary(req.file.path, 'ginera-departments');
+      data.logoUrl = cloudUrl || `/uploads/${req.file.filename}`;
+    }
 
     if (typeof data.faculty === 'string') {
       try { data.faculty = JSON.parse(data.faculty); } catch (e) { }

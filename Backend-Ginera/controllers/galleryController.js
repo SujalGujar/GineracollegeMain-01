@@ -2,6 +2,7 @@ const GalleryImage = require('../models/GalleryImage');
 const mongoose = require('mongoose');
 const fs = require('fs');
 const path = require('path');
+const { uploadToCloudinary } = require('../utils/uploadToCloudinary');
 
 exports.getGalleryImages = async (req, res) => {
   try {
@@ -31,7 +32,8 @@ exports.addGalleryImage = async (req, res) => {
       return res.status(400).json({ message: `No ${type} file uploaded` });
     }
 
-    const fileUrl = `/uploads/${req.file.filename}`;
+    const cloudUrl = await uploadToCloudinary(req.file.path, 'ginera-gallery');
+    const fileUrl = cloudUrl || `/uploads/${req.file.filename}`;
 
     const newImage = new GalleryImage({
       title,
@@ -58,7 +60,8 @@ exports.updateGalleryImage = async (req, res) => {
     if (mediaType) updateData.mediaType = mediaType;
     
     if (req.file) {
-      const fileUrl = `/uploads/${req.file.filename}`;
+      const cloudUrl = await uploadToCloudinary(req.file.path, 'ginera-gallery');
+      const fileUrl = cloudUrl || `/uploads/${req.file.filename}`;
       if (mediaType === 'video') {
         updateData.videoUrl = fileUrl;
       } else {

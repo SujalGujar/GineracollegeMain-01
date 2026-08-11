@@ -2,6 +2,7 @@ const testimonialService = require('../services/testimonialService');
 const fs = require('fs');
 const path = require('path');
 const Testimonial = require('../models/Testimonial');
+const { uploadToCloudinary } = require('../utils/uploadToCloudinary');
 
 exports.getAllTestimonials = async (req, res) => {
   try {
@@ -18,7 +19,8 @@ exports.createTestimonial = async (req, res) => {
     let imageUrl = '';
     
     if (req.file) {
-      imageUrl = `/uploads/${req.file.filename}`;
+      const cloudUrl = await uploadToCloudinary(req.file.path, 'ginera-testimonials');
+      imageUrl = cloudUrl || `/uploads/${req.file.filename}`;
     }
 
     const testimonial = await testimonialService.createTestimonial({
@@ -37,11 +39,12 @@ exports.updateTestimonial = async (req, res) => {
     const updateData = { name, role, content, rating };
     
     if (req.file) {
-      updateData.imageUrl = `/uploads/${req.file.filename}`;
+      const cloudUrl = await uploadToCloudinary(req.file.path, 'ginera-testimonials');
+      updateData.imageUrl = cloudUrl || `/uploads/${req.file.filename}`;
       const oldTestimonial = await Testimonial.findById(req.params.id);
-      if (oldTestimonial && oldTestimonial.imageUrl) {
+      if (oldTestimonial && oldTestimonial.imageUrl && oldTestimonial.imageUrl.startsWith('/uploads/')) {
          const oldPath = path.join(__dirname, '..', oldTestimonial.imageUrl);
-         if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
+         if (fs.existsSync(oldPath)) try { fs.unlinkSync(oldPath); } catch {}
       }
     }
 

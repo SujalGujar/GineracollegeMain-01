@@ -7,6 +7,7 @@ const CollegeLogo = require('../models/CollegeLogo');
 const VisionMission = require('../models/VisionMission');
 const CoreValue = require('../models/CoreValue');
 const AboutImage = require('../models/AboutImage');
+const { uploadToCloudinary } = require('../utils/uploadToCloudinary');
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, 'uploads/'),
@@ -106,7 +107,10 @@ exports.updateDeanMessage = [
       if (req.body.stats && typeof req.body.stats === 'string') {
         updates.stats = JSON.parse(req.body.stats);
       }
-      if (req.file) updates.photoUrl = '/uploads/' + req.file.filename;
+      if (req.file) {
+        const cloudUrl = await uploadToCloudinary(req.file.path, 'ginera-about');
+        updates.photoUrl = cloudUrl || '/uploads/' + req.file.filename;
+      }
 
       if (dean) {
         Object.assign(dean, updates);
@@ -134,7 +138,10 @@ exports.updateCollegeLogo = [
     try {
       let logo = await CollegeLogo.findOne();
       const updates = { ...req.body };
-      if (req.file) updates.logoUrl = '/uploads/' + req.file.filename;
+      if (req.file) {
+        const cloudUrl = await uploadToCloudinary(req.file.path, 'ginera-logos');
+        updates.logoUrl = cloudUrl || '/uploads/' + req.file.filename;
+      }
       if (logo) {
         Object.assign(logo, updates);
         await logo.save();
@@ -167,7 +174,10 @@ exports.updateAboutImage = [
         alt: req.body.alt || slot.alt,
         order: slot.order
       };
-      if (req.file) updates.imageUrl = '/uploads/' + req.file.filename;
+      if (req.file) {
+        const cloudUrl = await uploadToCloudinary(req.file.path, 'ginera-about');
+        updates.imageUrl = cloudUrl || '/uploads/' + req.file.filename;
+      }
 
       const image = await AboutImage.findOneAndUpdate(
         { key: slot.key },
