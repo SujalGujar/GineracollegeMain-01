@@ -13,7 +13,10 @@ const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, 'uploads/'),
   filename: (req, file, cb) => cb(null, Date.now() + path.extname(file.originalname))
 });
-const upload = multer({ storage });
+const upload = multer({ 
+  storage,
+  limits: { fileSize: 100 * 1024 * 1024 }
+});
 
 const ABOUT_IMAGE_SLOTS = [
   { key: 'missionValues', title: 'Mission & Values Image', alt: 'Mission & Values', order: 1 },

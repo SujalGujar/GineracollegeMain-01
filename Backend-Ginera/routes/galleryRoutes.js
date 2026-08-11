@@ -16,10 +16,10 @@ const storage = multer.diskStorage({
 
 const fileFilter = (req, file, cb) => {
   const allowedMime = [
-    'image/jpeg', 'image/png', 'image/webp', 'image/gif',
-    'video/mp4', 'video/webm', 'video/ogg', 'video/quicktime'
+    'image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/jpg', 'image/avif',
+    'video/mp4', 'video/webm', 'video/ogg', 'video/quicktime', 'video/mkv', 'video/avi'
   ];
-  if (allowedMime.includes(file.mimetype)) {
+  if (allowedMime.includes(file.mimetype) || /\.(jpg|jpeg|png|gif|webp|mp4|webm|mov|mkv|avi)$/i.test(file.originalname)) {
     cb(null, true);
   } else {
     cb(new Error('Only image and video files are allowed'), false);
@@ -29,7 +29,7 @@ const fileFilter = (req, file, cb) => {
 const upload = multer({ 
   storage: storage,
   fileFilter,
-  limits: { fileSize: 5 * 1024 * 1024 } // 5MB maximum for images and videos
+  limits: { fileSize: 100 * 1024 * 1024 } // 100MB maximum limit for videos
 });
 
 router.get('/', galleryController.getGalleryImages);
