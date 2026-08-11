@@ -41,30 +41,30 @@ function MissionStatementItem({ text, index, direction = 1 }) {
         delay: index * 0.15,
         ease: "easeOut",
       }}
-      className="flex items-start w-full py-1"
+      className="flex items-center min-h-[96px] w-full"
     >
       <motion.div
         whileHover={{
           scale: 1.01,
-          boxShadow: "0 10px 25px rgba(245, 158, 11, 0.15)",
+          boxShadow: "0 20px 40px rgba(245, 158, 11, 0.15)",
           backgroundColor: "#fef3c7",
           borderColor: "#f59e0b",
         }}
         transition={{ duration: 0.3, ease: "easeOut" }}
-        className="flex items-start space-x-3 sm:space-x-4 p-3.5 sm:p-4 border border-orange-200 rounded-xl bg-white shadow-sm cursor-pointer w-full"
+        className="flex items-start space-x-4 p-4 border border-orange-200 rounded-xl bg-white shadow-sm cursor-pointer w-full h-auto"
       >
         <motion.div
           whileHover={{ scale: 1.2, rotate: 45 }}
           transition={{ duration: 0.3 }}
-          className="shrink-0 mt-1"
+          className="flex-shrink-0 mt-1"
         >
           <IoMdArrowForward
             className="text-amber-600 group-hover:text-orange-600"
-            size={18}
+            size={20}
           />
         </motion.div>
         <div className="flex-1 min-w-0">
-          <p className={`text-gray-700 text-xs sm:text-sm leading-relaxed group-hover:text-amber-900 transition-colors ${!isExpanded && isLongText ? 'line-clamp-3' : ''}`}>
+          <p className={`text-gray-700 text-sm leading-relaxed group-hover:text-amber-900 transition-colors ${!isExpanded && isLongText ? 'line-clamp-3' : ''}`}>
             {text}
           </p>
           {isLongText && (
@@ -143,7 +143,7 @@ export function AboutLogo({ onNavigate }) {
   ];
 
   return (
-    <div className="relative min-h-screen bg-gradient-to-br from-amber-50 to-orange-50 pt-12 md:pt-16 pb-16 md:pb-24 overflow-hidden">
+    <div className="relative min-h-screen bg-gradient-to-br from-amber-50 to-orange-50 pt-16 pb-24 overflow-hidden">
       {/* 🔸 Background Image */}
       <img
         src={backgroundImage4}
@@ -151,11 +151,11 @@ export function AboutLogo({ onNavigate }) {
         className="absolute inset-0 w-full h-full object-cover z-0 opacity-20"
       />
 
-      <div className="container mx-auto px-4 sm:px-6 lg:px-12 relative z-10 space-y-16 md:space-y-28">
+      <div className="container mx-auto px-6 lg:px-12 relative z-10 space-y-32">
         {/* ------------------- SECTION 1 ------------------- */}
         <motion.div
-          style={{ marginTop: "40px" }}
-          className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-16 items-center"
+          style={{ marginTop: "70px" }}
+          className="grid md:grid-cols-2 gap-10 lg:gap-16 items-center"
           initial={{ opacity: 0, y: 50 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
@@ -168,11 +168,11 @@ export function AboutLogo({ onNavigate }) {
             className="flex justify-center md:justify-end"
           >
             <motion.div
-              className="bg-gradient-to-br from-amber-500 to-orange-500 rounded-3xl flex items-center justify-center shadow-2xl border-4 sm:border-8 border-white"
+              className="bg-gradient-to-br from-amber-500 to-orange-500 rounded-3xl flex items-center justify-center shadow-2xl border-8 border-white"
               style={{
-                width: "min(320px, 75vw)",
+                width: "min(320px, 82vw)",
                 aspectRatio: "1 / 1",
-                padding: "clamp(20px, 6vw, 56px)",
+                padding: "clamp(24px, 7vw, 56px)",
               }}
               whileHover={{
                 scale: 1.03,
@@ -203,10 +203,10 @@ export function AboutLogo({ onNavigate }) {
             initial={{ x: 60, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
             transition={{ duration: 0.7 }}
-            className="space-y-4 sm:space-y-6 text-center md:text-left"
+            className="space-y-6"
           >
             <motion.h1
-              className="text-2xl sm:text-3xl md:text-4xl font-bold text-[#78350f]"
+              className="text-3xl md:text-4xl font-bold text-[#78350f]"
               animate={{ scale: [1, 1.02, 1] }}
               transition={{
                 duration: 3,
@@ -218,13 +218,13 @@ export function AboutLogo({ onNavigate }) {
             </motion.h1>
 
             <motion.div
-              className="h-1 bg-gradient-to-r from-amber-500 to-orange-500 rounded-full mb-4 mx-auto md:mx-0"
+              className="h-1 bg-gradient-to-r from-amber-500 to-orange-500 rounded-full mb-4"
               initial={{ width: 0 }}
               animate={{ width: 120 }}
               transition={{ delay: 0.5, duration: 1 }}
             />
 
-            <p className="text-base sm:text-lg text-gray-700 leading-relaxed max-w-xl mx-auto md:mx-0">
+            <p className="text-lg text-gray-700 leading-relaxed max-w-xl">
               Discover our commitment to excellence in education, innovation,
               and community impact through our distinctive branding and visual
               identity.
@@ -235,22 +235,22 @@ export function AboutLogo({ onNavigate }) {
         {/* ------------------- SECTION 2 ------------------- */}
         <Card className="overflow-hidden shadow-2xl border-0 bg-white/90 backdrop-blur-sm rounded-3xl border border-orange-200">
           {/* HEADER */}
-          <CardHeader className="text-center py-10 sm:py-16 md:py-20 px-4 sm:px-8 space-y-4 sm:space-y-6 bg-gradient-to-r from-amber-500 to-orange-500">
+          <CardHeader className="text-center py-20 space-y-6 bg-gradient-to-r from-amber-500 to-orange-500">
             <motion.div
               initial={{ opacity: 0, y: -30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8 }}
             >
-              <CardTitle className="text-3xl sm:text-4xl md:text-5xl font-black text-black tracking-tight">
+              <CardTitle className="text-4xl md:text-5xl font-black text-black tracking-tight">
                 About Us
               </CardTitle>
               <motion.div
-                className="h-1.5 bg-black/60 rounded-full mx-auto my-3 sm:my-4 max-w-md"
+                className="h-1.5 bg-black/60 rounded-full mx-auto my-4 max-w-md"
                 initial={{ width: 0 }}
                 animate={{ width: "100%" }}
                 transition={{ delay: 0.5, duration: 1 }}
               />
-              <p className="max-w-2xl mx-auto text-gray-900 font-semibold text-base sm:text-lg md:text-xl leading-relaxed px-2">
+              <p className="max-w-2xl mx-auto text-gray-900 font-semibold text-lg md:text-xl leading-relaxed">
                 We are dedicated to fostering academic excellence and holistic
                 development in a vibrant learning environment.
               </p>
@@ -258,31 +258,31 @@ export function AboutLogo({ onNavigate }) {
           </CardHeader>
 
           {/* CONTENT */}
-          <CardContent className="space-y-12 sm:space-y-16 md:space-y-20 px-4 sm:px-6 md:px-14 pb-12 sm:pb-16 md:pb-20 pt-10 md:pt-16">
+          <CardContent className="space-y-20 px-6 md:px-14 pb-20 pt-16">
             {/* --- GROUP 1: LEFT TEXT + RIGHT IMAGE --- */}
             <motion.div
-              className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 items-center"
+              className="grid md:grid-cols-2 gap-12 items-start"
               initial={{ opacity: 0, y: 40 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8 }}
             >
               {/* LEFT TEXT */}
-              <div className="flex flex-col w-full">
+              <div className="flex flex-col h-full">
                 <motion.h3
-                  className="text-xl sm:text-2xl font-bold flex items-center mb-6 text-[#78350f]"
+                  className="text-2xl font-semibold flex items-center mb-8 text-[#78350f]"
                   initial={{ x: -50, opacity: 0 }}
                   animate={{ x: 0, opacity: 1 }}
                   transition={{ duration: 0.6 }}
                 >
                   <motion.span
-                    className="w-3 h-3 bg-amber-600 rounded-full mr-3 shrink-0"
+                    className="w-3 h-3 bg-amber-600 rounded-full mr-3"
                     animate={{ scale: [1, 1.5, 1] }}
                     transition={{ duration: 2, repeat: Infinity }}
                   ></motion.span>
                   Our Mission & Values
                 </motion.h3>
 
-                <div className="space-y-3 sm:space-y-4 w-full">
+                <div className="space-y-4 flex-1 overflow-y-auto">
                   {items.map((text, i) => (
                     <MissionStatementItem key={i} text={text} index={i} direction={-1} />
                   ))}
@@ -291,7 +291,8 @@ export function AboutLogo({ onNavigate }) {
 
               {/* RIGHT IMAGE */}
               <motion.div
-                className="w-full rounded-2xl shadow-lg overflow-hidden h-64 sm:h-80 md:h-[400px]"
+                className="rounded-2xl shadow-lg overflow-hidden"
+                style={{ aspectRatio: "4 / 3", maxHeight: "420px" }}
                 initial={{ x: 80, opacity: 0 }}
                 animate={{ x: 0, opacity: 1 }}
                 transition={{ duration: 0.8 }}
@@ -307,14 +308,15 @@ export function AboutLogo({ onNavigate }) {
 
             {/* --- GROUP 2: RIGHT TEXT + LEFT IMAGE --- */}
             <motion.div
-              className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 items-center"
+              className="grid md:grid-cols-2 gap-12 items-start"
               initial={{ opacity: 0, y: 40 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8 }}
             >
               {/* LEFT IMAGE */}
               <motion.div
-                className="w-full rounded-2xl shadow-lg overflow-hidden h-64 sm:h-80 md:h-[400px] order-2 md:order-1"
+                className="rounded-2xl shadow-lg overflow-hidden order-1 md:order-none"
+                style={{ aspectRatio: "4 / 3", maxHeight: "420px" }}
                 initial={{ x: -80, opacity: 0 }}
                 animate={{ x: 0, opacity: 1 }}
                 transition={{ duration: 0.8 }}
@@ -328,22 +330,22 @@ export function AboutLogo({ onNavigate }) {
               </motion.div>
 
               {/* RIGHT TEXT */}
-              <div className="flex flex-col w-full order-1 md:order-2">
+              <div className="flex flex-col h-full">
                 <motion.h3
-                  className="text-xl sm:text-2xl font-bold flex items-center mb-6 text-[#78350f]"
+                  className="text-2xl font-semibold flex items-center mb-8 text-[#78350f]"
                   initial={{ x: 50, opacity: 0 }}
                   animate={{ x: 0, opacity: 1 }}
                   transition={{ duration: 0.6 }}
                 >
                   <motion.span
-                    className="w-3 h-3 bg-amber-600 rounded-full mr-3 shrink-0"
+                    className="w-3 h-3 bg-amber-600 rounded-full mr-3"
                     animate={{ scale: [1, 1.5, 1] }}
                     transition={{ duration: 2, repeat: Infinity, delay: 0.5 }}
                   ></motion.span>
                   Our Vision & Goals
                 </motion.h3>
 
-                <div className="space-y-3 sm:space-y-4 w-full">
+                <div className="space-y-4 flex-1 overflow-y-auto">
                   {items2.map((text, i) => (
                     <MissionStatementItem key={i} text={text} index={i} direction={1} />
                   ))}
@@ -353,12 +355,12 @@ export function AboutLogo({ onNavigate }) {
 
             {/* CTA BUTTON */}
             <motion.div
-              className="pt-4 sm:pt-8 text-center"
+              className="pt-8 text-center"
               initial={{ opacity: 0, y: 40 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8 }}
             >
-              <p className="text-gray-600 mb-6 text-base sm:text-lg">
+              <p className="text-gray-600 mb-6 text-lg">
                 Explore more about our programs and initiatives.
               </p>
 
@@ -366,8 +368,8 @@ export function AboutLogo({ onNavigate }) {
                 whileHover={{ y: -6, scale: 1.05 }}
                 whileTap={{ scale: 0.95, y: 0 }}
                 transition={{ type: "spring", stiffness: 400, damping: 17 }}
-                className="relative text-white rounded-full font-bold text-lg overflow-hidden border-2 border-[#1a0f07]
-                shadow-lg shadow-[#5a280a]/40"
+                className="relative text-white  rounded-full font-bold text-lg overflow-hidden border-2 border-[#1a0f07]
+                shadow-lg shadow-[#5a280a]/40 "
               >
                 <ViewAllProgramsButton
                   onClick={() => onNavigate && onNavigate('courses')}
@@ -533,7 +535,7 @@ export function DeanMessage() {
               className="flex-1 flex justify-center lg:justify-start"
               variants={imageVariants}
             >
-              <div className="relative w-64 h-64 sm:w-80 sm:h-80 rounded-full shadow-2xl border-4 sm:border-8 border-white overflow-hidden bg-gradient-to-br from-[#A2632E] to-[#804C22]">
+              <div style={{ height: '285px' }} className="relative w-80 rounded-full shadow-2xl border-8 border-white overflow-hidden bg-gradient-to-br from-[#A2632E] to-[#804C22]">
                 {deanPhoto ? (
                   <img
                     src={deanPhoto}
@@ -559,7 +561,7 @@ export function DeanMessage() {
               variants={titleVariants}
             >
               <motion.h1
-                className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4"
+                className="text-5xl md:text-6xl font-bold mb-4"
                 style={{
                   color: "#A2632E",
                   textShadow: "0 4px 10px rgba(162, 99, 46, 0.3)",
