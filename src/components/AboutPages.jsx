@@ -520,8 +520,7 @@ export function DeanMessage() {
         style={{ marginTop: "70px" }}
         className="container mx-auto px-4 relative z-10"
         initial="visible"
-        whileInView="visible"
-        viewport={{ once: true }}
+        animate="visible"
         variants={containerVariants}
       >
         <div className="max-w-6xl mx-auto">
@@ -529,6 +528,8 @@ export function DeanMessage() {
           <motion.div
             className="flex flex-col lg:flex-row items-center gap-12 mb-16"
             variants={containerVariants}
+            initial="visible"
+            animate="visible"
           >
             {/* Dean Image */}
             <motion.div
@@ -780,9 +781,8 @@ export function History() {
   return (
     <motion.div
       className="w-full"
-      initial="hidden"
-      whileInView="visible"
-      viewport={{ once: true }}
+      initial="visible"
+      animate="visible"
       variants={containerVariants}
     >
       {/* ---------- HERO IMAGE ---------- */}
@@ -953,8 +953,8 @@ export function History() {
                     <motion.div
                       key={milestone._id || index}
                       className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden hover:shadow-xl transition-all duration-300"
-                      initial={{ opacity: 0, y: 20 }}
-                      whileInView={{ opacity: 1, y: 0 }}
+                      initial={{ opacity: 1, y: 0 }}
+                      animate={{ opacity: 1, y: 0 }}
                       viewport={{ once: true }}
                       transition={{ duration: 0.5, delay: index * 0.05 }}
                       whileHover={{ scale: 1.03, y: -5 }}
@@ -1592,8 +1592,8 @@ export function VisionMission() {
                   <motion.ul
                     className="space-y-4"
                     variants={containerVariants}
-                    initial="hidden"
-                    whileInView="visible"
+                    initial="visible"
+                    animate="visible"
                   >
                     {items2.map((item, index) => (
                       <motion.li
