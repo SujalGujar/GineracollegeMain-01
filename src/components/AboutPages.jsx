@@ -377,6 +377,7 @@ export function AboutLogo({ onNavigate }) {
           </CardContent>
         </Card>
       </div>
+    </div>
   );
 }
 // import { motion } from 'framer-motion';
