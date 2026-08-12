@@ -68,6 +68,7 @@ const NAV_ITEMS = [
       { label: "Events Photos", page: "events-photos" },
     ],
   },
+  { key: "student-corner", label: "Student Corner", subpages: [] },
   { key: "affiliated-institutes", label: "Affiliated Institutes", subpages: [] },
   { key: "contact", label: "Contact Us", subpages: [] },
 ];

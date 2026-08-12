@@ -288,6 +288,7 @@ export default function App() {
                       <button onClick={() => handleNavigation('admission-procedure')} className="block text-gray-300 hover:text-white hover:translate-x-1 transition-all text-sm">Admissions</button>
                       <button onClick={() => handleNavigation('courses')} className="block text-gray-300 hover:text-white hover:translate-x-1 transition-all text-sm">Courses</button>
                       <button onClick={() => handleNavigation('achievements')} className="block text-gray-300 hover:text-white hover:translate-x-1 transition-all text-sm">Achievements</button>
+                      <button onClick={() => handleNavigation('student-corner')} className="block text-gray-300 hover:text-white hover:translate-x-1 transition-all text-sm">Student Corner</button>
                     </div>
                   </div>
                   <div>
