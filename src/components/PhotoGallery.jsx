@@ -32,7 +32,7 @@ export function CollegePhotos() {
     const fetchGallery = async () => {
       try {
         const res = await axiosInstance.get('/gallery');
-        const images = res.data;
+        const images = Array.isArray(res.data) ? res.data : [];
         setCollegeImages(images.filter(img => img.category === 'college_highlight'));
         setAdditionalImages(images.filter(img => img.category === 'college_campus_view'));
       } catch (err) {
@@ -192,7 +192,7 @@ export function HospitalPhotos() {
     const fetchGallery = async () => {
       try {
         const res = await axiosInstance.get('/gallery');
-        const images = res.data;
+        const images = Array.isArray(res.data) ? res.data : [];
         setHospitalImages(images.filter(img => img.category === 'hospital'));
         setHospitalFacilities(images.filter(img => img.category === 'hospital_facility'));
       } catch (err) {

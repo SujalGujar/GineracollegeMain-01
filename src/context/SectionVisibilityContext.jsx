@@ -4,20 +4,30 @@ import axiosInstance from '../api/axiosInstance';
 const SectionVisibilityContext = createContext();
 
 export const SectionVisibilityProvider = ({ children }) => {
-  const [visibilityMap, setVisibilityMap] = useState({});
+  const [visibilityMap, setVisibilityMap] = useState(() => {
+    try {
+      const cached = localStorage.getItem('ginera_section_visibility');
+      return cached ? JSON.parse(cached) : {};
+    } catch {
+      return {};
+    }
+  });
   const [sectionsList, setSectionsList] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   const fetchVisibility = async () => {
     try {
       const res = await axiosInstance.get('/section-visibility');
-      if (Array.isArray(res.data)) {
+      if (Array.isArray(res.data) && res.data.length > 0) {
         setSectionsList(res.data);
         const map = {};
         res.data.forEach(item => {
           map[item.sectionKey] = item.isVisible !== false;
         });
         setVisibilityMap(map);
+        try {
+          localStorage.setItem('ginera_section_visibility', JSON.stringify(map));
+        } catch { }
       }
     } catch (err) {
       console.error('Failed to fetch section visibility:', err);
@@ -31,15 +41,21 @@ export const SectionVisibilityProvider = ({ children }) => {
   }, []);
 
   const isSectionVisible = (sectionKey) => {
-    if (visibilityMap[sectionKey] === undefined) {
-      return true; // Default to true if not specified
+    if (visibilityMap && visibilityMap[sectionKey] === false) {
+      return false;
     }
-    return visibilityMap[sectionKey];
+    return true; // Default to true so pages never open blank
   };
 
   const toggleSection = async (sectionKey, isVisible) => {
     // Optimistic UI update
-    setVisibilityMap(prev => ({ ...prev, [sectionKey]: isVisible }));
+    setVisibilityMap(prev => {
+      const updated = { ...prev, [sectionKey]: isVisible };
+      try {
+        localStorage.setItem('ginera_section_visibility', JSON.stringify(updated));
+      } catch { }
+      return updated;
+    });
     setSectionsList(prev => prev.map(s => s.sectionKey === sectionKey ? { ...s, isVisible } : s));
 
     try {
@@ -59,6 +75,9 @@ export const SectionVisibilityProvider = ({ children }) => {
       sectionsList.filter(s => s.page === pageName).forEach(s => {
         next[s.sectionKey] = isVisible;
       });
+      try {
+        localStorage.setItem('ginera_section_visibility', JSON.stringify(next));
+      } catch { }
       return next;
     });
 

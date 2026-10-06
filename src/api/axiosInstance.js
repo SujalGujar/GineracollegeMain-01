@@ -43,6 +43,11 @@ export const getMediaUrl = (url, fallback = '/placeholder.png') => {
 const axiosInstance = axios.create({
   baseURL,
   timeout: 45000,
+  headers: {
+    'Cache-Control': 'no-cache, no-store, must-revalidate',
+    'Pragma': 'no-cache',
+    'Expires': '0',
+  },
 });
 
 let activeRequests = 0;
@@ -75,6 +80,10 @@ export const waitForApiIdle = (settleDelay = 75) => new Promise((resolve) => {
 axiosInstance.interceptors.request.use((config) => {
   activeRequests += 1;
   notifyLoadingListeners();
+  // Ensure every GET request bypasses browser/CDN caching and always gets 200 with full data
+  if (config.method === 'get' || !config.method) {
+    config.params = { ...config.params, _cb: Date.now() };
+  }
   return config;
 }, (error) => Promise.reject(error));
 

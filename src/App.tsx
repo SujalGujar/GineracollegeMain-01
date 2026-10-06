@@ -20,8 +20,11 @@ import { LoginPage } from './components/LoginPage';
 import LoadingScreen from './components/LoadingScreen';
 import { StudentCorner } from './components/StudentCorner';
 import { waitForApiIdle } from './api/axiosInstance';
+import { useSectionVisibility } from './context/SectionVisibilityContext';
 
 export default function App() {
+  const { refreshVisibility } = useSectionVisibility();
+
   const getPageFromLocation = () => {
     const path = window.location.pathname.replace(/\/+$/, '');
     const hash = window.location.hash;
@@ -88,6 +91,9 @@ export default function App() {
   };
 
   useEffect(() => {
+    // Keep section visibility fresh across route transitions
+    refreshVisibility();
+
     const requestId = navigationId.current;
     let active = true;
     const minLoadTimer = new Promise((resolve) => setTimeout(resolve, 300));

@@ -16,15 +16,23 @@ let lastMongoError = null;
 const publicApiCache = new Map();
 const PUBLIC_CACHE_TTL_MS = 30 * 1000;
 
+// Disable ETags so API responses are never downgraded to 304 Not Modified without body
+app.set('etag', false);
+
 // Middleware
 app.use(cors());
 app.use(express.json());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Public pages call the same read endpoints repeatedly (header, home and
-// subpages). Cache successful JSON GET responses briefly and clear the cache
-// after any admin write, so visitors get fast data without stale admin edits.
+// subpages). Cache successful JSON GET responses in memory briefly on the server
+// and clear after any admin write, but ALWAYS send full 200 JSON with no-store/no-cache
+// to browsers so client-side navigation never receives 304 Not Modified empty bodies.
 app.use('/api', (req, res, next) => {
+  res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  res.set('Pragma', 'no-cache');
+  res.set('Expires', '0');
+
   if (req.method !== 'GET') {
     res.on('finish', () => {
       if (res.statusCode < 400) publicApiCache.clear();
@@ -38,14 +46,13 @@ app.use('/api', (req, res, next) => {
   const cached = publicApiCache.get(key);
   if (cached && cached.expiresAt > Date.now()) {
     res.set('X-Cache', 'HIT');
-    return res.json(cached.body);
+    return res.status(200).json(cached.body);
   }
 
   const sendJson = res.json.bind(res);
   res.json = (body) => {
     if (res.statusCode >= 200 && res.statusCode < 300) {
       publicApiCache.set(key, { body, expiresAt: Date.now() + PUBLIC_CACHE_TTL_MS });
-      res.set('Cache-Control', 'public, max-age=30');
       res.set('X-Cache', 'MISS');
     }
     return sendJson(body);

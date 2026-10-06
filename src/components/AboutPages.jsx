@@ -92,40 +92,49 @@ export function AboutLogo({ onNavigate }) {
   const [visionMission, setVisionMission] = useState([]);
 
   useEffect(() => {
-    axiosInstance.get('/about/college-logo').then(r => setCollegeBranding(r.data)).catch(() => { });
+    axiosInstance.get('/about/college-logo').then(r => {
+      if (r.data && typeof r.data === 'object') setCollegeBranding(r.data);
+    }).catch(() => { });
   }, []);
 
   useEffect(() => {
-    axiosInstance.get('/about/vision-mission').then(r => setVisionMission(r.data)).catch(() => { });
+    axiosInstance.get('/about/vision-mission').then(r => {
+      if (Array.isArray(r.data)) setVisionMission(r.data);
+    }).catch(() => { });
   }, []);
 
   useEffect(() => {
-    axiosInstance.get('/about/images').then(r => setAboutImages(r.data)).catch(() => { });
+    axiosInstance.get('/about/images').then(r => {
+      if (Array.isArray(r.data)) setAboutImages(r.data);
+    }).catch(() => { });
   }, []);
 
   if (!isSectionVisible('about_logo')) return <SectionOffNotice name="College Logo & Branding" />;
 
-  const visionPoints = visionMission.filter(v => v.type === 'vision').map(v => v.content);
-  const missionPoints = visionMission.filter(v => v.type === 'mission').map(v => v.content);
+  const safeVisionMission = Array.isArray(visionMission) ? visionMission : [];
+  const visionPoints = safeVisionMission.filter(v => v?.type === 'vision').map(v => v?.content).filter(Boolean);
+  const missionPoints = safeVisionMission.filter(v => v?.type === 'mission').map(v => v?.content).filter(Boolean);
 
   const displayLogo = collegeBranding?.logoUrl ? getMediaUrl(collegeBranding.logoUrl) : gineraLogo;
   const imageFor = (key, fallback = null) => {
-    let image = aboutImages.find(item => item.key === key);
+    const safeImages = Array.isArray(aboutImages) ? aboutImages : [];
+    let image = safeImages.find(item => item?.key === key);
     if (!image) {
       const aliasKey = key === 'missionValues' ? 'missionMain' : key === 'visionGoals' ? 'visionMain' : null;
       if (aliasKey) {
-        image = aboutImages.find(item => item.key === aliasKey);
+        image = safeImages.find(item => item?.key === aliasKey);
       }
     }
     if (image?.imageUrl) return getMediaUrl(image.imageUrl);
     return fallback;
   };
   const altFor = (key, fallback) => {
-    const image = aboutImages.find(item => item.key === key);
+    const safeImages = Array.isArray(aboutImages) ? aboutImages : [];
+    const image = safeImages.find(item => item?.key === key);
     if (image?.alt) return image.alt;
     const altKey = key === 'missionValues' ? 'missionMain' : key === 'visionGoals' ? 'visionMain' : null;
     if (altKey) {
-      const altImage = aboutImages.find(item => item.key === altKey);
+      const altImage = safeImages.find(item => item?.key === altKey);
       if (altImage?.alt) return altImage.alt;
     }
     return fallback;
@@ -1362,15 +1371,22 @@ export function VisionMission() {
   };
 
   useEffect(() => {
-    axiosInstance.get('/about/vision-mission').then(r => setVisionMission(r.data)).catch(() => { });
-    axiosInstance.get('/about/core-values').then(r => setCoreValuesData(r.data)).catch(() => { });
-    axiosInstance.get('/about/images').then(r => setAboutImages(r.data)).catch(() => { });
+    axiosInstance.get('/about/vision-mission').then(r => {
+      if (Array.isArray(r.data)) setVisionMission(r.data);
+    }).catch(() => { });
+    axiosInstance.get('/about/core-values').then(r => {
+      if (Array.isArray(r.data)) setCoreValuesData(r.data);
+    }).catch(() => { });
+    axiosInstance.get('/about/images').then(r => {
+      if (Array.isArray(r.data)) setAboutImages(r.data);
+    }).catch(() => { });
   }, []);
 
   if (!isSectionVisible('about_vision_mission')) return <SectionOffNotice name="Vision & Mission" />;
 
-  const visionPoints = visionMission.filter(v => v.type === 'vision').map(v => v.content);
-  const missionPoints = visionMission.filter(v => v.type === 'mission').map(v => v.content);
+  const safeVisionMission = Array.isArray(visionMission) ? visionMission : [];
+  const visionPoints = safeVisionMission.filter(v => v?.type === 'vision').map(v => v?.content).filter(Boolean);
+  const missionPoints = safeVisionMission.filter(v => v?.type === 'mission').map(v => v?.content).filter(Boolean);
 
   const items = visionPoints.length ? visionPoints : [
     "A college of nursing's vision is to be a leader in nursing education, preparing competent, compassionate, and ethically grounded professionals who can contribute to global healthcare.",
