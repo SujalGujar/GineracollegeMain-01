@@ -389,7 +389,7 @@ export function EventsPhotos() {
     const fetchGallery = async () => {
       try {
         const res = await axiosInstance.get('/gallery');
-        const images = res.data;
+        const images = Array.isArray(res.data) ? res.data : [];
         
         setEventImages(images.filter(img => img.category === 'event'));
         
