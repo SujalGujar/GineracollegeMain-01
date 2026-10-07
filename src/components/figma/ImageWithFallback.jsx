@@ -32,6 +32,8 @@ export function ImageWithFallback(props) {
       alt={alt}
       className={className}
       style={style}
+      loading="lazy"
+      decoding="async"
       {...rest}
       onError={handleError}
     />

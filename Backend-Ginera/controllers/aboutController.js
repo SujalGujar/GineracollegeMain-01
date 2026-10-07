@@ -42,7 +42,7 @@ const ensureAboutImageSlots = async () => {
 // ─── MILESTONES ────────────────────────────────────────────────────────────────
 exports.getMilestones = async (req, res) => {
   try {
-    const milestones = await Milestone.find().sort({ order: -1, year: -1 });
+    const milestones = await Milestone.find().sort({ order: -1, year: -1 }).lean();
     res.json(milestones);
   } catch (err) { res.status(500).json({ message: err.message }); }
 };
@@ -208,7 +208,7 @@ exports.clearAboutImage = async (req, res) => {
 
 exports.getVisionMission = async (req, res) => {
   try {
-    const items = await VisionMission.find().sort({ order: 1 });
+    const items = await VisionMission.find().sort({ order: 1 }).lean();
     res.json(items);
   } catch (err) { res.status(500).json({ message: err.message }); }
 };
@@ -238,7 +238,7 @@ exports.deleteVisionMission = async (req, res) => {
 // ─── CORE VALUES ─────────────────────────────────────────────────────────────
 exports.getCoreValues = async (req, res) => {
   try {
-    const items = await CoreValue.find().sort({ order: 1 });
+    const items = await CoreValue.find().sort({ order: 1 }).lean();
     res.json(items);
   } catch (err) { res.status(500).json({ message: err.message }); }
 };

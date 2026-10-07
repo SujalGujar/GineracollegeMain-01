@@ -34,4 +34,6 @@ const galleryImageSchema = new mongoose.Schema({
   }
 });
 
+galleryImageSchema.index({ category: 1, createdAt: -1 });
+
 module.exports = mongoose.model('GalleryImage', galleryImageSchema);

@@ -9,4 +9,6 @@ const milestoneSchema = new mongoose.Schema({
   order: { type: Number, default: 0, min: 0 }
 }, { timestamps: true });
 
+milestoneSchema.index({ order: -1, year: -1 });
+
 module.exports = mongoose.model('Milestone', milestoneSchema);

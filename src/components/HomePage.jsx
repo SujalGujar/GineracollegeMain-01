@@ -924,6 +924,32 @@ const globalStyles = `
     border: 1px solid #e8edf5;
     overflow: hidden;
   }
+  .testimonial-card-grid {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    align-items: stretch;
+  }
+  .testimonial-card-grid.no-image {
+    grid-template-columns: 1fr;
+  }
+  .testimonial-image-wrapper {
+    position: relative;
+    height: 320px;
+    min-height: 320px;
+    max-height: 320px;
+    overflow: hidden;
+    background: #f1f5f9;
+  }
+  @media (max-width: 768px) {
+    .testimonial-card-grid {
+      grid-template-columns: 1fr;
+    }
+    .testimonial-image-wrapper {
+      height: 240px;
+      min-height: 240px;
+      max-height: 240px;
+    }
+  }
   .read-more-btn {
     background: none;
     border: none;
@@ -1118,48 +1144,33 @@ const HomePage=({ onNavigate }) => {
   }, []);
 
   useEffect(() => {
-    const fetchDynamicPrograms = async () => {
+    let isMounted = true;
+    const fetchHomeData = async () => {
       try {
-        const response = await axiosInstance.get("/programs");
-        setDynamicPrograms(Array.isArray(response.data) ? response.data : []);
-      } catch (error) {
-        console.error("Error fetching programs:", error);
-      } finally {
-        setLoadingPrograms(false);
-      }
-    };
-    fetchDynamicPrograms();
-  }, []);
-
-  useEffect(() => {
-    const fetchAcademicContent = async () => {
-      try {
-        const response = await axiosInstance.get("/content/academic");
-        if (response.data && typeof response.data === "object" && !Array.isArray(response.data)) {
-          setAcademicContent(response.data);
+        const [progRes, academicRes, testRes] = await Promise.all([
+          axiosInstance.get("/programs").catch(() => ({ data: [] })),
+          axiosInstance.get("/content/academic").catch(() => ({ data: null })),
+          axiosInstance.get("/testimonials").catch(() => ({ data: [] })),
+        ]);
+        if (!isMounted) return;
+        if (Array.isArray(progRes?.data) && progRes.data.length > 0) {
+          setDynamicPrograms(progRes.data);
+        }
+        if (academicRes?.data && typeof academicRes.data === "object" && !Array.isArray(academicRes.data)) {
+          setAcademicContent(academicRes.data);
+        }
+        if (Array.isArray(testRes?.data) && testRes.data.length > 0) {
+          setDynamicTestimonials(testRes.data);
+          setTestimonialsIndex(0);
         }
       } catch (error) {
-        console.error("Error fetching academic content:", error);
+        console.error("Error fetching homepage dynamic data:", error);
+      } finally {
+        if (isMounted) setLoadingPrograms(false);
       }
     };
-    fetchAcademicContent();
-  }, []);
-
-  useEffect(() => {
-    const fetchDynamicTestimonials = async () => {
-      try {
-        const response = await axiosInstance.get("/testimonials", {
-          params: { t: Date.now() },
-          headers: { "Cache-Control": "no-cache" },
-        });
-        const testimonials = Array.isArray(response.data) ? response.data : [];
-        setDynamicTestimonials(testimonials);
-        setTestimonialsIndex(0);
-      } catch (error) {
-        console.error("Error fetching testimonials:", error);
-      }
-    };
-    fetchDynamicTestimonials();
+    fetchHomeData();
+    return () => { isMounted = false; };
   }, []);
 
   const duplicatedLogos = [...LOGOS, ...LOGOS, ...LOGOS];
@@ -1196,7 +1207,7 @@ const HomePage=({ onNavigate }) => {
     return possibleLists.find((items) => Array.isArray(items) && items.length > 0) || [];
   };
 
-  const programsToDisplay = dynamicPrograms.length > 0 ? dynamicPrograms : (loadingPrograms ? [] : PROGRAMS);
+  const programsToDisplay = dynamicPrograms.length > 0 ? dynamicPrograms : PROGRAMS;
 
   const scrollPrograms = (dir) => {
     const el = document.getElementById("programs-slider");
@@ -1346,7 +1357,7 @@ const HomePage=({ onNavigate }) => {
                     initial={{ opacity: 0, y: 30 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.5, delay: i * 0.12 }}
-                    whileHover={{ y: -8, transition: { duration: 0.3 } }}
+                    whileHover={{ y: -8, boxShadow: "var(--card-shadow-hover)", transition: { duration: 0.3 } }}
                     style={{
                       background: "#fff",
                       borderRadius: 24,
@@ -1362,8 +1373,6 @@ const HomePage=({ onNavigate }) => {
                       width: 350,
                       scrollSnapAlign: "start",
                     }}
-                    onHoverStart={(e) => e.currentTarget.style.boxShadow = "var(--card-shadow-hover)"}
-                    onHoverEnd={(e) => e.currentTarget.style.boxShadow = "var(--card-shadow)"}
                   >
                     <div style={{ position: "relative", height: 200, overflow: "hidden", flexShrink: 0 }}>
                       <motion.img 
@@ -1519,14 +1528,14 @@ const HomePage=({ onNavigate }) => {
                       transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
                       className="testimonial-card"
                     >
-                      <div style={{ display: "grid", gridTemplateColumns: hasImage ? "1fr 1.4fr" : "1fr" }}>
+                      <div className={`testimonial-card-grid ${hasImage ? "" : "no-image"}`}>
                         {hasImage && (
-                          <div style={{ position: "relative", minHeight: 320, overflow: "hidden" }}>
+                          <div className="testimonial-image-wrapper">
                             <img
                               src={getMediaUrl(current.imageUrl || current.image)}
                               alt={current.name || "Testimonial"}
                               onError={(e) => { e.currentTarget.src = libraryImage; }}
-                              style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+                              style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "top center", display: "block" }}
                             />
                             <div style={{
                               position: "absolute", inset: 0,
@@ -1547,9 +1556,9 @@ const HomePage=({ onNavigate }) => {
                             </div>
                           </div>
                         )}
-                        <div style={{ padding: "44px 40px", display: "flex", flexDirection: "column", justifyContent: "center" }}>
-                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-                            <Quote size={40} color="#3b82f6" style={{ opacity: 0.8 }} />
+                        <div style={{ padding: "32px 36px", display: "flex", flexDirection: "column", justifyContent: "space-between", minHeight: 320 }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+                            <Quote size={36} color="#3b82f6" style={{ opacity: 0.8 }} />
                             {!hasImage && (
                               <div style={{
                                 background: "rgba(245,158,11,0.08)",
@@ -1565,22 +1574,29 @@ const HomePage=({ onNavigate }) => {
                               </div>
                             )}
                           </div>
-                          <div style={{ marginBottom: 28 }}>
-                            <p style={{ fontSize: 17, color: "#374151", lineHeight: 1.75, fontStyle: "italic", margin: 0 }}>
-                              "{visibleTestimonialText}"
-                            </p>
+                          <div style={{ marginBottom: 16 }}>
+                            <div style={{
+                              maxHeight: isTestimonialExpanded ? 160 : "none",
+                              overflowY: isTestimonialExpanded ? "auto" : "visible",
+                              paddingRight: isTestimonialExpanded ? 8 : 0,
+                              scrollbarWidth: "thin",
+                            }}>
+                              <p style={{ fontSize: 16, color: "#374151", lineHeight: 1.7, fontStyle: "italic", margin: 0 }}>
+                                "{visibleTestimonialText}"
+                              </p>
+                            </div>
                             {testimonialNeedsToggle && (
                               <button
                                 type="button"
                                 onClick={() => setIsTestimonialExpanded(value => !value)}
-                                style={{ marginTop: 12, border: 0, padding: 0, background: "transparent", color: "#1e3a8a", fontSize: 14, fontWeight: 700, cursor: "pointer" }}
+                                style={{ marginTop: 10, border: 0, padding: 0, background: "transparent", color: "#1e3a8a", fontSize: 14, fontWeight: 700, cursor: "pointer" }}
                               >
                                 {isTestimonialExpanded ? "Read less" : "Read more"}
                               </button>
                             )}
                           </div>
-                          <div style={{ borderTop: "1px solid #e5e7eb", paddingTop: 20 }}>
-                            <p style={{ fontWeight: 700, fontSize: 18, color: "#111827", marginBottom: 4 }}>
+                          <div style={{ borderTop: "1px solid #e5e7eb", paddingTop: 16 }}>
+                            <p style={{ fontWeight: 700, fontSize: 18, color: "#111827", marginBottom: 2 }}>
                               {current.name}
                             </p>
                             <p style={{ fontSize: 14, color: "#6b7280" }}>{current.role}</p>

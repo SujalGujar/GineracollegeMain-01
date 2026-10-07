@@ -10,11 +10,18 @@ dns.setServers(['8.8.8.8', '8.8.4.4']);
 
 dotenv.config({ path: path.join(__dirname, '.env') });
 
+const {
+  connectRedis,
+  getCache,
+  setCache,
+  clearCache,
+  isRedisReady,
+} = require('./configs/redis');
+
 const app = express();
 const PORT = process.env.PORT || 8080;
 let lastMongoError = null;
-const publicApiCache = new Map();
-const PUBLIC_CACHE_TTL_MS = 30 * 1000;
+const PUBLIC_CACHE_TTL_SECONDS = 30;
 
 // Disable ETags so API responses are never downgraded to 304 Not Modified without body
 app.set('etag', false);
@@ -24,36 +31,61 @@ app.use(cors());
 app.use(express.json());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
+// Performance: Response timing logger to detect slow requests (>1000ms)
+app.use((req, res, next) => {
+  const start = Date.now();
+  res.on('finish', () => {
+    const elapsed = Date.now() - start;
+    if (elapsed > 1000) {
+      console.warn(`⚠️ [SLOW REQUEST] ${req.method} ${req.originalUrl} completed in ${elapsed}ms (${res.statusCode})`);
+    }
+  });
+  next();
+});
+
 // Public pages call the same read endpoints repeatedly (header, home and
-// subpages). Cache successful JSON GET responses in memory briefly on the server
+// subpages). Cache successful JSON GET responses via Redis (with server memory fallback)
 // and clear after any admin write, but ALWAYS send full 200 JSON with no-store/no-cache
 // to browsers so client-side navigation never receives 304 Not Modified empty bodies.
-app.use('/api', (req, res, next) => {
+app.use('/api', async (req, res, next) => {
   res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
   res.set('Pragma', 'no-cache');
   res.set('Expires', '0');
 
   if (req.method !== 'GET') {
     res.on('finish', () => {
-      if (res.statusCode < 400) publicApiCache.clear();
+      if (res.statusCode < 400) {
+        clearCache();
+      }
     });
+    return next();
+  }
+
+  // Health check should always return live status
+  if (req.path === '/health') {
     return next();
   }
 
   const requestUrl = new URL(req.originalUrl, 'http://localhost');
   requestUrl.searchParams.delete('t'); // ignore frontend cache-busting timestamps
-  const key = requestUrl.pathname + requestUrl.search;
-  const cached = publicApiCache.get(key);
-  if (cached && cached.expiresAt > Date.now()) {
-    res.set('X-Cache', 'HIT');
-    return res.status(200).json(cached.body);
+  requestUrl.searchParams.delete('_cb');
+  const key = `cache:${requestUrl.pathname}${requestUrl.search}`;
+
+  try {
+    const cachedBody = await getCache(key);
+    if (cachedBody) {
+      res.set('X-Cache', isRedisReady() ? 'HIT-REDIS' : 'HIT-MEMORY');
+      return res.status(200).json(cachedBody);
+    }
+  } catch (err) {
+    // Proceed to fetch from database if cache reading fails
   }
 
   const sendJson = res.json.bind(res);
   res.json = (body) => {
     if (res.statusCode >= 200 && res.statusCode < 300) {
-      publicApiCache.set(key, { body, expiresAt: Date.now() + PUBLIC_CACHE_TTL_MS });
-      res.set('X-Cache', 'MISS');
+      setCache(key, body, PUBLIC_CACHE_TTL_SECONDS);
+      res.set('X-Cache', isRedisReady() ? 'MISS-REDIS' : 'MISS-MEMORY');
     }
     return sendJson(body);
   };
@@ -83,6 +115,7 @@ const instituteRoutes = require('./routes/instituteRoutes');
 const contactRoutes = require('./routes/contactRoutes');
 const sectionVisibilityRoutes = require('./routes/sectionVisibilityRoutes');
 const studentCornerRoutes = require('./routes/studentCornerRoutes');
+const screenRoutes = require('./routes/screenRoutes');
 
 app.use('/api/sliders', sliderRoutes);
 app.use('/api/gallery', galleryRoutes);
@@ -100,6 +133,7 @@ app.use('/api/institutes', instituteRoutes);
 app.use('/api/contact', contactRoutes);
 app.use('/api/section-visibility', sectionVisibilityRoutes);
 app.use('/api/student-corner', studentCornerRoutes);
+app.use('/api/screen', screenRoutes);
 
 // MongoDB Connection
 mongoose.set('bufferCommands', false);
@@ -123,6 +157,7 @@ const connectDB = async () => {
 };
 
 connectDB();
+connectRedis();
 
 // Handle connection events
 mongoose.connection.on('error', err => {
@@ -147,6 +182,7 @@ app.get('/api/health', (req, res) => {
     hasMongoUri: Boolean(process.env.MONGODB_URI),
     dbReadyState: mongoose.connection.readyState,
     dbName: mongoose.connection.name || null,
+    redisReady: isRedisReady(),
     lastMongoError,
   });
 });

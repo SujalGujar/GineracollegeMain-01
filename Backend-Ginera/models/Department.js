@@ -53,4 +53,6 @@ const departmentSchema = new mongoose.Schema({
   }
 });
 
+departmentSchema.index({ category: 1 });
+
 module.exports = mongoose.model('Department', departmentSchema);

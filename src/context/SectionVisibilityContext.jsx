@@ -38,6 +38,16 @@ export const SectionVisibilityProvider = ({ children }) => {
 
   useEffect(() => {
     fetchVisibility();
+
+    const handleStorageChange = (e) => {
+      if (e.key === 'ginera_section_visibility' && e.newValue) {
+        try {
+          setVisibilityMap(JSON.parse(e.newValue));
+        } catch { }
+      }
+    };
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
   const isSectionVisible = (sectionKey) => {

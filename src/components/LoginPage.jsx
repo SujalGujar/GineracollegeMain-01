@@ -15,7 +15,8 @@ export const LoginPage = ({ onLogin }) => {
     setIsLoading(true);
     setError('');
     setTimeout(() => {
-      if (username === 'adminginera@gmail.com' && password === '12345') {
+      const validPassword = localStorage.getItem('adminPassword') || 'Admin@12345';
+      if (username === 'adminginera@gmail.com' && password === validPassword) {
         onLogin();
       } else {
         setError('Invalid email or password. Please try again.');

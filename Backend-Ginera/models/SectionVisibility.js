@@ -8,4 +8,6 @@ const sectionVisibilitySchema = new mongoose.Schema({
   isVisible: { type: Boolean, default: true }
 }, { timestamps: true });
 
+sectionVisibilitySchema.index({ page: 1, isVisible: 1 });
+
 module.exports = mongoose.model('SectionVisibility', sectionVisibilitySchema);

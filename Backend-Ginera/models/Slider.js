@@ -21,4 +21,6 @@ const sliderSchema = new mongoose.Schema({
   }
 });
 
+sliderSchema.index({ department: 1, createdAt: -1 });
+
 module.exports = mongoose.model('Slider', sliderSchema);

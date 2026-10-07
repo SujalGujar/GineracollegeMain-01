@@ -15,10 +15,11 @@ import { GenericDepartment } from './components/DepartmentPages';
 import { CollegePhotos, HospitalPhotos, EventsPhotos } from './components/PhotoGallery';
 import { AffiliatedInstitutes } from './components/AffiliatedInstitutes';
 import { ContactPage } from './components/ContactPage';
-import AdminPanel from './components/AdminPanel';
-import { LoginPage } from './components/LoginPage';
 import LoadingScreen from './components/LoadingScreen';
 import { StudentCorner } from './components/StudentCorner';
+
+const AdminPanel = React.lazy(() => import('./components/AdminPanel'));
+const LoginPage = React.lazy(() => import('./components/LoginPage').then(m => ({ default: m.LoginPage })));
 import { waitForApiIdle } from './api/axiosInstance';
 import { useSectionVisibility } from './context/SectionVisibilityContext';
 
@@ -96,14 +97,16 @@ export default function App() {
 
     const requestId = navigationId.current;
     let active = true;
-    const minLoadTimer = new Promise((resolve) => setTimeout(resolve, 300));
-    // Extended max timeout timer (8s) so cold-start servers on Render return full API data
-    const maxTimeoutTimer = new Promise((resolve) => setTimeout(resolve, 8000));
+    const minLoadTimer = new Promise((resolve) => setTimeout(resolve, 150));
+    // Snappy route transition loader (max 800ms cap)
+    const maxTimeoutTimer = new Promise((resolve) => setTimeout(resolve, 800));
     
     Promise.all([
-      Promise.race([waitForApiIdle(150), maxTimeoutTimer]),
+      Promise.race([waitForApiIdle(100), maxTimeoutTimer]),
       minLoadTimer
     ]).then(() => {
+      if (active && navigationId.current === requestId) setPageLoading(false);
+    }).catch(() => {
       if (active && navigationId.current === requestId) setPageLoading(false);
     });
     return () => { active = false; };
@@ -240,7 +243,11 @@ export default function App() {
             <main
               className="flex-1 min-h-0 flex flex-col overflow-hidden w-full"
               style={{ minHeight: 0, height: '100%' }}>
-              <React.Fragment key={pageInstance}>{renderCurrentPage()}</React.Fragment>
+              <React.Fragment key={pageInstance}>
+                <React.Suspense fallback={<LoadingScreen />}>
+                  {renderCurrentPage()}
+                </React.Suspense>
+              </React.Fragment>
             </main>
             <Toaster />
           </div>

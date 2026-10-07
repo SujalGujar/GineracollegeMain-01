@@ -6,7 +6,7 @@ import {
   LogOut, Plus, Trash2, Edit3, ChevronRight, Upload, FileText,
   X, Menu, Save, CheckCircle2, AlertCircle, Layers, Info,
   ArrowLeft, Building2, Zap, ChevronDown, ChevronUp, Eye, EyeOff,
-  GraduationCap, Phone, MapPin, Sliders, Search, Clock
+  GraduationCap, Phone, MapPin, Sliders, Search, Clock, KeyRound, ShieldCheck
 } from "lucide-react";
 import axiosInstance, { getMediaUrl } from "../api/axiosInstance";
 import { useSectionVisibility } from "../context/SectionVisibilityContext";
@@ -1104,7 +1104,156 @@ const Sidebar = ({ isMobile, sidebarOpen, setSidebarOpen, ...props }) => (
   </>
 );
 
-const Header = ({ setSidebarOpen, selectedDept, activeTab }) => (
+const ResetPasswordModal = ({ show, onClose, notify }) => {
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [error, setError] = useState("");
+
+  const isLongEnough = newPassword.length > 8;
+  const hasUniqueChar = /[!@#$%^&*(),.?":{}|<>_\-+=\\/[\]~`]/.test(newPassword);
+  const isMatching = newPassword.length > 0 && newPassword === confirmPassword;
+  const isValid = isLongEnough && hasUniqueChar && isMatching;
+
+  const handleClose = () => {
+    setNewPassword("");
+    setConfirmPassword("");
+    setShowNewPassword(false);
+    setShowConfirmPassword(false);
+    setError("");
+    onClose();
+  };
+
+  const handleReset = (e) => {
+    e.preventDefault();
+    if (!isLongEnough) {
+      setError("New password must be greater than 8 characters (at least 9 characters).");
+      return;
+    }
+    if (!hasUniqueChar) {
+      setError("New password must contain at least one unique special character (e.g., @, #, $, %, !).");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setError("Passwords do not match. Please ensure both fields are identical.");
+      return;
+    }
+
+    localStorage.setItem("adminPassword", newPassword);
+    notify("Admin password successfully updated!");
+    handleClose();
+  };
+
+  return (
+    <Modal
+      show={show}
+      onClose={handleClose}
+      title="Reset Admin Password"
+      subtitle="Update credentials to maintain secure administrative access"
+    >
+      <form onSubmit={handleReset} className="space-y-4">
+        {error && (
+          <div className="flex items-center gap-2 p-3 rounded-xl bg-red-50 border border-red-200 text-red-600 text-xs font-semibold">
+            <AlertCircle size={16} className="shrink-0" />
+            <span>{error}</span>
+          </div>
+        )}
+
+        <Field label="New Password" required hint="Must be greater than 8 characters with at least one unique special character">
+          <div className="relative flex items-center">
+            <input
+              type={showNewPassword ? "text" : "password"}
+              value={newPassword}
+              onChange={(e) => {
+                setNewPassword(e.target.value);
+                if (error) setError("");
+              }}
+              placeholder="Enter new strong password"
+              className={inputCls}
+              style={{ ...inputStyle, paddingRight: "44px" }}
+              required
+            />
+            <button
+              type="button"
+              onClick={() => setShowNewPassword((v) => !v)}
+              className="absolute right-3.5 text-gray-400 hover:text-gray-600 transition"
+              title={showNewPassword ? "Hide password" : "Show password"}
+            >
+              {showNewPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+            </button>
+          </div>
+        </Field>
+
+        <Field label="Confirm New Password" required hint="Re-enter the exact same new password">
+          <div className="relative flex items-center">
+            <input
+              type={showConfirmPassword ? "text" : "password"}
+              value={confirmPassword}
+              onChange={(e) => {
+                setConfirmPassword(e.target.value);
+                if (error) setError("");
+              }}
+              placeholder="Re-enter new password"
+              className={inputCls}
+              style={{ ...inputStyle, paddingRight: "44px" }}
+              required
+            />
+            <button
+              type="button"
+              onClick={() => setShowConfirmPassword((v) => !v)}
+              className="absolute right-3.5 text-gray-400 hover:text-gray-600 transition"
+              title={showConfirmPassword ? "Hide password" : "Show password"}
+            >
+              {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+            </button>
+          </div>
+        </Field>
+
+        {/* Live Security Checklist */}
+        <div className="p-3.5 rounded-xl border bg-amber-50/40 border-amber-200/60 space-y-2 text-xs">
+          <p className="font-bold text-gray-700 uppercase tracking-wider text-[11px]">Password Security Requirements:</p>
+          <div className={`flex items-center gap-2 font-medium transition-colors ${isLongEnough ? "text-emerald-700" : "text-gray-500"}`}>
+            <CheckCircle2 size={15} className={isLongEnough ? "text-emerald-600" : "text-gray-300"} />
+            <span>Greater than 8 characters (at least 9 characters long)</span>
+          </div>
+          <div className={`flex items-center gap-2 font-medium transition-colors ${hasUniqueChar ? "text-emerald-700" : "text-gray-500"}`}>
+            <CheckCircle2 size={15} className={hasUniqueChar ? "text-emerald-600" : "text-gray-300"} />
+            <span>At least 1 unique/special character (e.g. @, #, $, %, !, &, *)</span>
+          </div>
+          <div className={`flex items-center gap-2 font-medium transition-colors ${isMatching ? "text-emerald-700" : "text-gray-500"}`}>
+            <CheckCircle2 size={15} className={isMatching ? "text-emerald-600" : "text-gray-300"} />
+            <span>Passwords match in both fields</span>
+          </div>
+        </div>
+
+        <div className="admin-form-actions flex gap-3 pt-3">
+          <button
+            type="button"
+            onClick={handleClose}
+            className={formBtnSecondary}
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            disabled={!isValid}
+            className={formBtnPrimary}
+            style={{
+              background: isValid ? C.brand : "#B5ACA2",
+              cursor: isValid ? "pointer" : "not-allowed"
+            }}
+          >
+            <ShieldCheck size={18} />
+            Reset Password
+          </button>
+        </div>
+      </form>
+    </Modal>
+  );
+};
+
+const Header = ({ setSidebarOpen, selectedDept, activeTab, onOpenResetPassword }) => (
   <header className="admin-header h-14 lg:h-16 flex items-center px-4 lg:px-6 border-b shrink-0 z-10"
           style={{ background: C.surface, borderColor: C.border }}>
     <button onClick={() => setSidebarOpen(true)}
@@ -1120,8 +1269,22 @@ const Header = ({ setSidebarOpen, selectedDept, activeTab }) => (
         {selectedDept ? "Department management console" : `Manage ${activeTab.toLowerCase()} system content`}
       </p>
     </div>
-    <div className="ml-auto hidden md:flex items-center gap-2">
-      <span className="admin-header-chip">
+    <div className="ml-auto flex items-center gap-2 sm:gap-3">
+      <button
+        type="button"
+        onClick={onOpenResetPassword}
+        title="Reset Admin Password"
+        className="flex items-center gap-1.5 sm:gap-2 px-3 py-1.5 rounded-xl border transition-all text-xs font-semibold shadow-xs hover:shadow-sm hover:scale-[1.02] active:scale-[0.98]"
+        style={{
+          background: "#FFF8F3",
+          borderColor: "#EAD5C5",
+          color: C.brand
+        }}
+      >
+        <KeyRound size={15} style={{ color: C.accent }} />
+        <span className="hidden sm:inline">Reset Password</span>
+      </button>
+      <span className="admin-header-chip hidden md:inline-flex">
         <span className="admin-header-dot" />
         Live Admin
       </span>
@@ -2641,9 +2804,9 @@ const AboutTab = ({ aboutSub, setAboutSub, collegeLogo, setCollegeLogo, logoFile
           <div className="p-6 rounded-3xl space-y-6 shadow-sm" style={{ background: C.surface, border:`1px solid ${C.border}` }}>
             <p className="font-bold text-base" style={{ color: C.text }}>Institution Branding</p>
             <div className="flex flex-col sm:flex-row items-start gap-6">
-              <div className="w-24 h-24 rounded-3xl border-2 border-dashed overflow-hidden bg-gray-50 flex items-center justify-center shrink-0 shadow-inner"
-                   style={{ borderColor: C.border }}>
-                {collegeLogo.logoUrl ? <img src={imgUrl(collegeLogo.logoUrl)} className="w-full h-full object-contain p-2" alt=""/> : <ImageIcon size={32} style={{ color: C.muted }}/>}
+              <div className="rounded-2xl border-2 border-dashed overflow-hidden bg-gray-50 flex items-center justify-center shrink-0 shadow-inner"
+                   style={{ width: "100px", height: "100px", minWidth: "100px", minHeight: "100px", maxWidth: "100px", maxHeight: "100px", borderColor: C.border, padding: "6px", background: "#f8fafc", boxSizing: "border-box" }}>
+                {collegeLogo.logoUrl ? <img src={imgUrl(collegeLogo.logoUrl)} style={{ width: "100%", height: "100%", maxWidth: "86px", maxHeight: "86px", objectFit: "contain", display: "block" }} alt="College Logo"/> : <ImageIcon size={32} style={{ color: C.muted }}/>}
               </div>
               <div className="flex-1 w-full space-y-4">
                 <Field label="College Full Name">
@@ -2683,7 +2846,7 @@ const AboutTab = ({ aboutSub, setAboutSub, collegeLogo, setCollegeLogo, logoFile
                 placeholder="A powerful summary statement..." value={deanMessage.highlight||""} onChange={e=>setDeanMessage({...deanMessage,highlight:e.target.value})}/>
             </Field>
             <div className="flex flex-col gap-4 p-4 rounded-2xl bg-gray-50 border border-dashed sm:flex-row sm:items-center" style={{ borderColor: C.border }}>
-              <div className="w-16 h-16 rounded-2xl overflow-hidden border-2 shadow-sm shrink-0" style={{ borderColor: C.brand + "40" }}>
+              <div className="rounded-2xl overflow-hidden border-2 shadow-sm shrink-0" style={{ width: "64px", height: "64px", minWidth: "64px", minHeight: "64px", maxWidth: "64px", maxHeight: "64px", borderColor: C.brand + "40" }}>
                 {deanMessage.photoUrl ? <img src={imgUrl(deanMessage.photoUrl)} className="w-full h-full object-cover" alt=""/> : <div className="w-full h-full bg-white flex items-center justify-center"><Users size={24} style={{ color: C.muted }}/></div>}
               </div>
               <label className="flex min-w-0 flex-1 items-center gap-3 rounded-xl border-2 border-dashed px-4 py-3 text-sm font-bold cursor-pointer transition-all hover:border-amber-400 hover:bg-amber-50"
@@ -4389,6 +4552,7 @@ const AdminPanel = ({ onLogout }) => {
   const [loading, setLoading] = useState(false);
   const [note, setNote] = useState(null);
   const [showModal, setShowModal] = useState(false);
+  const [showResetPasswordModal, setShowResetPasswordModal] = useState(false);
   const [modalType, setModalType] = useState("");
   const [editItem, setEditItem] = useState(null);
 
@@ -4874,7 +5038,7 @@ const AdminPanel = ({ onLogout }) => {
       <main
         className="admin-main flex-1 flex flex-col min-w-0 h-full overflow-hidden bg-gray-50"
         style={{ height: '100dvh', minHeight: 0, overflow: 'hidden' }}>
-        <Header setSidebarOpen={setSidebarOpen} selectedDept={selectedDept} activeTab={activeTab}/>
+        <Header setSidebarOpen={setSidebarOpen} selectedDept={selectedDept} activeTab={activeTab} onOpenResetPassword={() => setShowResetPasswordModal(true)}/>
         <Toast note={note} onDismiss={() => setNote(null)}/>
         
         <div className="admin-content-scroll flex-1 min-h-0 overflow-y-auto admin-scroll p-4 md:p-6 lg:p-8">
@@ -4927,6 +5091,11 @@ const AdminPanel = ({ onLogout }) => {
         {modalType === "contactDept" && <ContactDeptForm editItem={editItem} contactDeptForm={contactDeptForm} setContactDeptForm={setContactDeptForm} closeModal={closeModal} fetchData={fetchData} notify={notify} axiosInstance={axiosInstance}/>}
         {modalType === "studentCorner" && <StudentCornerForm editItem={editItem} scForm={scForm} setScForm={setScForm} closeModal={closeModal} fetchData={fetchData} notify={notify}/>}
       </Modal>
+      <ResetPasswordModal
+        show={showResetPasswordModal}
+        onClose={() => setShowResetPasswordModal(false)}
+        notify={notify}
+      />
     </div>
   );
 };
