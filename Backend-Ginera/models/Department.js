@@ -35,7 +35,9 @@ const departmentSchema = new mongoose.Schema({
     name: String,
     designation: String,
     qualification: String,
-    specialization: String
+    specialization: String,
+    imageUrl: String,
+    description: String
   }],
   facilities: [{
     type: String

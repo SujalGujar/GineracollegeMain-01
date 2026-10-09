@@ -20,7 +20,7 @@ import { StudentCorner } from './components/StudentCorner';
 
 const AdminPanel = React.lazy(() => import('./components/AdminPanel'));
 const LoginPage = React.lazy(() => import('./components/LoginPage').then(m => ({ default: m.LoginPage })));
-import { waitForApiIdle } from './api/axiosInstance';
+import { waitForApiIdle, warmUpBackend } from './api/axiosInstance';
 import { useSectionVisibility } from './context/SectionVisibilityContext';
 
 export default function App() {
@@ -92,17 +92,22 @@ export default function App() {
   };
 
   useEffect(() => {
+    // Ping cloud backend to start waking up container immediately on first visit
+    warmUpBackend();
+  }, []);
+
+  useEffect(() => {
     // Keep section visibility fresh across route transitions
     refreshVisibility();
 
     const requestId = navigationId.current;
     let active = true;
-    const minLoadTimer = new Promise((resolve) => setTimeout(resolve, 150));
-    // Snappy route transition loader (max 800ms cap)
-    const maxTimeoutTimer = new Promise((resolve) => setTimeout(resolve, 800));
+    const minLoadTimer = new Promise((resolve) => setTimeout(resolve, 80));
+    // Snappy route transition loader (max 400ms cap)
+    const maxTimeoutTimer = new Promise((resolve) => setTimeout(resolve, 400));
     
     Promise.all([
-      Promise.race([waitForApiIdle(100), maxTimeoutTimer]),
+      Promise.race([waitForApiIdle(60), maxTimeoutTimer]),
       minLoadTimer
     ]).then(() => {
       if (active && navigationId.current === requestId) setPageLoading(false);

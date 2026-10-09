@@ -102,6 +102,38 @@ export const SectionVisibilityProvider = ({ children }) => {
     }
   };
 
+  const toggleDepartmentSections = async (departmentSlug, isVisible) => {
+    const slugKey = (departmentSlug || '').toLowerCase().replace(/[^a-z0-9]/g, '_').replace(/_+/g, '_');
+    // Optimistic UI update
+    setVisibilityMap(prev => {
+      const next = { ...prev };
+      sectionsList.forEach(s => {
+        if (s.departmentSlug === departmentSlug || (s.sectionKey && s.sectionKey.startsWith(`dept_${slugKey}`))) {
+          next[s.sectionKey] = isVisible;
+        }
+      });
+      try {
+        localStorage.setItem('ginera_section_visibility', JSON.stringify(next));
+      } catch { }
+      return next;
+    });
+
+    setSectionsList(prev => prev.map(s => {
+      if (s.departmentSlug === departmentSlug || (s.sectionKey && s.sectionKey.startsWith(`dept_${slugKey}`))) {
+        return { ...s, isVisible };
+      }
+      return s;
+    }));
+
+    try {
+      await axiosInstance.put('/section-visibility/bulk', { departmentSlug, isVisible });
+    } catch (err) {
+      console.error(`Failed to update bulk department visibility for ${departmentSlug}:`, err);
+      fetchVisibility();
+      throw err;
+    }
+  };
+
   return (
     <SectionVisibilityContext.Provider value={{
       visibilityMap,
@@ -110,6 +142,7 @@ export const SectionVisibilityProvider = ({ children }) => {
       isSectionVisible,
       toggleSection,
       togglePageSections,
+      toggleDepartmentSections,
       refreshVisibility: fetchVisibility
     }}>
       {children}

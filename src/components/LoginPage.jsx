@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Mail, Lock, ArrowRight, AlertCircle, Eye, EyeOff } from 'lucide-react';
+import { Mail, Lock, ArrowRight, AlertCircle, Eye, EyeOff, KeyRound } from 'lucide-react';
 import gineraLogo2 from '../images/ginera-logo2.png';
 import { motion } from 'framer-motion';
 
@@ -127,16 +127,23 @@ export const LoginPage = ({ onLogin }) => {
                 style={{
                   background: 'rgba(255,255,255,0.04)',
                   border: '1px solid rgba(255,255,255,0.08)',
-                  padding: '14px 44px 14px 44px',
+                  padding: '14px 84px 14px 44px',
                 }}
               />
               <button
                 type="button"
                 onClick={() => setShowPassword((v) => !v)}
-                className="absolute right-[14px] flex items-center justify-center transition-colors"
-                style={{ color: 'rgba(255,255,255,0.25)', background: 'none', border: 'none', cursor: 'pointer' }}
+                title={showPassword ? 'Hide password' : 'Click key icon to see password'}
+                className="absolute right-[10px] flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl transition-all select-none group"
+                style={{
+                  color: showPassword ? '#E07B39' : 'rgba(255,255,255,0.7)',
+                  background: showPassword ? 'rgba(224,123,57,0.16)' : 'rgba(255,255,255,0.06)',
+                  border: '1px solid ' + (showPassword ? 'rgba(224,123,57,0.35)' : 'rgba(255,255,255,0.1)'),
+                  cursor: 'pointer',
+                }}
               >
-                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                <KeyRound size={15} className="transition-transform group-hover:scale-110" />
+                {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
               </button>
             </div>
           </div>

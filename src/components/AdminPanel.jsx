@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -3216,6 +3216,34 @@ const DepartmentsTab = ({ selectedDept, setSelectedDept, departments, deptForm, 
   const [editingFacultyIdx, setEditingFacultyIdx] = useState(null);
   const [editingFacilityIdx, setEditingFacilityIdx] = useState(null);
   const [editingActivityIdx, setEditingActivityIdx] = useState(null);
+  const [facultyImageUploading, setFacultyImageUploading] = useState(false);
+
+  const handleFacultyImageChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Check 500KB limit
+    if (file.size > 500 * 1024) {
+      notify(`Image size is ${(file.size / 1024).toFixed(0)}KB. Maximum allowed is 500KB.`, "error");
+      e.target.value = "";
+      return;
+    }
+
+    try {
+      setFacultyImageUploading(true);
+      const fd = new FormData();
+      fd.append("image", file);
+      const res = await axiosInstance.post("/departments/upload-faculty-image", fd);
+      setDeptFacultyForm(prev => ({ ...prev, imageUrl: res.data.imageUrl }));
+      notify("Faculty photo uploaded successfully");
+    } catch (err) {
+      const msg = err.response?.data?.message || "Failed to upload faculty photo";
+      notify(msg, "error");
+    } finally {
+      setFacultyImageUploading(false);
+      e.target.value = "";
+    }
+  };
 
   if (!selectedDept) return (
     <div className="space-y-6">
@@ -3289,22 +3317,34 @@ const DepartmentsTab = ({ selectedDept, setSelectedDept, departments, deptForm, 
         <button
           onClick={async () => {
             try {
+              // Auto-bundle active faculty edit if admin is currently editing in the form
+              let facultyToSave = deptForm.faculty ? [...deptForm.faculty] : [];
+              if (editingFacultyIdx !== null && deptFacultyForm.name?.trim()) {
+                facultyToSave[editingFacultyIdx] = { ...deptFacultyForm };
+              }
+
               const fd = new FormData();
               fd.append("name", deptForm.name || "");
               fd.append("category", deptForm.category || "");
               fd.append("description", deptForm.description || "");
               fd.append("overview", deptForm.overview || "");
               fd.append("overview2", deptForm.overview2 || "");
-              if (deptForm.faculty) fd.append("faculty", JSON.stringify(deptForm.faculty));
+              fd.append("faculty", JSON.stringify(facultyToSave));
               if (deptForm.facilities) fd.append("facilities", JSON.stringify(deptForm.facilities));
               if (deptForm.activities) fd.append("activities", JSON.stringify(deptForm.activities));
               if (deptForm.logo instanceof File) {
                 fd.append("logo", deptForm.logo);
               }
-              await axiosInstance.put(`/departments/${selectedDept._id}`, fd);
-              notify("Department Updated Successfully");
+              const res = await axiosInstance.put(`/departments/${selectedDept._id}`, fd);
+              setSelectedDept(res.data);
+              setDeptForm({ ...res.data });
+              setEditingFacultyIdx(null);
+              setDeptFacultyForm({ name: "", designation: "", qualification: "", specialization: "", description: "", imageUrl: "" });
+              notify("Department & Staff Saved Successfully");
               fetchData();
-            } catch { notify("Failed to save changes","error"); }
+            } catch (err) {
+              notify("Failed to save changes", "error");
+            }
           }}
           className="w-full lg:w-auto flex items-center justify-center gap-2 px-8 py-3.5 rounded-2xl text-sm font-bold text-white shadow-xl hover:opacity-90 active:scale-95 transition-all"
           style={{ background: C.brand }}>
@@ -3348,60 +3388,237 @@ const DepartmentsTab = ({ selectedDept, setSelectedDept, departments, deptForm, 
 
           {deptSub === "Faculty" && (
             <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 p-5 rounded-2xl shadow-inner border border-dashed" style={{ background: C.bg, borderColor: C.border }}>
-                {["name","designation","qualification"].map(k => (
-                  <input key={k} placeholder={k.charAt(0).toUpperCase()+k.slice(1)} value={deptFacultyForm[k] || ""}
-                    onChange={e=>setDeptFacultyForm({...deptFacultyForm,[k]:e.target.value})}
-                    className={inputCls} style={inputStyle}/>
-                ))}
-                <div className="flex gap-2">
-                  <button onClick={() => {
-                    if(!deptFacultyForm.name) return;
-                    if (editingFacultyIdx !== null) {
-                      const updated = [...deptForm.faculty];
-                      updated[editingFacultyIdx] = deptFacultyForm;
-                      setDeptForm({...deptForm, faculty: updated});
-                      setEditingFacultyIdx(null);
-                    } else {
-                      setDeptForm({...deptForm, faculty:[...deptForm.faculty, deptFacultyForm]});
-                    }
-                    setDeptFacultyForm({name:"",designation:"",qualification:"",specialization:""});
-                  }}
-                  className="flex-1 px-4 py-2.5 rounded-xl text-sm font-bold text-white shadow hover:opacity-90 active:scale-95 transition-all" style={{ background: C.brand }}>
-                    {editingFacultyIdx !== null ? "Update Staff" : "Add Staff"}
-                  </button>
+              <div className="p-5 rounded-2xl shadow-inner border border-dashed space-y-4" style={{ background: C.bg, borderColor: C.border }}>
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    {deptFacultyForm.imageUrl ? (
+                      <div className="relative group/avatar">
+                        <img src={imgUrl(deptFacultyForm.imageUrl)} alt="Faculty preview" className="w-16 h-16 rounded-2xl object-cover border-2 shadow-sm" style={{ borderColor: C.brand }} />
+                        <button
+                          type="button"
+                          onClick={() => setDeptFacultyForm({ ...deptFacultyForm, imageUrl: "" })}
+                          className="absolute -top-1.5 -right-1.5 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition shadow"
+                          title="Remove photo"
+                        >
+                          <X size={12} />
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-2xl border-2 border-dashed bg-white shadow-sm" style={{ borderColor: C.border, color: C.muted }}>
+                        <Users size={24} />
+                      </div>
+                    )}
+                    <div>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <label className="flex items-center gap-2 px-4 py-2.5 rounded-xl border bg-white cursor-pointer hover:bg-gray-50 transition text-xs font-semibold text-gray-700 shadow-sm" style={{ borderColor: C.border }}>
+                          <Upload size={14} />
+                          {facultyImageUploading ? "Uploading..." : deptFacultyForm.imageUrl ? "Change Photo" : "Upload Faculty Photo"}
+                          <input type="file" accept="image/*" className="hidden" disabled={facultyImageUploading} onChange={handleFacultyImageChange} />
+                        </label>
+                        {deptFacultyForm.imageUrl && (
+                          <button
+                            type="button"
+                            onClick={() => setDeptFacultyForm({ ...deptFacultyForm, imageUrl: "" })}
+                            className="flex items-center gap-1.5 px-3 py-2.5 rounded-xl border border-red-200 bg-red-50 hover:bg-red-100 text-red-600 transition text-xs font-semibold shadow-sm"
+                            title="Cancel / Remove image"
+                          >
+                            <Trash2 size={13} /> Cancel Image
+                          </button>
+                        )}
+                      </div>
+                      <p className="text-[11px] text-gray-400 mt-1">Recommended: max 500KB (PNG/JPG/WEBP)</p>
+                    </div>
+                  </div>
                   {editingFacultyIdx !== null && (
-                    <button onClick={() => { setEditingFacultyIdx(null); setDeptFacultyForm({name:"",designation:"",qualification:"",specialization:""}); }}
-                      className="px-3 py-2.5 rounded-xl text-xs font-bold bg-gray-200 text-gray-700 hover:bg-gray-300 transition">
-                      Cancel
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <div className="px-3 py-1.5 rounded-lg bg-amber-100 text-amber-800 text-xs font-bold flex items-center gap-1.5">
+                        <Edit3 size={13} /> Editing Faculty #{editingFacultyIdx + 1}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingFacultyIdx(null);
+                          setDeptFacultyForm({ name: "", designation: "", qualification: "", specialization: "", description: "", imageUrl: "" });
+                        }}
+                        className="px-2.5 py-1.5 rounded-lg border border-gray-300 bg-white text-gray-600 hover:bg-gray-100 text-xs font-semibold transition"
+                      >
+                        Cancel Edit
+                      </button>
+                    </div>
                   )}
                 </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <input
+                    placeholder="Faculty Full Name *"
+                    value={deptFacultyForm.name || ""}
+                    onChange={e => setDeptFacultyForm({ ...deptFacultyForm, name: e.target.value })}
+                    className={inputCls}
+                    style={inputStyle}
+                  />
+                  <input
+                    placeholder="Designation (e.g. Nursing Tutor)"
+                    value={deptFacultyForm.designation || ""}
+                    onChange={e => setDeptFacultyForm({ ...deptFacultyForm, designation: e.target.value })}
+                    className={inputCls}
+                    style={inputStyle}
+                  />
+                  <input
+                    placeholder="Qualification (e.g. M.Sc. Child Health Nursing)"
+                    value={deptFacultyForm.qualification || ""}
+                    onChange={e => setDeptFacultyForm({ ...deptFacultyForm, qualification: e.target.value })}
+                    className={inputCls}
+                    style={inputStyle}
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
+                  <div className="sm:col-span-2">
+                    <textarea
+                      rows={2}
+                      placeholder="Faculty Description / Bio (e.g. Specialization, experience, clinical training...)"
+                      value={deptFacultyForm.description || ""}
+                      onChange={e => setDeptFacultyForm({ ...deptFacultyForm, description: e.target.value })}
+                      className={`${inputCls} resize-none`}
+                      style={inputStyle}
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (!deptFacultyForm.name || !deptFacultyForm.name.trim()) {
+                          notify("Please enter faculty name", "error");
+                          return;
+                        }
+                        if (editingFacultyIdx !== null) {
+                          const updated = [...deptForm.faculty];
+                          updated[editingFacultyIdx] = { ...deptFacultyForm };
+                          setDeptForm(prev => ({ ...prev, faculty: updated }));
+                          setEditingFacultyIdx(null);
+                          notify("Staff updated in list! Click 'Save All Changes' above to apply to the website.");
+                        } else {
+                          setDeptForm(prev => ({ ...prev, faculty: [...(prev.faculty || []), { ...deptFacultyForm }] }));
+                          notify("Staff added to list! Click 'Save All Changes' above to apply to the website.");
+                        }
+                        setDeptFacultyForm({ name: "", designation: "", qualification: "", specialization: "", description: "", imageUrl: "" });
+                      }}
+                      className="flex-1 px-4 py-2.5 rounded-xl text-sm font-bold text-white shadow hover:opacity-90 active:scale-95 transition-all flex items-center justify-center gap-1.5"
+                      style={{ background: C.brand }}
+                    >
+                      {editingFacultyIdx !== null ? "Update Staff" : "Add Staff"}
+                    </button>
+                    {editingFacultyIdx !== null && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingFacultyIdx(null);
+                          setDeptFacultyForm({ name: "", designation: "", qualification: "", specialization: "", description: "", imageUrl: "" });
+                        }}
+                        className="px-3 py-2.5 rounded-xl text-xs font-bold bg-gray-200 text-gray-700 hover:bg-gray-300 transition"
+                      >
+                        Cancel
+                      </button>
+                    )}
+                  </div>
+                </div>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {deptForm.faculty.map((f,i) => (
-                  <div key={i} className={`flex items-center justify-between p-4 rounded-2xl shadow-sm border group hover:border-amber-300 transition-all ${editingFacultyIdx === i ? 'ring-2 ring-amber-500 bg-amber-50/30' : ''}`} style={{ background: C.bg, borderColor: C.border }}>
-                    <div className="min-w-0 flex-1">
-                      <p className="font-bold text-sm truncate" style={{ color: C.text }}>{f.name}</p>
-                      <div className="flex items-center gap-2 mt-1">
-                        <p className="text-[10px] font-bold uppercase text-amber-600">{f.designation}</p>
-                        <span className="w-1 h-1 rounded-full bg-gray-300"/>
-                        <p className="text-[10px] font-medium text-gray-500 truncate">{f.qualification}</p>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {deptForm.faculty.map((f, i) => (
+                  <div
+                    key={i}
+                    className={`flex flex-col justify-between p-4 rounded-2xl shadow-sm border group transition-all ${
+                      editingFacultyIdx === i ? 'ring-2 ring-amber-500 bg-amber-50/40' : 'hover:border-amber-300 hover:shadow-md'
+                    }`}
+                    style={{ background: C.bg, borderColor: C.border }}
+                  >
+                    <div>
+                      <div className="flex items-start justify-between gap-3 mb-2.5">
+                        <div className="flex items-center gap-3 min-w-0 flex-1">
+                          {f.imageUrl ? (
+                            <img
+                              src={imgUrl(f.imageUrl)}
+                              alt={f.name}
+                              className="w-14 h-14 rounded-2xl object-cover shrink-0 border shadow-sm group-hover:scale-105 transition-transform"
+                            />
+                          ) : (
+                            <div
+                              className="w-14 h-14 rounded-2xl flex items-center justify-center font-bold text-base shrink-0 border shadow-sm"
+                              style={{ background: C.accentSoft, color: C.accent, borderColor: C.border }}
+                            >
+                              {f.name ? f.name.charAt(0).toUpperCase() : "👨‍⚕️"}
+                            </div>
+                          )}
+                          <div className="min-w-0 flex-1">
+                            <p className="font-bold text-sm truncate" style={{ color: C.text }}>
+                              {f.name}
+                            </p>
+                            <p className="text-[11px] font-bold uppercase tracking-wide text-amber-600 truncate mt-0.5">
+                              {f.designation || "Faculty Member"}
+                            </p>
+                            <p className="text-[11px] text-gray-500 truncate mt-0.5">
+                              {f.qualification}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-1 shrink-0">
+                          <IconBtn
+                            title="Edit faculty member"
+                            onClick={() => {
+                              setEditingFacultyIdx(i);
+                              setDeptFacultyForm({
+                                name: f.name || "",
+                                designation: f.designation || "",
+                                qualification: f.qualification || "",
+                                specialization: f.specialization || "",
+                                description: f.description || "",
+                                imageUrl: f.imageUrl || "",
+                              });
+                            }}
+                          >
+                            <Edit3 size={15} />
+                          </IconBtn>
+                          <IconBtn
+                            danger
+                            title="Delete faculty member"
+                            onClick={() => {
+                              setDeptForm({
+                                ...deptForm,
+                                faculty: deptForm.faculty.filter((_, idx) => idx !== i),
+                              });
+                              if (editingFacultyIdx === i) {
+                                setEditingFacultyIdx(null);
+                                setDeptFacultyForm({
+                                  name: "",
+                                  designation: "",
+                                  qualification: "",
+                                  specialization: "",
+                                  description: "",
+                                  imageUrl: "",
+                                });
+                              }
+                            }}
+                          >
+                            <Trash2 size={15} />
+                          </IconBtn>
+                        </div>
                       </div>
-                    </div>
-                    <div className="flex items-center gap-1.5 ml-2">
-                      <IconBtn onClick={() => { setEditingFacultyIdx(i); setDeptFacultyForm({ name: f.name || "", designation: f.designation || "", qualification: f.qualification || "", specialization: f.specialization || "" }); }}>
-                        <Edit3 size={15}/>
-                      </IconBtn>
-                      <IconBtn danger onClick={() => {
-                        setDeptForm({...deptForm, faculty: deptForm.faculty.filter((_,idx)=>idx!==i)});
-                        if (editingFacultyIdx === i) { setEditingFacultyIdx(null); setDeptFacultyForm({name:"",designation:"",qualification:"",specialization:""}); }
-                      }}>
-                        <Trash2 size={15}/>
-                      </IconBtn>
+
+                      {f.description && (
+                        <p className="text-xs text-gray-600 bg-amber-50/50 p-2.5 rounded-xl border border-amber-100/60 leading-relaxed mt-2 line-clamp-3">
+                          {f.description}
+                        </p>
+                      )}
                     </div>
                   </div>
                 ))}
+                {deptForm.faculty.length === 0 && (
+                  <div className="col-span-full py-8 text-center text-gray-400 text-sm">
+                    No faculty members added yet. Use the form above to add staff with photo and description.
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -3472,23 +3689,61 @@ const DepartmentsTab = ({ selectedDept, setSelectedDept, departments, deptForm, 
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-5 rounded-2xl shadow-inner border border-dashed" style={{ background: C.bg, borderColor: C.border }}>
                 <div>
                   <p className="font-bold text-sm" style={{ color: C.text }}>Department Hero Sliders</p>
-                  <p className="text-[11px] font-medium mt-0.5" style={{ color: C.muted }}>High-resolution images for the department landing page</p>
+                  <p className="text-[11px] font-medium mt-0.5" style={{ color: C.muted }}>Upload high-resolution banner images for the department landing page (stored on Cloudinary)</p>
                 </div>
-                <label className="flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-bold text-white cursor-pointer shadow-lg active:scale-95 transition-all" style={{ background: C.brand }}>
+                <label className="flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-bold text-white cursor-pointer shadow-lg active:scale-95 transition-all hover:opacity-90" style={{ background: C.brand }}>
                   <Upload size={16}/> Bulk Upload
-                  <input type="file" className="hidden" onChange={e => { if(e.target.files[0]) handleSliderUpload(e, selectedDept._id); }}/>
+                  <input type="file" multiple accept="image/*" className="hidden" onChange={e => { if(e.target.files && e.target.files.length > 0) { handleSliderUpload(e, selectedDept._id); e.target.value = ''; } }}/>
                 </label>
               </div>
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
-                {sliders.filter(s=>s.department?._id===selectedDept._id).map(s => (
-                  <div key={s._id} className="group relative aspect-video rounded-2xl overflow-hidden shadow-md transition-all hover:shadow-xl" style={{ border:`2px solid ${C.border}` }}>
-                    <img src={imgUrl(s.imageUrl)} alt="" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"/>
-                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-[1px]">
-                      <button onClick={() => del(`/sliders/${s._id}`)} className="p-3 bg-red-500 text-white rounded-2xl shadow-xl hover:bg-red-600 transform transition-transform group-hover:scale-110"><Trash2 size={18}/></button>
+              
+              {(() => {
+                const deptSliders = sliders.filter(s => s.department?._id === selectedDept._id);
+                if (deptSliders.length === 0) {
+                  return (
+                    <div className="flex flex-col items-center justify-center p-10 rounded-2xl border-2 border-dashed text-center" style={{ borderColor: C.border, background: C.panel }}>
+                      <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-3 shadow-inner" style={{ background: `${C.brand}15`, color: C.brand }}>
+                        <ImageIcon size={28} />
+                      </div>
+                      <p className="font-bold text-sm" style={{ color: C.text }}>No Sliders Uploaded Yet</p>
+                      <p className="text-xs max-w-md mt-1 mb-5" style={{ color: C.muted }}>
+                        Upload one or multiple images for <strong>{selectedDept.name}</strong>. All images will be securely saved to Cloudinary and displayed immediately in the website banner.
+                      </p>
+                      <label className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold text-white cursor-pointer shadow-md active:scale-95 transition-all hover:opacity-90" style={{ background: C.brand }}>
+                        <Upload size={14}/> Choose Banner Images
+                        <input type="file" multiple accept="image/*" className="hidden" onChange={e => { if(e.target.files && e.target.files.length > 0) { handleSliderUpload(e, selectedDept._id); e.target.value = ''; } }}/>
+                      </label>
                     </div>
+                  );
+                }
+                return (
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
+                    {deptSliders.map(s => (
+                      <div key={s._id} className="group relative aspect-video rounded-2xl overflow-hidden shadow-md transition-all hover:shadow-xl" style={{ border:`2px solid ${C.border}` }}>
+                        <img 
+                          src={imgUrl(s.imageUrl)} 
+                          alt="" 
+                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                          onError={(e) => {
+                            e.currentTarget.onerror = null;
+                            e.currentTarget.src = "https://placehold.co/600x400?text=Image+Unavailable";
+                          }}
+                        />
+                        {s.imageUrl?.includes('cloudinary.com') && (
+                          <span className="absolute top-2 left-2 bg-emerald-600/90 text-white text-[9px] font-semibold px-2 py-0.5 rounded-full shadow backdrop-blur-xs">
+                            Cloudinary
+                          </span>
+                        )}
+                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-[1px]">
+                          <button onClick={() => del(`/sliders/${s._id}`)} className="p-3 bg-red-500 text-white rounded-2xl shadow-xl hover:bg-red-600 transform transition-transform group-hover:scale-110" title="Delete Slider">
+                            <Trash2 size={18}/>
+                          </button>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
+                );
+              })()}
             </div>
           )}
         </div>
@@ -3814,9 +4069,16 @@ const ContactTab = ({ contactSub, setContactSub, keyPersons, setKeyPersonForm, c
 );
 
 const SectionControlTab = ({ notify }) => {
-  const { sectionsList, loading, toggleSection, togglePageSections } = useSectionVisibility();
+  const { sectionsList, loading, toggleSection, togglePageSections, toggleDepartmentSections, refreshVisibility } = useSectionVisibility();
   const [selectedPage, setSelectedPage] = useState("Home Page");
+  const [selectedDeptFilter, setSelectedDeptFilter] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
+
+  useEffect(() => {
+    if (typeof refreshVisibility === "function") {
+      refreshVisibility();
+    }
+  }, []);
 
   const pages = ["Home Page", "About Us", "Admission", "Departments", "Gallery", "Institutes", "Student Corner", "Contact Us", "All Pages"];
   const pageCounts = pages.reduce((acc, page) => {
@@ -3824,24 +4086,144 @@ const SectionControlTab = ({ notify }) => {
     return acc;
   }, {});
 
-  const filteredSections = sectionsList.filter(s => {
-    const matchesPage = selectedPage === "All Pages" || s.page === selectedPage;
-    const matchesSearch = (s.sectionName || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          (s.description || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          (s.sectionKey || "").toLowerCase().includes(searchTerm.toLowerCase());
-    return matchesPage && matchesSearch;
-  });
+  // Extract all unique departments dynamically from sectionsList
+  const departmentGroups = useMemo(() => {
+    const deptMap = new Map();
+    sectionsList.filter(s => s.page === "Departments").forEach(s => {
+      let slug = s.departmentSlug;
+      if (!slug) {
+        const cleaned = s.sectionKey.replace(/^dept_/, "");
+        slug = cleaned.replace(/_(overview|facilities|faculty|activities)$/, "");
+      }
+      let name = s.departmentName;
+      if (!name) {
+        name = s.sectionName.split(" - ")[0] || slug;
+      }
+      if (!deptMap.has(slug)) {
+        deptMap.set(slug, { slug, name, sections: [] });
+      }
+      deptMap.get(slug).sections.push(s);
+    });
 
-  const grouped = filteredSections.reduce((acc, sec) => {
-    acc[sec.page] = acc[sec.page] || [];
-    acc[sec.page].push(sec);
-    return acc;
-  }, {});
+    const subOrder = { page: 1, overview: 2, facilities: 3, faculty: 4, activities: 5 };
+    deptMap.forEach(group => {
+      group.sections.sort((a, b) => {
+        const orderA = subOrder[a.subSection] || 99;
+        const orderB = subOrder[b.subSection] || 99;
+        return orderA - orderB;
+      });
+    });
+
+    return Array.from(deptMap.values()).sort((a, b) => a.name.localeCompare(b.name));
+  }, [sectionsList]);
+
+  const getSubSectionMeta = (sec) => {
+    if (sec.subSection === "page" || sec.sectionKey.endsWith("_page") || (!sec.subSection && !sec.sectionKey.includes("_overview") && !sec.sectionKey.includes("_facilities") && !sec.sectionKey.includes("_faculty") && !sec.sectionKey.includes("_activities"))) {
+      return {
+        label: "Entire Page",
+        tag: "Page Access",
+        color: "#6B3F1D",
+        bg: "#FDF0E6",
+        icon: Building2
+      };
+    }
+    if (sec.subSection === "overview" || sec.sectionKey.endsWith("_overview")) {
+      return {
+        label: "Overview",
+        tag: "Overview & Vision",
+        color: "#0284C7",
+        bg: "#E0F2FE",
+        icon: BookOpen
+      };
+    }
+    if (sec.subSection === "facilities" || sec.sectionKey.endsWith("_facilities")) {
+      return {
+        label: "Facilities",
+        tag: "Labs & Equipment",
+        color: "#7C3AED",
+        bg: "#EDE9FE",
+        icon: Layers
+      };
+    }
+    if (sec.subSection === "faculty" || sec.sectionKey.endsWith("_faculty")) {
+      return {
+        label: "Faculty",
+        tag: "Faculty & Slider",
+        color: "#D97706",
+        bg: "#FEF3C7",
+        icon: Users
+      };
+    }
+    if (sec.subSection === "activities" || sec.sectionKey.endsWith("_activities")) {
+      return {
+        label: "Activities",
+        tag: "Academic Activities",
+        color: "#059669",
+        bg: "#D1FAE5",
+        icon: GraduationCap
+      };
+    }
+    return {
+      label: "Section",
+      tag: "Section Control",
+      color: "#4B5563",
+      bg: "#F3F4F6",
+      icon: Layers
+    };
+  };
+
+  // Filter department groups based on search term & department filter
+  const filteredDepartmentGroups = useMemo(() => {
+    let groups = departmentGroups;
+    if (selectedDeptFilter !== "all") {
+      groups = groups.filter(g => g.slug === selectedDeptFilter);
+    }
+    if (!searchTerm.trim()) return groups;
+
+    const term = searchTerm.toLowerCase();
+    return groups.map(g => {
+      const groupMatches = g.name.toLowerCase().includes(term) || g.slug.toLowerCase().includes(term);
+      if (groupMatches) return g;
+      const matchingSections = g.sections.filter(s =>
+        (s.sectionName || "").toLowerCase().includes(term) ||
+        (s.description || "").toLowerCase().includes(term) ||
+        (s.sectionKey || "").toLowerCase().includes(term)
+      );
+      if (matchingSections.length > 0) {
+        return { ...g, sections: matchingSections };
+      }
+      return null;
+    }).filter(Boolean);
+  }, [departmentGroups, selectedDeptFilter, searchTerm]);
+
+  // Filter non-department sections
+  const filteredNonDeptSections = useMemo(() => {
+    return sectionsList.filter(s => {
+      if (s.page === "Departments") return false;
+      const matchesPage = selectedPage === "All Pages" || s.page === selectedPage;
+      const matchesSearch = !searchTerm.trim() ||
+        (s.sectionName || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (s.description || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (s.sectionKey || "").toLowerCase().includes(searchTerm.toLowerCase());
+      return matchesPage && matchesSearch;
+    });
+  }, [sectionsList, selectedPage, searchTerm]);
+
+  const nonDeptGrouped = useMemo(() => {
+    return filteredNonDeptSections.reduce((acc, sec) => {
+      acc[sec.page] = acc[sec.page] || [];
+      acc[sec.page].push(sec);
+      return acc;
+    }, {});
+  }, [filteredNonDeptSections]);
 
   const totalSections = sectionsList.length;
   const activeSections = sectionsList.filter(s => s.isVisible !== false).length;
   const hiddenSections = totalSections - activeSections;
   const activePercent = totalSections ? Math.round((activeSections / totalSections) * 100) : 0;
+
+  const showDepartmentsSection = selectedPage === "Departments" || selectedPage === "All Pages";
+  const showNonDeptSection = selectedPage !== "Departments";
 
   return (
     <div className="section-control-shell">
@@ -4056,6 +4438,57 @@ const SectionControlTab = ({ notify }) => {
           background: #EFE7DF;
           color: #1A1208;
         }
+
+        /* Department Filter Pills */
+        .dept-filter-bar {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 8px;
+          padding: 12px 14px;
+          border: 1px solid #E8E0D8;
+          border-radius: 14px;
+          background: #FBFAF8;
+        }
+        .dept-filter-pill {
+          min-height: 32px;
+          border: 1px solid #E6DCD1;
+          border-radius: 999px;
+          padding: 6px 12px;
+          color: #655646;
+          background: #FFFFFF;
+          font-size: 12px;
+          font-weight: 750;
+          line-height: 1;
+          display: inline-flex;
+          align-items: center;
+          gap: 7px;
+          cursor: pointer;
+          transition: transform 160ms ease, background 160ms ease, border-color 160ms ease, color 160ms ease;
+        }
+        .dept-filter-pill:hover {
+          transform: translateY(-1px);
+          border-color: #CFB69D;
+          background: #FFF7EF;
+        }
+        .dept-filter-pill.is-active {
+          color: #FFFFFF;
+          border-color: #6B3F1D;
+          background: #6B3F1D;
+          box-shadow: 0 8px 18px rgba(107, 63, 29, 0.18);
+        }
+        .dept-filter-pill.is-active .dept-filter-count {
+          background: rgba(255,255,255,0.22);
+          color: #FFFFFF;
+        }
+        .dept-filter-count {
+          font-size: 10px;
+          padding: 2px 6px;
+          border-radius: 999px;
+          background: #F1ECE6;
+          color: #796858;
+          font-weight: 800;
+        }
+
         .section-control-loading {
           min-height: 280px;
           border: 1px solid #E8E0D8;
@@ -4131,6 +4564,45 @@ const SectionControlTab = ({ notify }) => {
           font-size: 12px;
           font-weight: 700;
         }
+        .dept-meta-row {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          margin-top: 4px;
+          flex-wrap: wrap;
+        }
+        .dept-slug-badge {
+          font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+          font-size: 11px;
+          font-weight: 700;
+          padding: 2px 7px;
+          border-radius: 6px;
+          background: #F5EFE9;
+          color: #6B3F1D;
+          border: 1px solid #E8DDD2;
+        }
+        .dept-stat-badge {
+          font-size: 11px;
+          font-weight: 800;
+          padding: 2px 8px;
+          border-radius: 999px;
+        }
+        .dept-stat-badge.is-all {
+          background: #ECFDF3;
+          color: #146C3E;
+          border: 1px solid #B8E7CA;
+        }
+        .dept-stat-badge.is-partial {
+          background: #FFFBEB;
+          color: #B45309;
+          border: 1px solid #FDE68A;
+        }
+        .dept-stat-badge.is-none {
+          background: #FFF1F1;
+          color: #A13434;
+          border: 1px solid #F4C7C7;
+        }
+
         .section-control-actions {
           display: flex;
           align-items: center;
@@ -4214,11 +4686,12 @@ const SectionControlTab = ({ notify }) => {
           gap: 8px;
           min-width: 0;
           margin-bottom: 9px;
+          flex-wrap: wrap;
         }
         .section-control-status {
-          min-width: 72px;
+          min-width: 68px;
           border-radius: 999px;
-          padding: 5px 9px;
+          padding: 4px 8px;
           color: #146C3E;
           background: #ECFDF3;
           border: 1px solid #B8E7CA;
@@ -4234,6 +4707,17 @@ const SectionControlTab = ({ notify }) => {
           color: #A13434;
           background: #FFF1F1;
           border-color: #F4C7C7;
+        }
+        .section-sub-tag {
+          font-size: 10px;
+          font-weight: 900;
+          letter-spacing: 0.04em;
+          padding: 4px 8px;
+          border-radius: 6px;
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+          flex: 0 0 auto;
         }
         .section-control-key {
           min-width: 0;
@@ -4371,14 +4855,14 @@ const SectionControlTab = ({ notify }) => {
             </div>
           </div>
           <p className="section-control-subtitle">
-            Live control for public page sections, grouped by page with quick search and bulk status actions.
+            Live control for public page sections &amp; individual department modules (Full Page, Overview, Facilities, Faculty, Activities).
           </p>
         </div>
 
         <div className="section-control-metrics">
           <div className="section-control-metric">
             <strong>{totalSections}</strong>
-            <span>Total</span>
+            <span>Total Sections</span>
           </div>
           <div className="section-control-metric">
             <strong style={{ color: "#16A34A" }}>{activeSections}</strong>
@@ -4402,7 +4886,10 @@ const SectionControlTab = ({ notify }) => {
               <button
                 key={page}
                 type="button"
-                onClick={() => setSelectedPage(page)}
+                onClick={() => {
+                  setSelectedPage(page);
+                  if (page === "Departments") setSelectedDeptFilter("all");
+                }}
                 className={`section-control-tab ${active ? "is-active" : ""}`}
               >
                 {page}
@@ -4416,7 +4903,7 @@ const SectionControlTab = ({ notify }) => {
           <Search size={16} />
           <input
             type="text"
-            placeholder="Search sections..."
+            placeholder="Search sections or departments..."
             value={searchTerm}
             onChange={e => setSearchTerm(e.target.value)}
           />
@@ -4428,16 +4915,48 @@ const SectionControlTab = ({ notify }) => {
         </div>
       </div>
 
+      {/* Sub-filter Bar for Departments */}
+      {selectedPage === "Departments" && departmentGroups.length > 0 && (
+        <div className="dept-filter-bar">
+          <span className="text-xs font-bold text-stone-500 flex items-center gap-1.5 self-center mr-1">
+            <Building2 size={14} /> Filter Dept:
+          </span>
+          <button
+            type="button"
+            onClick={() => setSelectedDeptFilter("all")}
+            className={`dept-filter-pill ${selectedDeptFilter === "all" ? "is-active" : ""}`}
+          >
+            All Departments
+            <span className="dept-filter-count">{departmentGroups.length}</span>
+          </button>
+          {departmentGroups.map(d => {
+            const activeCount = d.sections.filter(s => s.isVisible !== false).length;
+            const isSelected = selectedDeptFilter === d.slug;
+            return (
+              <button
+                key={d.slug}
+                type="button"
+                onClick={() => setSelectedDeptFilter(d.slug)}
+                className={`dept-filter-pill ${isSelected ? "is-active" : ""}`}
+                title={d.name}
+              >
+                {d.name.replace(/^Department of\s+/i, "")}
+                <span className="dept-filter-count">{activeCount}/{d.sections.length}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+
       {loading ? (
         <div className="section-control-loading">
           <span className="section-control-spinner" />
           Loading visibility settings...
         </div>
-      ) : Object.keys(grouped).length === 0 ? (
-        <EmptyState icon={EyeOff} text="No sections found matching filter search." />
       ) : (
         <div className="section-control-groups">
-          {Object.entries(grouped).map(([pageName, secs]) => {
+          {/* 1. If viewing standard pages (or All Pages) */}
+          {showNonDeptSection && Object.entries(nonDeptGrouped).map(([pageName, secs]) => {
             return (
               <div key={pageName} className="section-control-group">
                 <div className="section-control-group-head">
@@ -4534,6 +5053,146 @@ const SectionControlTab = ({ notify }) => {
               </div>
             );
           })}
+
+          {/* 2. Department-Wise Grouped View */}
+          {showDepartmentsSection && (
+            <>
+              {selectedPage === "All Pages" && (
+                <div className="flex items-center gap-3 pt-4 pb-1">
+                  <div className="h-px bg-stone-300 flex-1" />
+                  <span className="text-xs font-black uppercase tracking-widest text-stone-500 flex items-center gap-2">
+                    <GraduationCap size={16} /> Department-Wise Section Controls ({departmentGroups.length} Departments)
+                  </span>
+                  <div className="h-px bg-stone-300 flex-1" />
+                </div>
+              )}
+
+              {filteredDepartmentGroups.length === 0 ? (
+                <EmptyState icon={EyeOff} text="No departments or sections found matching search/filter." />
+              ) : (
+                filteredDepartmentGroups.map(dept => {
+                  const activeInDept = dept.sections.filter(s => s.isVisible !== false).length;
+                  const totalInDept = dept.sections.length;
+                  const isAllActive = activeInDept === totalInDept;
+                  const isNoneActive = activeInDept === 0;
+
+                  return (
+                    <div key={dept.slug} className="section-control-group">
+                      <div className="section-control-group-head">
+                        <div className="section-control-group-title">
+                          <div className="section-control-group-icon" style={{ background: "#FDF0E6", color: "#6B3F1D" }}>
+                            <GraduationCap size={22} />
+                          </div>
+                          <div>
+                            <h3>{dept.name}</h3>
+                            <div className="dept-meta-row">
+                              <span className="dept-slug-badge">/department-{dept.slug}</span>
+                              <span className={`dept-stat-badge ${isAllActive ? "is-all" : isNoneActive ? "is-none" : "is-partial"}`}>
+                                {activeInDept} of {totalInDept} Sections Visible
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="section-control-actions">
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              try {
+                                await toggleDepartmentSections(dept.slug, true);
+                                notify(`Turned ALL sections ON for ${dept.name}`);
+                              } catch {
+                                notify("Update failed", "error");
+                              }
+                            }}
+                            className="section-control-action on"
+                          >
+                            <CheckCircle2 size={14} /> All ON
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              try {
+                                await toggleDepartmentSections(dept.slug, false);
+                                notify(`Turned ALL sections OFF for ${dept.name}`);
+                              } catch {
+                                notify("Update failed", "error");
+                              }
+                            }}
+                            className="section-control-action off"
+                          >
+                            <X size={14} /> All OFF
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="section-control-list">
+                        {dept.sections.map(sec => {
+                          const isVisible = sec.isVisible !== false;
+                          const meta = getSubSectionMeta(sec);
+                          const SubIcon = meta.icon;
+
+                          return (
+                            <div
+                              key={sec.sectionKey}
+                              className={`section-control-card ${isVisible ? "" : "is-hidden"}`}
+                            >
+                              <div className="section-control-card-copy">
+                                <div className="section-control-status-row">
+                                  <span className="section-control-status">
+                                    {isVisible ? "Visible" : "Hidden"}
+                                  </span>
+                                  <span
+                                    className="section-sub-tag"
+                                    style={{ background: meta.bg, color: meta.color }}
+                                  >
+                                    <SubIcon size={11} /> {meta.tag}
+                                  </span>
+                                  <span className="section-control-key">{sec.sectionKey}</span>
+                                </div>
+
+                                <h4>{sec.sectionName}</h4>
+                                {sec.description && <p>{sec.description}</p>}
+                              </div>
+
+                              <button
+                                type="button"
+                                aria-pressed={isVisible}
+                                aria-label={`Toggle ${sec.sectionName}`}
+                                onClick={async () => {
+                                  try {
+                                    await toggleSection(sec.sectionKey, !isVisible);
+                                    notify(`${sec.sectionName} is now ${!isVisible ? "ON (Visible)" : "OFF (Hidden)"}`);
+                                  } catch {
+                                    notify("Update failed", "error");
+                                  }
+                                }}
+                                className={`section-toggle ${isVisible ? "" : "is-off"}`}
+                              >
+                                <span>
+                                  {isVisible ? (
+                                    <CheckCircle2 size={15} />
+                                  ) : (
+                                    <X size={15} />
+                                  )}
+                                </span>
+                              </button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </>
+          )}
+
+          {/* Empty state when searching on non-departments */}
+          {!showDepartmentsSection && Object.keys(nonDeptGrouped).length === 0 && (
+            <EmptyState icon={EyeOff} text="No sections found matching filter search." />
+          )}
         </div>
       )}
     </div>
@@ -4598,7 +5257,7 @@ const AdminPanel = ({ onLogout }) => {
   const [bondForm, setBondForm] = useState({ type:"student",title:"",content:"",order:0 });
   const [guidelineForm, setGuidelineForm] = useState({ category:"General Guidelines",subCategory:"",points:"",order:0 });
   const [deptForm, setDeptForm] = useState({ name:"",slug:"",category:"Nursing Department",description:"",overview:"",overview2:"",faculty:[],facilities:[],activities:[],icon:"🏥" });
-  const [deptFacultyForm, setDeptFacultyForm] = useState({ name:"",designation:"",qualification:"",specialization:"" });
+  const [deptFacultyForm, setDeptFacultyForm] = useState({ name:"",designation:"",qualification:"",specialization:"",description:"",imageUrl:"" });
   const [deptFacilityInput, setDeptFacilityInput] = useState("");
   const [deptActivityInput, setDeptActivityInput] = useState("");
   const [deanPhotoFile, setDeanPhotoFile] = useState(null);

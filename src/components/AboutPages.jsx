@@ -15,7 +15,7 @@ import { MapPin, Hospital } from "lucide-react";
 import ViewAllProgramsButton from "./Buttons/ViewAllProgramsButton";
 import { Button } from "./ui/button";
 import principleImage from "../images/principleImage.jpeg"
-import axiosInstance, { getMediaUrl } from "../api/axiosInstance";
+import axiosInstance, { getMediaUrl, getCachedData, setCachedData } from "../api/axiosInstance";
 import campusLocationImg from "../images/coll.jpeg";
 import gineraLogo from "../images/ginera-logo.png";
 import { useSectionVisibility } from "../context/SectionVisibilityContext";
@@ -721,53 +721,61 @@ const imageAnimation = {
 
 
 
+const DEFAULT_MILESTONES = [
+  { year: "1963", event: "College Established with 50 Students", icon: "🎯", color: "#1e3a8a", description: "The college has the roots in the post basic Nursing School started in 1963 to address acute healthcare needs." },
+  { year: "1965", event: "First Postgraduate Programs Introduced", icon: "📚", color: "#3b82f6", description: "Expanded educational offerings to advanced levels with Diploma in Nursing Education." },
+  { year: "1993", event: "Basic B.Sc. Nursing Program", icon: "🔬", color: "#10b981", description: "Started basic B.Sc. Nursing program affiliated with Gujarat University, recognized by INC & GNC." },
+  { year: "2005", event: "M.Sc. Nursing Program", icon: "🎓", color: "#f59e0b", description: "The College of Nursing Ahmedabad launched M.Sc. Nursing across multiple clinical specialties." },
+  { year: "2013", event: "Merger of College and School of Nursing", icon: "🎯", color: "#1e3a8a", description: "School of Nursing and College of Nursing unified to run under one roof." },
+  { year: "2017", event: "NPCC Program Introduced", icon: "🏥", color: "#ef4444", description: "Nurse Practitioner in Critical Care Nursing postgraduate residential program launched." }
+];
+
 export function History() {
   const { isSectionVisible } = useSectionVisibility();
-  const [dynamicMilestones, setDynamicMilestones] = useState([]);
-  const [aboutImages, setAboutImages] = useState([]);
-  const [historyContent, setHistoryContent] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [dynamicMilestones, setDynamicMilestones] = useState(() => getCachedData('/about/milestones', DEFAULT_MILESTONES));
+  const [aboutImages, setAboutImages] = useState(() => getCachedData('/about/images', []));
+  const [historyContent, setHistoryContent] = useState(() => getCachedData('/about/history-content', null));
   const [isHistoryExpanded, setIsHistoryExpanded] = React.useState(false);
   const [expandedMilestones, setExpandedMilestones] = React.useState([]);
 
   useEffect(() => {
-    setLoading(true);
+    let active = true;
     Promise.all([
       axiosInstance.get('/about/milestones'),
       axiosInstance.get('/about/images'),
       axiosInstance.get('/about/history-content')
     ])
       .then(([rMilestones, rImages, rContent]) => {
-        setDynamicMilestones(rMilestones.data);
-        setAboutImages(rImages.data);
-        setHistoryContent(rContent.data);
-        setLoading(false);
+        if (!active) return;
+        if (rMilestones?.data && Array.isArray(rMilestones.data) && rMilestones.data.length > 0) {
+          setDynamicMilestones(rMilestones.data);
+          setCachedData('/about/milestones', rMilestones.data);
+        }
+        if (rImages?.data && Array.isArray(rImages.data)) {
+          setAboutImages(rImages.data);
+          setCachedData('/about/images', rImages.data);
+        }
+        if (rContent?.data) {
+          setHistoryContent(rContent.data);
+          setCachedData('/about/history-content', rContent.data);
+        }
       })
       .catch((err) => {
         console.error("Failed to fetch history data:", err);
-        setLoading(false);
       });
+    return () => { active = false; };
   }, []);
 
   if (!isSectionVisible('about_history')) return <SectionOffNotice name="History & Milestones" />;
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-amber-50/50">
-        <motion.div
-          animate={{ rotate: 360 }}
-          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-          className="w-12 h-12 border-4 border-amber-600 border-t-transparent rounded-full"
-        />
-      </div>
-    );
-  }
+  const milestonesToDisplay = (Array.isArray(dynamicMilestones) && dynamicMilestones.length > 0)
+    ? dynamicMilestones
+    : DEFAULT_MILESTONES;
 
-  const milestonesToDisplay = dynamicMilestones;
-
-  const historyHeroSlot = aboutImages.find(img => img.key === 'historyHero');
-  const historyTimelineSlot = aboutImages.find(img => img.key === 'historyTimeline');
-  const historyLegacySlot = aboutImages.find(img => img.key === 'historyLegacy');
+  const imagesList = Array.isArray(aboutImages) ? aboutImages : [];
+  const historyHeroSlot = imagesList.find(img => img.key === 'historyHero');
+  const historyTimelineSlot = imagesList.find(img => img.key === 'historyTimeline');
+  const historyLegacySlot = imagesList.find(img => img.key === 'historyLegacy');
 
   const historyHeroImg = historyHeroSlot?.imageUrl ? getMediaUrl(historyHeroSlot.imageUrl) : collegeImage1;
   const historyTimelineImg = historyTimelineSlot?.imageUrl ? getMediaUrl(historyTimelineSlot.imageUrl) : laboratoryImage;
@@ -948,12 +956,7 @@ export function History() {
 
             <CardContent className="px-4 pb-12">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {loading ? (
-                  <div className="col-span-full py-20 text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
-                    <p className="text-gray-500">Loading milestones...</p>
-                  </div>
-                ) : milestonesToDisplay.length === 0 ? (
+                {milestonesToDisplay.length === 0 ? (
                   <div className="col-span-full py-20 text-center bg-gray-50 rounded-2xl border-2 border-dashed border-gray-200">
                     <p className="text-gray-400">No milestones found in database.</p>
                   </div>

@@ -479,7 +479,7 @@
 
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import axiosInstance, { getMediaUrl } from "../api/axiosInstance";
+import axiosInstance, { getMediaUrl, getCachedData, setCachedData } from "../api/axiosInstance";
 import { Users, BookOpen, Microscope, GraduationCap, ChevronLeft, ChevronRight } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Badge } from "./ui/badge";
@@ -555,7 +555,204 @@ const staggerContainer = {
   }
 };
 
-function DepartmentPage({ department, sliders }) {
+const FacultyCard = ({ member }) => {
+  return (
+    <div className="p-4 sm:p-5 border border-gray-100 hover:border-amber-200 bg-white rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 flex flex-col justify-between h-full group">
+      <div>
+        <div className="flex items-start gap-3.5 mb-3">
+          {member.imageUrl ? (
+            <img
+              src={imgUrl(member.imageUrl)}
+              alt={member.name}
+              className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl object-cover shrink-0 border border-amber-100 shadow-sm group-hover:scale-105 transition-transform duration-300"
+            />
+          ) : (
+            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-br from-amber-50 to-orange-100 border border-amber-200/60 flex items-center justify-center shrink-0 text-amber-700 font-bold text-xl shadow-sm">
+              {member.name ? member.name.charAt(0).toUpperCase() : "👨‍⚕️"}
+            </div>
+          )}
+          <div className="min-w-0 flex-1">
+            <h3 className="font-bold text-base text-gray-900 leading-snug group-hover:text-amber-700 transition-colors">
+              {member.name}
+            </h3>
+            <p className="text-xs font-bold uppercase tracking-wider text-amber-600 mt-1">
+              {member.designation}
+            </p>
+            <p className="text-xs text-muted-foreground mt-0.5 leading-tight">
+              {member.qualification}
+            </p>
+            {member.specialization && (
+              <p className="text-[11px] text-amber-800 font-medium mt-1">
+                Specialization: {member.specialization}
+              </p>
+            )}
+          </div>
+        </div>
+        {member.description && (
+          <p className="text-xs text-gray-600 leading-relaxed bg-amber-50/40 p-2.5 rounded-xl border border-amber-100/50 mt-1">
+            {member.description}
+          </p>
+        )}
+      </div>
+    </div>
+  );
+};
+
+const FacultySection = ({ faculty = [] }) => {
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [itemsPerPage, setItemsPerPage] = useState(3);
+
+  useEffect(() => {
+    const updateItemsPerPage = () => {
+      if (typeof window === "undefined") return;
+      if (window.innerWidth < 640) {
+        setItemsPerPage(1);
+      } else if (window.innerWidth < 1024) {
+        setItemsPerPage(2);
+      } else {
+        setItemsPerPage(3);
+      }
+    };
+    updateItemsPerPage();
+    window.addEventListener("resize", updateItemsPerPage);
+    return () => window.removeEventListener("resize", updateItemsPerPage);
+  }, []);
+
+  if (!faculty || faculty.length === 0) {
+    return null;
+  }
+
+  const isSlider = faculty.length > 3;
+  const maxIndex = Math.max(0, faculty.length - itemsPerPage);
+
+  const prev = () => {
+    setCurrentIndex((prevIdx) => (prevIdx <= 0 ? maxIndex : prevIdx - 1));
+  };
+
+  const next = () => {
+    setCurrentIndex((prevIdx) => (prevIdx >= maxIndex ? 0 : prevIdx + 1));
+  };
+
+  // If 3 or fewer members: display clean responsive grid without slider controls
+  if (!isSlider) {
+    return (
+      <Card className="mb-8 border-gray-200 shadow-sm rounded-3xl overflow-hidden">
+        <CardHeader className="flex flex-row items-center justify-between pb-3">
+          <CardTitle className="flex items-center gap-2.5 text-xl font-bold">
+            <Users className="h-5 w-5 text-amber-600" />
+            Faculty Members
+            <Badge variant="secondary" className="text-xs bg-amber-50 text-amber-700 border border-amber-200 ml-1">
+              {faculty.length} Staff
+            </Badge>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {faculty.map((member, index) => (
+              <FacultyCard key={index} member={member} />
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // If greater than 3 members: interactive slider
+  const totalDots = maxIndex + 1;
+
+  return (
+    <Card className="mb-8 border-gray-200 shadow-sm rounded-3xl overflow-hidden">
+      <CardHeader className="flex flex-row items-center justify-between pb-3">
+        <CardTitle className="flex items-center gap-2.5 text-xl font-bold">
+          <Users className="h-5 w-5 text-amber-600" />
+          Faculty Members
+          <Badge variant="secondary" className="text-xs bg-amber-50 text-amber-700 border border-amber-200 ml-1">
+            {faculty.length} Staff
+          </Badge>
+        </CardTitle>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={prev}
+            className="p-2.5 rounded-full bg-white border border-gray-200 shadow-sm hover:bg-amber-50 hover:border-amber-300 text-gray-700 hover:text-amber-700 transition active:scale-95"
+            aria-label="Previous faculty"
+          >
+            <ChevronLeft size={18} />
+          </button>
+          <button
+            type="button"
+            onClick={next}
+            className="p-2.5 rounded-full bg-white border border-gray-200 shadow-sm hover:bg-amber-50 hover:border-amber-300 text-gray-700 hover:text-amber-700 transition active:scale-95"
+            aria-label="Next faculty"
+          >
+            <ChevronRight size={18} />
+          </button>
+        </div>
+      </CardHeader>
+      <CardContent>
+        {/* Carousel Container */}
+        <div className="relative overflow-hidden py-1">
+          <div
+            className="flex transition-transform ease-out duration-500"
+            style={{
+              transform: `translateX(-${currentIndex * (100 / itemsPerPage)}%)`
+            }}
+          >
+            {faculty.map((member, index) => (
+              <div
+                key={index}
+                className="px-2.5 shrink-0"
+                style={{ width: `${100 / itemsPerPage}%` }}
+              >
+                <FacultyCard member={member} />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Indicator dots */}
+        {totalDots > 1 && (
+          <div className="flex justify-center items-center gap-1.5 mt-5">
+            {Array.from({ length: totalDots }).map((_, i) => (
+              <button
+                key={i}
+                type="button"
+                onClick={() => setCurrentIndex(i)}
+                className={`h-2 rounded-full transition-all duration-300 ${
+                  i === currentIndex ? "w-6 bg-amber-600" : "w-2 bg-gray-300 hover:bg-gray-400"
+                }`}
+                aria-label={`Go to slide ${i + 1}`}
+              />
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+};
+
+function DepartmentPage({ department, sliders, slug }) {
+  const { isSectionVisible } = useSectionVisibility();
+  const effectiveSlug = slug || department?.slug || '';
+  const slugKey = (effectiveSlug || '').toLowerCase().replace(/[^a-z0-9]/g, '_').replace(/_+/g, '_');
+
+  const showOverview = isSectionVisible(`dept_${slugKey}_overview`);
+  const showFacilities = isSectionVisible(`dept_${slugKey}_facilities`);
+  const showFaculty = isSectionVisible(`dept_${slugKey}_faculty`);
+  const showActivities = isSectionVisible(`dept_${slugKey}_activities`);
+
+  const hasOverview = Boolean(department.overview || department.overview2);
+  const hasFacilities = Array.isArray(department.facilities) && department.facilities.length > 0;
+  const hasFaculty = Array.isArray(department.faculty) && department.faculty.length > 0;
+  const hasActivities = Array.isArray(department.activities) && department.activities.length > 0;
+
+  const renderOverview = showOverview && hasOverview;
+  const renderFacilities = showFacilities && hasFacilities;
+  const renderFaculty = showFaculty && hasFaculty;
+  const renderActivities = showActivities && hasActivities;
+
+  const anySectionRendered = renderOverview || renderFacilities || renderFaculty || renderActivities;
+
   return (
     <div className="min-h-screen bg-[#FDFCFB] pb-20">
       <div className="container mx-auto px-4 pt-12">
@@ -579,98 +776,95 @@ function DepartmentPage({ department, sliders }) {
           </p>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-8 mb-8">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <BookOpen className="h-5 w-5" />
-                Department Overview
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground leading-relaxed">
-                {department.overview}
-              </p>
-            </CardContent>
-            {department.overview2 && (
-              <CardContent>
-                <p className="text-muted-foreground leading-relaxed">
-                  {department.overview2}
-                </p>
-              </CardContent>
-            )}
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Microscope className="h-5 w-5" />
-                Facilities
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ul className="space-y-2">
-                {department.facilities.map((facility, index) => (
-                  <li key={index} className="flex items-center gap-2 text-sm">
-                    <div className="w-2 h-2 bg-primary rounded-full"></div>
-                    <span className="text-muted-foreground">{facility}</span>
-                  </li>
-                ))}
-              </ul>
-            </CardContent>
-          </Card>
-        </div>
-
-        <Card className="mb-8">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Users className="h-5 w-5" />
-              Faculty Members
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {department.faculty.map((member, index) => (
-                <div key={index} className="p-4 border rounded-lg">
-                  <h3 className="font-semibold">{member.name}</h3>
-                  <p className="text-sm text-primary">{member.designation}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {member.qualification}
+        {(renderOverview || renderFacilities) && (
+          <div className={`grid ${renderOverview && renderFacilities ? 'md:grid-cols-2' : 'grid-cols-1'} gap-8 mb-8`}>
+            {renderOverview && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <BookOpen className="h-5 w-5" />
+                    Department Overview
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-muted-foreground leading-relaxed">
+                    {department.overview}
                   </p>
-                  {member.specialization && (
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Specialization: {member.specialization}
+                </CardContent>
+                {department.overview2 && (
+                  <CardContent>
+                    <p className="text-muted-foreground leading-relaxed">
+                      {department.overview2}
                     </p>
-                  )}
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+                  </CardContent>
+                )}
+              </Card>
+            )}
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <GraduationCap className="h-5 w-5" />
-              Academic Activities
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid md:grid-cols-2 gap-4">
-              {department.activities.map((activity, index) => (
-                <div
-                  key={index}
-                  className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg"
-                >
-                  <div className="w-2 h-2 bg-primary rounded-full"></div>
-                  <span className="text-sm text-muted-foreground">
-                    {activity}
-                  </span>
-                </div>
-              ))}
+            {renderFacilities && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Microscope className="h-5 w-5" />
+                    Facilities
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ul className="space-y-2">
+                    {department.facilities.map((facility, index) => (
+                      <li key={index} className="flex items-center gap-2 text-sm">
+                        <div className="w-2 h-2 bg-primary rounded-full"></div>
+                        <span className="text-muted-foreground">{facility}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        )}
+
+        {renderFaculty && (
+          <FacultySection faculty={department.faculty} />
+        )}
+
+        {renderActivities && (
+          <Card className="mb-8">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <GraduationCap className="h-5 w-5" />
+                Academic Activities
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid md:grid-cols-2 gap-4">
+                {department.activities.map((activity, index) => (
+                  <div
+                    key={index}
+                    className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg"
+                  >
+                    <div className="w-2 h-2 bg-primary rounded-full"></div>
+                    <span className="text-sm text-muted-foreground">
+                      {activity}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {!anySectionRendered && (
+          <div className="p-10 rounded-2xl border border-amber-200 bg-amber-50/50 text-center my-6">
+            <div className="w-12 h-12 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center mx-auto mb-3">
+              <BookOpen className="w-6 h-6" />
             </div>
-          </CardContent>
-        </Card>
+            <h3 className="text-lg font-bold text-gray-800">Department Sections Offline</h3>
+            <p className="text-sm text-gray-600 max-w-md mx-auto mt-1">
+              Sections for this department are temporarily hidden or undergoing administration updates. Please check back later.
+            </p>
+          </div>
+        )}
         </div>
       </div>
     </div>
@@ -971,53 +1165,49 @@ const allDepartments = {
 // Export GenericDepartment component that uses the department data
 export function GenericDepartment({ slug, category }) {
   const { isSectionVisible } = useSectionVisibility();
-  const [department, setDepartment] = useState(null);
-  const [sliders, setSliders] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const defaultDept = allDepartments[slug] || Object.values(allDepartments)[0];
+  
+  // Instant render: check client cache first, fallback to static department data (0ms delay)
+  const [department, setDepartment] = useState(() => {
+    return getCachedData(`/departments/${slug}`, defaultDept);
+  });
+  const [sliders, setSliders] = useState(() => {
+    return getCachedData(`/sliders?department=${slug}`, []);
+  });
 
   const sectionKey = `dept_${(slug || '').replace(/-/g, '_')}`;
 
   useEffect(() => {
+    let active = true;
     const fetchDepartment = async () => {
-      setLoading(true);
       try {
         const response = await axiosInstance.get(`/departments/${slug}`);
-        if (response.data) {
+        if (response.data && active) {
           setDepartment(response.data);
+          setCachedData(`/departments/${slug}`, response.data);
           try {
             const sRes = await axiosInstance.get(`/sliders?department=${response.data._id}`);
-            setSliders(sRes.data);
+            if (sRes.data && active) {
+              setSliders(sRes.data);
+              setCachedData(`/sliders?department=${slug}`, sRes.data);
+            }
           } catch (e) { console.error("Sliders load error", e); }
-        } else {
-          // Fallback to static data if not in DB
-          setDepartment(allDepartments[slug] || Object.values(allDepartments)[0]);
         }
       } catch (error) {
         console.error("Error fetching department:", error);
-        // Fallback to static data on error
-        setDepartment(allDepartments[slug] || Object.values(allDepartments)[0]);
-      } finally {
-        setLoading(false);
       }
     };
     fetchDepartment();
+    return () => { active = false; };
   }, [slug]);
 
   if (!isSectionVisible(sectionKey)) {
-    const deptObj = department || allDepartments[slug];
+    const deptObj = department || defaultDept;
     const deptName = deptObj?.name || 'Department Section';
     return <SectionOffNotice name={deptName} />;
   }
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-white">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-amber-600"></div>
-      </div>
-    );
-  }
-
-  const deptData = department || allDepartments[slug] || Object.values(allDepartments)[0];
+  const deptData = department || defaultDept;
   const finalDept = { ...deptData };
   if (category) {
     finalDept.category = category;
@@ -1026,7 +1216,7 @@ export function GenericDepartment({ slug, category }) {
   return (
     <>
       <HeroSection departmentName={slug} />
-      <DepartmentPage department={finalDept} sliders={sliders} />
+      <DepartmentPage department={finalDept} sliders={sliders} slug={slug} />
     </>
   );
 }

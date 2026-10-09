@@ -1,5 +1,8 @@
 const Department = require('../models/Department');
+const SectionVisibility = require('../models/SectionVisibility');
 const mongoose = require('mongoose');
+const { clearCache } = require('../configs/redis');
+const { buildDepartmentSections, getSlugKey } = require('./sectionVisibilityController');
 
 const checkDbConnection = (res) => {
   if (mongoose.connection.readyState !== 1) {
@@ -209,8 +212,33 @@ exports.createDepartment = async (req, res) => {
       const cloudUrl = await uploadToCloudinary(req.file.path, 'ginera-departments');
       data.logoUrl = cloudUrl || `/uploads/${req.file.filename}`;
     }
+    if (typeof data.faculty === 'string') {
+      try { data.faculty = JSON.parse(data.faculty); } catch (e) { }
+    }
+    if (typeof data.facilities === 'string') {
+      try { data.facilities = JSON.parse(data.facilities); } catch (e) { }
+    }
+    if (typeof data.activities === 'string') {
+      try { data.activities = JSON.parse(data.activities); } catch (e) { }
+    }
     const department = new Department(data);
     await department.save();
+
+    // Auto-create all 5 section visibility entries for this new department
+    try {
+      const deptSecs = buildDepartmentSections(department);
+      for (const sec of deptSecs) {
+        await SectionVisibility.findOneAndUpdate(
+          { sectionKey: sec.sectionKey },
+          { $setOnInsert: { ...sec, isVisible: true } },
+          { upsert: true }
+        );
+      }
+    } catch (visErr) {
+      console.error('Error auto-syncing new department sections to SectionVisibility:', visErr);
+    }
+
+    clearCache();
     res.status(201).json(department);
   } catch (error) {
     res.status(500).json({ message: 'Error creating department', error: error.message });
@@ -237,9 +265,45 @@ exports.updateDepartment = async (req, res) => {
 
     const department = await Department.findByIdAndUpdate(req.params.id, data, { new: true });
     if (!department) return res.status(404).json({ message: 'Department not found' });
+
+    // Update department sections metadata in SectionVisibility
+    try {
+      const deptSecs = buildDepartmentSections(department);
+      for (const sec of deptSecs) {
+        await SectionVisibility.findOneAndUpdate(
+          { sectionKey: sec.sectionKey },
+          {
+            $set: {
+              departmentSlug: department.slug,
+              departmentName: department.name,
+              sectionName: sec.sectionName,
+              description: sec.description
+            }
+          },
+          { upsert: true, setDefaultsOnInsert: true }
+        );
+      }
+    } catch (visErr) {
+      console.error('Error updating department sections in SectionVisibility:', visErr);
+    }
+
+    clearCache();
     res.status(200).json(department);
   } catch (error) {
     res.status(500).json({ message: 'Error updating department', error: error.message });
+  }
+};
+
+exports.uploadFacultyImage = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: 'No image file uploaded' });
+    }
+    const cloudUrl = await uploadToCloudinary(req.file.path, 'ginera-faculty');
+    const imageUrl = cloudUrl || `/uploads/${req.file.filename}`;
+    res.status(200).json({ imageUrl });
+  } catch (error) {
+    res.status(500).json({ message: 'Error uploading faculty image', error: error.message });
   }
 };
 
@@ -247,6 +311,21 @@ exports.deleteDepartment = async (req, res) => {
   try {
     const department = await Department.findByIdAndDelete(req.params.id);
     if (!department) return res.status(404).json({ message: 'Department not found' });
+
+    // Remove corresponding section visibility entries
+    try {
+      const slugKey = getSlugKey(department.slug);
+      await SectionVisibility.deleteMany({
+        $or: [
+          { departmentSlug: department.slug },
+          { sectionKey: { $regex: `^dept_${slugKey}` } }
+        ]
+      });
+    } catch (visErr) {
+      console.error('Error removing department sections from SectionVisibility:', visErr);
+    }
+
+    clearCache();
     res.status(200).json({ message: 'Department deleted successfully' });
   } catch (error) {
     res.status(500).json({ message: 'Error deleting department', error: error.message });

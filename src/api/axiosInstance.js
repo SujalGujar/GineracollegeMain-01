@@ -1,11 +1,57 @@
 import axios from 'axios';
 
-const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-export const API_ORIGIN = isLocalhost
-  ? 'http://localhost:8080'
-  : (import.meta.env.VITE_API_ORIGIN || 'https://gineracollegemain-01.onrender.com').replace(/\/$/, '');
+// Smart host detection: handles localhost, loopback, and local network Wi-Fi/LAN IPs (e.g. 192.168.x.x, 10.x.x.x)
+const hostname = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
+const isLocalOrLan = 
+  hostname === 'localhost' || 
+  hostname === '127.0.0.1' || 
+  hostname.startsWith('192.168.') || 
+  hostname.startsWith('10.') || 
+  hostname.startsWith('172.') || 
+  hostname.endsWith('.local');
+
+export const API_ORIGIN = (import.meta.env.VITE_API_ORIGIN)
+  ? import.meta.env.VITE_API_ORIGIN.replace(/\/$/, '')
+  : (isLocalOrLan
+      ? `http://${hostname}:8080`
+      : 'https://gineracollegemain-01.onrender.com');
 
 const baseURL = `${API_ORIGIN}/api`;
+
+// ─── Fast Client-Side Cache Layer (SWR) ──────────────────────────────────────
+const memoryCache = new Map();
+
+export const getCachedData = (key, fallback = null) => {
+  if (!key) return fallback;
+  if (memoryCache.has(key)) return memoryCache.get(key);
+  try {
+    const raw = localStorage.getItem(`ginera_cache_${key}`);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      memoryCache.set(key, parsed);
+      return parsed;
+    }
+  } catch (e) {}
+  return fallback;
+};
+
+export const setCachedData = (key, data) => {
+  if (!key || data === undefined || data === null) return;
+  memoryCache.set(key, data);
+  try {
+    localStorage.setItem(`ginera_cache_${key}`, JSON.stringify(data));
+  } catch (e) {}
+};
+
+// Background pre-warm for cloud backends (e.g. Render free tier cold-start)
+let warmedUp = false;
+export const warmUpBackend = () => {
+  if (warmedUp) return;
+  warmedUp = true;
+  try {
+    fetch(`${API_ORIGIN}/health`, { method: 'GET', keepalive: true }).catch(() => {});
+  } catch (e) {}
+};
 
 export const getMediaUrl = (url, fallback = '/placeholder.png') => {
   if (!url || typeof url !== 'string') return fallback;
@@ -80,7 +126,6 @@ export const waitForApiIdle = (settleDelay = 75) => new Promise((resolve) => {
 axiosInstance.interceptors.request.use((config) => {
   activeRequests += 1;
   notifyLoadingListeners();
-  // Ensure every GET request bypasses browser/CDN caching and always gets 200 with full data
   if (config.method === 'get' || !config.method) {
     config.params = { ...config.params, _cb: Date.now() };
   }
@@ -94,6 +139,16 @@ axiosInstance.interceptors.response.use((response) => {
   if (typeof response.data === "string" && contentType.includes("text/html")) {
     return Promise.reject(new Error("API returned HTML instead of JSON"));
   }
+
+  // Automatically cache successful read queries for instant future reloads
+  if (response.config?.method === 'get' || !response.config?.method) {
+    const rawUrl = response.config?.url || '';
+    if (rawUrl && response.data && typeof response.data === 'object') {
+      const cleanKey = rawUrl.split('?')[0];
+      setCachedData(cleanKey, response.data);
+    }
+  }
+
   return response;
 }, async (error) => {
   activeRequests = Math.max(0, activeRequests - 1);

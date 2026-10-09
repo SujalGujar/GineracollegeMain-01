@@ -1,4 +1,5 @@
 const SectionVisibility = require('../models/SectionVisibility');
+const Department = require('../models/Department');
 
 const DEFAULT_SECTIONS = [
   // Home Page
@@ -27,14 +28,6 @@ const DEFAULT_SECTIONS = [
   { sectionKey: 'admission_rules', page: 'Admission', sectionName: 'Rules & Regulations', description: 'Code of conduct and admission rules' },
   { sectionKey: 'admission_instructions', page: 'Admission', sectionName: 'Instructions & Guidelines', description: 'Guidelines for applicants and parents' },
 
-  // Departments
-  { sectionKey: 'dept_fundamentals', page: 'Departments', sectionName: 'Fundamentals of Nursing', description: 'Fundamentals of Nursing department' },
-  { sectionKey: 'dept_medical_surgical', page: 'Departments', sectionName: 'Medical Surgical Nursing', description: 'Medical Surgical Nursing department' },
-  { sectionKey: 'dept_obstetric', page: 'Departments', sectionName: 'Obstetric & Gynaecological Nursing', description: 'Obstetric & Gynaecological Nursing department' },
-  { sectionKey: 'dept_child_health', page: 'Departments', sectionName: 'Child Health Nursing', description: 'Child Health (Pediatric) Nursing department' },
-  { sectionKey: 'dept_community', page: 'Departments', sectionName: 'Community Health Nursing', description: 'Community Health Nursing department' },
-  { sectionKey: 'dept_mental_health', page: 'Departments', sectionName: 'Mental Health Nursing', description: 'Mental Health (Psychiatric) Nursing department' },
-
   // Gallery
   { sectionKey: 'gallery_college', page: 'Gallery', sectionName: 'College Campus Photos', description: 'Campus building and infrastructure photos' },
   { sectionKey: 'gallery_hospital', page: 'Gallery', sectionName: 'Hospital & Clinical Photos', description: 'Clinical facilities and lab photos' },
@@ -54,19 +47,117 @@ const DEFAULT_SECTIONS = [
   { sectionKey: 'student_corner', page: 'Student Corner', sectionName: 'Student Corner Page', description: 'Document requirements notice board for students (Transcript, Refund, Foreign Verification)' }
 ];
 
+const getSlugKey = (slug) => (slug || '').toLowerCase().replace(/[^a-z0-9]/g, '_').replace(/_+/g, '_');
+
+const buildDepartmentSections = (dept) => {
+  const slugKey = getSlugKey(dept.slug);
+  return [
+    {
+      sectionKey: `dept_${slugKey}`,
+      page: 'Departments',
+      departmentSlug: dept.slug,
+      departmentName: dept.name,
+      subSection: 'page',
+      sectionName: `${dept.name} - Full Page`,
+      description: `Complete public page access for ${dept.name}`
+    },
+    {
+      sectionKey: `dept_${slugKey}_overview`,
+      page: 'Departments',
+      departmentSlug: dept.slug,
+      departmentName: dept.name,
+      subSection: 'overview',
+      sectionName: `${dept.name} - Overview`,
+      description: `Overview and introduction section for ${dept.name}`
+    },
+    {
+      sectionKey: `dept_${slugKey}_facilities`,
+      page: 'Departments',
+      departmentSlug: dept.slug,
+      departmentName: dept.name,
+      subSection: 'facilities',
+      sectionName: `${dept.name} - Facilities`,
+      description: `Laboratories and clinical facilities for ${dept.name}`
+    },
+    {
+      sectionKey: `dept_${slugKey}_faculty`,
+      page: 'Departments',
+      departmentSlug: dept.slug,
+      departmentName: dept.name,
+      subSection: 'faculty',
+      sectionName: `${dept.name} - Faculty Members`,
+      description: `Faculty directory, photos, and slider for ${dept.name}`
+    },
+    {
+      sectionKey: `dept_${slugKey}_activities`,
+      page: 'Departments',
+      departmentSlug: dept.slug,
+      departmentName: dept.name,
+      subSection: 'activities',
+      sectionName: `${dept.name} - Academic Activities`,
+      description: `Academic and clinical activities list for ${dept.name}`
+    }
+  ];
+};
+
+exports.getSlugKey = getSlugKey;
+exports.buildDepartmentSections = buildDepartmentSections;
+
 exports.getAllSectionVisibility = async (req, res) => {
   try {
     let sections = await SectionVisibility.find({}).sort({ page: 1, sectionName: 1 });
 
-    // Seed defaults if any missing
+    // Dynamically fetch all departments to ensure all existing & future departments are included
+    let dynamicDeptSections = [];
+    try {
+      const departments = await Department.find({}).sort({ name: 1 }).lean();
+      departments.forEach(dept => {
+        dynamicDeptSections.push(...buildDepartmentSections(dept));
+      });
+    } catch (deptErr) {
+      console.error('Error fetching departments for section visibility sync:', deptErr);
+    }
+
+    const allExpected = [...DEFAULT_SECTIONS, ...dynamicDeptSections];
     const existingKeys = new Set(sections.map(s => s.sectionKey));
-    const missing = DEFAULT_SECTIONS.filter(ds => !existingKeys.has(ds.sectionKey));
+    const missing = allExpected.filter(exp => !existingKeys.has(exp.sectionKey));
 
     if (missing.length > 0) {
       await SectionVisibility.insertMany(missing.map(m => ({ ...m, isVisible: true })));
-      sections = await SectionVisibility.find({}).sort({ page: 1, sectionName: 1 });
     }
 
+    // Ensure existing department entries have departmentSlug and subSection populated
+    if (dynamicDeptSections.length > 0) {
+      const existingMap = new Map(sections.map(s => [s.sectionKey, s]));
+      const bulkSyncOps = [];
+
+      for (const expected of dynamicDeptSections) {
+        const existing = existingMap.get(expected.sectionKey);
+        if (existing && (!existing.departmentSlug || !existing.subSection || existing.departmentName !== expected.departmentName)) {
+          bulkSyncOps.push({
+            updateOne: {
+              filter: { _id: existing._id },
+              update: {
+                $set: {
+                  departmentSlug: expected.departmentSlug,
+                  departmentName: expected.departmentName,
+                  subSection: expected.subSection,
+                  sectionName: expected.sectionName,
+                  description: expected.description
+                }
+              }
+            }
+          });
+        }
+      }
+
+      if (bulkSyncOps.length > 0) {
+        await SectionVisibility.bulkWrite(bulkSyncOps);
+      }
+    }
+
+    // Re-fetch sorted sections
+    sections = await SectionVisibility.find({}).sort({ page: 1, departmentName: 1, sectionName: 1 });
     res.json(sections);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -80,10 +171,28 @@ exports.updateSectionVisibility = async (req, res) => {
 
     let section = await SectionVisibility.findOne({ sectionKey });
     if (!section) {
-      const defaultInfo = DEFAULT_SECTIONS.find(ds => ds.sectionKey === sectionKey);
+      let defaultInfo = DEFAULT_SECTIONS.find(ds => ds.sectionKey === sectionKey);
+
+      if (!defaultInfo) {
+        try {
+          const departments = await Department.find({}).lean();
+          for (const dept of departments) {
+            const deptSecs = buildDepartmentSections(dept);
+            const matched = deptSecs.find(ds => ds.sectionKey === sectionKey);
+            if (matched) {
+              defaultInfo = matched;
+              break;
+            }
+          }
+        } catch (e) {
+          console.error('Error finding matching department section:', e);
+        }
+      }
+
       if (!defaultInfo) {
         return res.status(404).json({ message: 'Section not found' });
       }
+
       section = new SectionVisibility({
         ...defaultInfo,
         isVisible: Boolean(isVisible)
@@ -101,7 +210,7 @@ exports.updateSectionVisibility = async (req, res) => {
 
 exports.updateBulkSectionVisibility = async (req, res) => {
   try {
-    const { updates, page, isVisible } = req.body;
+    const { updates, page, departmentSlug, isVisible } = req.body;
 
     if (Array.isArray(updates)) {
       // updates format: [{ sectionKey: '...', isVisible: true/false }]
@@ -113,17 +222,30 @@ exports.updateBulkSectionVisibility = async (req, res) => {
         }
       }));
       await SectionVisibility.bulkWrite(bulkOps);
+    } else if (departmentSlug && typeof isVisible === 'boolean') {
+      // Update all sections under a specific department
+      const slugKey = getSlugKey(departmentSlug);
+      await SectionVisibility.updateMany(
+        {
+          $or: [
+            { departmentSlug: departmentSlug },
+            { sectionKey: { $regex: `^dept_${slugKey}` } }
+          ]
+        },
+        { $set: { isVisible: Boolean(isVisible) } }
+      );
     } else if (page && typeof isVisible === 'boolean') {
       // Update all sections under a specific page
       await SectionVisibility.updateMany(
         { page },
-        { $set: { isVisible } }
+        { $set: { isVisible: Boolean(isVisible) } }
       );
     }
 
-    const sections = await SectionVisibility.find({}).sort({ page: 1, sectionName: 1 });
+    const sections = await SectionVisibility.find({}).sort({ page: 1, departmentName: 1, sectionName: 1 });
     res.json(sections);
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
 };
+

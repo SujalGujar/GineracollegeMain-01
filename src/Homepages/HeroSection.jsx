@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import HeroImage1 from "../images/collegeimage1.jpg"
 import HeroImage2 from "../images/collegeimage2.jpg"
 import HeroImage3 from "../images/collegeimage3.jpg"
-import axiosInstance, { getMediaUrl } from "../api/axiosInstance";
+import axiosInstance, { getMediaUrl, getCachedData, setCachedData } from "../api/axiosInstance";
 
 const backgroundSlides = [
   { 
@@ -16,54 +16,47 @@ const backgroundSlides = [
     alt: "Surgical Innovation"
   },
   { 
-    image:HeroImage3,
+    image: HeroImage3,
     alt: "Research Laboratory"
   },
 ];
 
 const HeroSection = ({ departmentName }) => {
   const [currentBgSlide, setCurrentBgSlide] = useState(0);
-  const [slides, setSlides] = useState(backgroundSlides);
+  const cacheKey = `hero_slides_${departmentName || 'home'}`;
+  const [slides, setSlides] = useState(() => {
+    const cached = getCachedData(cacheKey);
+    return Array.isArray(cached) && cached.length > 0 ? cached : backgroundSlides;
+  });
 
   useEffect(() => {
+    let active = true;
     const fetchSliders = async () => {
       try {
-        let url = "/sliders?department=null";
-        if (departmentName) {
-          // departmentName here is the slug from App.tsx (e.g. "department-of-fundamentals-of-nursing")
-          // We need to find the department ID. We can fetch all departments and match.
-          const deptsRes = await axiosInstance.get("/departments");
-          const depts = deptsRes.data;
-          
-          const matchedDept = depts.find(d => {
-            if (d.slug) return d.slug === departmentName;
-            // Fallback to legacy slug generation if slug field is missing
-            const legacySlug = d.name.toLowerCase().replace(/\s+/g, "-");
-            return legacySlug === departmentName;
-          });
-
-          if (matchedDept) {
-            url = `/sliders?department=${matchedDept._id}`;
-          }
-        }
-        
+        const url = departmentName ? `/sliders?department=${departmentName}` : "/sliders?department=null";
         const response = await axiosInstance.get(url);
-        if (response.data && response.data.length > 0) {
+        if (response.data && response.data.length > 0 && active) {
           const backendSlides = response.data.filter(item => item.imageUrl).map(item => ({
             image: getMediaUrl(item.imageUrl),
             alt: item.title || "Ginera College Slider"
           }));
-          setSlides(backendSlides.length > 0 ? backendSlides : backgroundSlides);
-        } else {
+          if (backendSlides.length > 0) {
+            setSlides(backendSlides);
+            setCachedData(cacheKey, backendSlides);
+          } else {
+            setSlides(backgroundSlides);
+          }
+        } else if (active) {
           setSlides(backgroundSlides);
         }
       } catch (error) {
         console.error("Error fetching slider images:", error);
-        setSlides(backgroundSlides);
+        if (active) setSlides(backgroundSlides);
       }
     };
     fetchSliders();
-  }, [departmentName]);
+    return () => { active = false; };
+  }, [departmentName, cacheKey]);
 
   useEffect(() => {
     const bgTimer = setInterval(() => {

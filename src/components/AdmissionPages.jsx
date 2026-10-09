@@ -23,7 +23,7 @@ import ViewAllProgramsButton from "../components/Buttons/ViewAllProgramsButton";
 import AnimatedLearnMoreButton from "./Buttons/AnimatedLearnMoreButton";
 import { useState, useEffect } from "react";
 import { ExternalLink } from "lucide-react";
-import axiosInstance from "../api/axiosInstance";
+import axiosInstance, { getCachedData, setCachedData } from "../api/axiosInstance";
 import LoadingScreen from "./LoadingScreen";
 import { useSectionVisibility } from "../context/SectionVisibilityContext";
 import SectionOffNotice from "./SectionOffNotice";
@@ -142,45 +142,57 @@ const FeatureCard = ({ item, index }) => {
   );
 };
 
+const DEFAULT_COURSES = [
+  {
+    type: "Undergraduate Programs",
+    programs: [
+      { _id: "bsc", title: "B.Sc. Nursing", duration: "4 Years", seats: 60, eligibility: "10+2 with PCB & English (Min 45%)", description: "Comprehensive 4-year degree focusing on nursing theory, clinical practice, community health, and leadership.", fees: "As per Govt. Norms", features: ["INC & GNC Approved", "Hospital Clinical Postings", "Fully Equipped Simulation Labs"] },
+      { _id: "pbbsc", title: "Post Basic B.Sc. Nursing", duration: "2 Years", seats: 30, eligibility: "GNM passed with RN/RM registration", description: "Designed for diploma nurses to upgrade their knowledge and advance their professional practice.", fees: "As per Govt. Norms", features: ["Advanced Clinical Skills", "Research & Education Focus"] }
+    ]
+  },
+  {
+    type: "Diploma Programs",
+    programs: [
+      { _id: "gnm", title: "GNM (General Nursing & Midwifery)", duration: "3 Years", seats: 100, eligibility: "10+2 with English (Min 40%)", description: "Foundational diploma covering bedside nursing, patient care, maternal-child health, and pharmacology.", fees: "As per Govt. Norms", features: ["State Council Recognized", "Intensive Hospital Internship"] }
+    ]
+  }
+];
+
 export function CoursesOffered() {
   const { isSectionVisible } = useSectionVisibility();
   const [expandedIds, setExpandedIds] = useState([]);
-  const [courses, setCourses] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [courses, setCourses] = useState(() => getCachedData('/courses_grouped', DEFAULT_COURSES));
 
   useEffect(() => {
+    let active = true;
     const fetchCourses = async () => {
       try {
         const response = await axiosInstance.get("/courses");
         const courseList = Array.isArray(response.data) ? response.data : [];
-        const grouped = courseList.reduce((acc, course) => {
-          const cat = acc.find(c => c.type === course.category);
-          if (cat) {
-            cat.programs.push(course);
-          } else {
-            acc.push({ type: course.category, programs: [course] });
+        if (courseList.length > 0) {
+          const grouped = courseList.reduce((acc, course) => {
+            const cat = acc.find(c => c.type === course.category);
+            if (cat) {
+              cat.programs.push(course);
+            } else {
+              acc.push({ type: course.category, programs: [course] });
+            }
+            return acc;
+          }, []);
+          if (active && grouped.length > 0) {
+            setCourses(grouped);
+            setCachedData('/courses_grouped', grouped);
           }
-          return acc;
-        }, []);
-        setCourses(grouped);
+        }
       } catch (err) {
         console.error("Error fetching courses:", err);
-      } finally {
-        setLoading(false);
       }
     };
     fetchCourses();
+    return () => { active = false; };
   }, []);
 
   if (!isSectionVisible('admission_courses')) return <SectionOffNotice name="Courses Offered" />;
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-amber-50">
-        <div className="animate-spin rounded-full h-12 w-12 border-4 border-orange-500 border-t-transparent" />
-      </div>
-    );
-  }
 
   //   admission: "Through University Entrance Exam",
   // },
@@ -550,11 +562,17 @@ export function CoursesOffered() {
 }
 // example variants
 
+const DEFAULT_STEPS = [
+  { step: 1, title: "Online Registration", icon: "Calendar", description: "Register on the centralized admission committee portal and submit initial candidate details." },
+  { step: 2, title: "Document Verification", icon: "FileText", description: "Verify original 10th/12th marksheets, caste, and identity certificates at designated centers." },
+  { step: 3, title: "Merit List & Choice Filling", icon: "Users", description: "Review provisional merit ranking and lock preferences for Government College of Nursing." },
+  { step: 4, title: "Seat Allotment & Reporting", icon: "GraduationCap", description: "Confirm allotted seat, pay tuition fees, and submit documents for final reporting." }
+];
+
 export function AdmissionProcedure() {
   const { isSectionVisible } = useSectionVisibility();
-  const [steps, setSteps] = useState([]);
-  const [documentSections, setDocumentSections] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [steps, setSteps] = useState(() => getCachedData('/admission-steps', DEFAULT_STEPS));
+  const [documentSections, setDocumentSections] = useState(() => getCachedData('/guidelines', []));
   const [expandedProcedureSteps, setExpandedProcedureSteps] = useState([]);
 
   const getIcon = (iconName) => {
@@ -571,36 +589,32 @@ export function AdmissionProcedure() {
   };
 
   useEffect(() => {
+    let active = true;
     const fetchSteps = async () => {
       try {
         const [stepsResponse, guidelinesResponse] = await Promise.all([
           axiosInstance.get("/admission-steps"),
           axiosInstance.get("/guidelines")
         ]);
-        setSteps(stepsResponse.data);
-        setDocumentSections(Array.isArray(guidelinesResponse.data) ? guidelinesResponse.data : []);
+        if (active) {
+          if (Array.isArray(stepsResponse.data) && stepsResponse.data.length > 0) {
+            setSteps(stepsResponse.data);
+            setCachedData('/admission-steps', stepsResponse.data);
+          }
+          if (Array.isArray(guidelinesResponse.data)) {
+            setDocumentSections(guidelinesResponse.data);
+            setCachedData('/guidelines', guidelinesResponse.data);
+          }
+        }
       } catch (err) {
         console.error("Error fetching admission steps:", err);
-      } finally {
-        setLoading(false);
       }
     };
     fetchSteps();
+    return () => { active = false; };
   }, []);
 
   if (!isSectionVisible('admission_procedure')) return <SectionOffNotice name="Admission Procedure & Steps" />;
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-amber-50">
-        <motion.div
-          animate={{ rotate: 360 }}
-          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-          className="w-12 h-12 border-4 border-orange-500 border-t-transparent rounded-full"
-        />
-      </div>
-    );
-  }
 
 
 
@@ -2119,23 +2133,30 @@ Government of Gujarat ,Gandhinagar</motion.p>
 }
 
 
+const DEFAULT_GUIDELINES = [
+  { category: "General Guidelines", points: ["Candidates must adhere to the admission timeline prescribed by the committee.", "Ensure all entered personal and qualification details match official matriculation certificates.", "Keep digital and physical copies of all payment receipts and application acknowledgments."] },
+  { category: "Reporting Guidelines", points: ["Report to the college within the scheduled reporting window with original documents.", "Submit medical fitness certificate issued by an authorized medical practitioner."] }
+];
+
 export function Instructions() {
   const { isSectionVisible } = useSectionVisibility();
-  const [guidelines, setGuidelines] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [guidelines, setGuidelines] = useState(() => getCachedData('/guidelines', DEFAULT_GUIDELINES));
 
   useEffect(() => {
+    let active = true;
     const fetchGuidelines = async () => {
       try {
         const response = await axiosInstance.get("/guidelines");
-        setGuidelines(response.data);
+        if (active && Array.isArray(response.data) && response.data.length > 0) {
+          setGuidelines(response.data);
+          setCachedData('/guidelines', response.data);
+        }
       } catch (err) {
         console.error("Error fetching guidelines:", err);
-      } finally {
-        setLoading(false);
       }
     };
     fetchGuidelines();
+    return () => { active = false; };
   }, []);
 
   if (!isSectionVisible('admission_instructions')) return <SectionOffNotice name="Instructions & Guidelines" />;
@@ -2150,12 +2171,6 @@ export function Instructions() {
     visible: { opacity: 1, y: 0, scale: 1, transition: { type: "spring", stiffness: 100, damping: 15, duration: 0.6 } },
     hover: { y: -5, scale: 1.01, transition: { duration: 0.3 } },
   };
-
-  if (loading) return (
-    <div className="min-h-screen flex items-center justify-center bg-amber-50">
-      <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }} className="w-12 h-12 border-4 border-amber-600 border-t-transparent rounded-full" />
-    </div>
-  );
 
   const groupedGuidelines = guidelines.reduce((acc, curr) => {
     if (!acc[curr.category]) acc[curr.category] = [];
