@@ -766,9 +766,9 @@ import {
 
 // ─── Replace these with your actual imports ───────────────────────────────────
 import logo from "../icons/logo (2).png";
-import laboratoryImage from "../images/laboratory.jpg";
-import libraryImage from "../images/library.jpg";
-import backgroundImage4 from "../images/backgroundImage(4).png";
+import laboratoryImage from "../images/laboratory1.jpg";
+import libraryImage from "../images/library1.jpg";
+import backgroundImage4 from "../images/backgroundImage4_opt.jpg";
 import collegeImage1 from "../images/collegeimage1.jpg";
 import collegeImage2 from "../images/collegeimage2.jpg";
 import collegeImage3 from "../images/collegeimage3.jpg";
@@ -781,7 +781,7 @@ import collegelogo3 from "../Logos/collegelogo3.webp";
 import collegelogo4 from "../Logos/collegelogo4.webp";
 import HeroSection from "../Homepages/HeroSection";
 import ImageSlider from "./ImageSlider";
-import axiosInstance, { getMediaUrl } from "../api/axiosInstance";
+import axiosInstance, { getMediaUrl, getCachedData, setCachedData } from "../api/axiosInstance";
 import { useSectionVisibility } from "../context/SectionVisibilityContext";
 import SectionOffNotice from "./SectionOffNotice";
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1113,14 +1113,14 @@ const HomePage=({ onNavigate }) => {
   const [programsVisible, setProgramsVisible] = useState(true);
   const [expandedProgram, setExpandedProgram] = useState(null);
 
-  const [dynamicPrograms, setDynamicPrograms] = useState([]);
-  const [loadingPrograms, setLoadingPrograms] = useState(true);
-  const [dynamicTestimonials, setDynamicTestimonials] = useState([]);
-  const [academicContent, setAcademicContent] = useState({
+  const [dynamicPrograms, setDynamicPrograms] = useState(() => getCachedData('/programs', []));
+  const [loadingPrograms, setLoadingPrograms] = useState(() => !getCachedData('/programs'));
+  const [dynamicTestimonials, setDynamicTestimonials] = useState(() => getCachedData('/testimonials', []));
+  const [academicContent, setAcademicContent] = useState(() => getCachedData('/content/academic', {
     title: "Academic Programs",
     description1: "Academic nursing programs are structured educational pathways designed to prepare individuals for the nursing profession — from entry-level bedside care to advanced clinical practice, education, and research.",
     description2: "Programs span 4 years (Undergraduate), 3 years (Diploma), 2 years (Masters in Nursing), and 1 year (Post-Basic Diploma)."
-  });
+  }));
 
   const testimonialsToDisplay = dynamicTestimonials.length > 0 ? dynamicTestimonials : TESTIMONIALS;
 
@@ -1155,12 +1155,15 @@ const HomePage=({ onNavigate }) => {
         if (!isMounted) return;
         if (Array.isArray(progRes?.data) && progRes.data.length > 0) {
           setDynamicPrograms(progRes.data);
+          setCachedData('/programs', progRes.data);
         }
         if (academicRes?.data && typeof academicRes.data === "object" && !Array.isArray(academicRes.data)) {
           setAcademicContent(academicRes.data);
+          setCachedData('/content/academic', academicRes.data);
         }
         if (Array.isArray(testRes?.data) && testRes.data.length > 0) {
           setDynamicTestimonials(testRes.data);
+          setCachedData('/testimonials', testRes.data);
           setTestimonialsIndex(0);
         }
       } catch (error) {

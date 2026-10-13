@@ -7,7 +7,7 @@ import { motion } from "framer-motion";
 import laboratoryImage from "../images/laboratory1.jpg";
 import libraryImage from "../images/library1.jpg";
 import collegeImage1 from "../images/collegeimage1.jpg";
-import backgroundImage4 from "../images/backgroundImage(4).png";
+import backgroundImage4 from "../images/backgroundImage4_opt.jpg";
 import backgroundImage from "../images/backgroundImage (2).jpg";
 import backgroundImage1 from "../images/backgroundImage (1).jpg";
 import backgroundImage2 from "../images/backgroundImage (3).jpg";

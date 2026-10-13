@@ -56,5 +56,15 @@
     server: {
       port: 3000,
       open: true,
+      watch: {
+        ignored: [
+          '**/build/**',
+          '**/build.zip',
+          '**/*.zip',
+          '**/Backend-Ginera/**',
+          '**/scratch/**',
+          '**/.git/**',
+        ],
+      },
     },
   });

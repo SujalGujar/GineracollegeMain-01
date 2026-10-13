@@ -16,6 +16,7 @@ import { CollegePhotos, HospitalPhotos, EventsPhotos } from './components/PhotoG
 import { AffiliatedInstitutes } from './components/AffiliatedInstitutes';
 import { ContactPage } from './components/ContactPage';
 import LoadingScreen from './components/LoadingScreen';
+import ErrorBoundary from './components/ErrorBoundary';
 import { StudentCorner } from './components/StudentCorner';
 
 const AdminPanel = React.lazy(() => import('./components/AdminPanel'));
@@ -102,9 +103,9 @@ export default function App() {
 
     const requestId = navigationId.current;
     let active = true;
-    const minLoadTimer = new Promise((resolve) => setTimeout(resolve, 80));
-    // Snappy route transition loader (max 400ms cap)
-    const maxTimeoutTimer = new Promise((resolve) => setTimeout(resolve, 400));
+    const minLoadTimer = new Promise((resolve) => setTimeout(resolve, 100));
+    // Route transition loader cap (allows smooth data fetch without hanging forever)
+    const maxTimeoutTimer = new Promise((resolve) => setTimeout(resolve, 800));
     
     Promise.all([
       Promise.race([waitForApiIdle(60), maxTimeoutTimer]),
@@ -249,9 +250,11 @@ export default function App() {
               className="flex-1 min-h-0 flex flex-col overflow-hidden w-full"
               style={{ minHeight: 0, height: '100%' }}>
               <React.Fragment key={pageInstance}>
-                <React.Suspense fallback={<LoadingScreen />}>
-                  {renderCurrentPage()}
-                </React.Suspense>
+                <ErrorBoundary onReset={() => setPageInstance(instance => instance + 1)}>
+                  <React.Suspense fallback={<LoadingScreen />}>
+                    {renderCurrentPage()}
+                  </React.Suspense>
+                </ErrorBoundary>
               </React.Fragment>
             </main>
             <Toaster />
@@ -266,7 +269,9 @@ export default function App() {
           >
             <Header currentPage={currentPage} onNavigate={handleNavigation} />
             <main className="flex-1">
-              <React.Fragment key={pageInstance}>{renderCurrentPage()}</React.Fragment>
+              <ErrorBoundary onReset={() => setPageInstance(instance => instance + 1)}>
+                <React.Fragment key={pageInstance}>{renderCurrentPage()}</React.Fragment>
+              </ErrorBoundary>
             </main>
 
             {/* Footer */}

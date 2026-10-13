@@ -17,7 +17,7 @@ import {
   Stethoscope,
 } from "lucide-react";
 import { motion } from "framer-motion";
-import backgroundImage4 from "../images/backgroundImage(4).png";
+import backgroundImage4 from "../images/backgroundImage4_opt.jpg";
 import ViewAllProgramsButton from "../components/Buttons/ViewAllProgramsButton";
 // import DownloadProspectusButton from "./DownloadProspectusButton";
 import AnimatedLearnMoreButton from "./Buttons/AnimatedLearnMoreButton";
@@ -146,14 +146,50 @@ const DEFAULT_COURSES = [
   {
     type: "Undergraduate Programs",
     programs: [
-      { _id: "bsc", title: "B.Sc. Nursing", duration: "4 Years", seats: 60, eligibility: "10+2 with PCB & English (Min 45%)", description: "Comprehensive 4-year degree focusing on nursing theory, clinical practice, community health, and leadership.", fees: "As per Govt. Norms", features: ["INC & GNC Approved", "Hospital Clinical Postings", "Fully Equipped Simulation Labs"] },
-      { _id: "pbbsc", title: "Post Basic B.Sc. Nursing", duration: "2 Years", seats: 30, eligibility: "GNM passed with RN/RM registration", description: "Designed for diploma nurses to upgrade their knowledge and advance their professional practice.", fees: "As per Govt. Norms", features: ["Advanced Clinical Skills", "Research & Education Focus"] }
+      {
+        _id: "bsc",
+        id: "bsc",
+        name: "B.Sc. Nursing",
+        title: "B.Sc. Nursing",
+        duration: "4 Years",
+        seats: 60,
+        eligibility: "10+2 with PCB & English (Min 45%)",
+        description: "Comprehensive 4-year degree focusing on nursing theory, clinical practice, community health, and leadership.",
+        fees: "As per Govt. Norms",
+        admission: "Through University / State Entrance Exam",
+        highlights: ["INC & GNC Approved", "Hospital Clinical Postings", "Fully Equipped Simulation Labs"]
+      },
+      {
+        _id: "pbbsc",
+        id: "pbbsc",
+        name: "Post Basic B.Sc. Nursing",
+        title: "Post Basic B.Sc. Nursing",
+        duration: "2 Years",
+        seats: 30,
+        eligibility: "GNM passed with RN/RM registration",
+        description: "Designed for diploma nurses to upgrade their knowledge and advance their professional practice.",
+        fees: "As per Govt. Norms",
+        admission: "Through State Merit / Entrance",
+        highlights: ["Advanced Clinical Skills", "Research & Education Focus"]
+      }
     ]
   },
   {
     type: "Diploma Programs",
     programs: [
-      { _id: "gnm", title: "GNM (General Nursing & Midwifery)", duration: "3 Years", seats: 100, eligibility: "10+2 with English (Min 40%)", description: "Foundational diploma covering bedside nursing, patient care, maternal-child health, and pharmacology.", fees: "As per Govt. Norms", features: ["State Council Recognized", "Intensive Hospital Internship"] }
+      {
+        _id: "gnm",
+        id: "gnm",
+        name: "GNM (General Nursing & Midwifery)",
+        title: "GNM (General Nursing & Midwifery)",
+        duration: "3 Years",
+        seats: 100,
+        eligibility: "10+2 with English (Min 40%)",
+        description: "Foundational diploma covering bedside nursing, patient care, maternal-child health, and pharmacology.",
+        fees: "As per Govt. Norms",
+        admission: "Through State Nursing Council Portal",
+        highlights: ["State Council Recognized", "Intensive Hospital Internship"]
+      }
     ]
   }
 ];
@@ -311,9 +347,9 @@ export function CoursesOffered() {
               className="grid gap-8 lg:grid-cols-2 xl:grid-cols-2"
               variants={staggerContainer}
             >
-              {courseType.programs.map((program, programIndex) => (
+              {(courseType.programs || []).map((program, programIndex) => (
                 <motion.div
-                  key={program.id}
+                  key={program._id || program.id || programIndex}
                   variants={cardVariants}
                   whileHover={{ scale: 1.05, y: -5 }}
                   transition={{ duration: 0.3, ease: "easeOut" }}
@@ -354,7 +390,7 @@ export function CoursesOffered() {
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.5, delay: 0.1 }}
                       >
-                        {program.name}
+                        {program.name || program.title || "Nursing Program"}
                       </motion.h3>
 
                       {/* Description with Read More / Read Less */}
@@ -469,27 +505,29 @@ export function CoursesOffered() {
                       </div>
 
                       {/* 🔹 Highlights */}
-                      <motion.div
-                        className="pt-4 border-t border-orange-200"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ duration: 0.6 }}
-                      >
-                        <h4 className="font-semibold text-sm mb-3 text-gray-800 flex items-center gap-2">
-                          <BookOpen className="w-4 h-4" style={{ color: "#b45309" }} />
-                          Course Highlights
-                        </h4>
-                        <div className="flex flex-wrap gap-2">
-                          {program.highlights.map((highlight, idx) => (
-                            <span
-                              key={idx}
-                              className="text-xs bg-orange-100 text-amber-900 px-3 py-1 rounded-full border border-orange-200 font-medium"
-                            >
-                              {highlight}
-                            </span>
-                          ))}
-                        </div>
-                      </motion.div>
+                      {Array.isArray(program.highlights || program.features) && (program.highlights || program.features).length > 0 && (
+                        <motion.div
+                          className="pt-4 border-t border-orange-200"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          transition={{ duration: 0.6 }}
+                        >
+                          <h4 className="font-semibold text-sm mb-3 text-gray-800 flex items-center gap-2">
+                            <BookOpen className="w-4 h-4" style={{ color: "#b45309" }} />
+                            Course Highlights
+                          </h4>
+                          <div className="flex flex-wrap gap-2">
+                            {(program.highlights || program.features || []).map((highlight, idx) => (
+                              <span
+                                key={idx}
+                                className="text-xs bg-orange-100 text-amber-900 px-3 py-1 rounded-full border border-orange-200 font-medium"
+                              >
+                                {highlight}
+                              </span>
+                            ))}
+                          </div>
+                        </motion.div>
+                      )}
 
                       {/* 🔹 Website Link */}
                       {program.websiteLink && (
