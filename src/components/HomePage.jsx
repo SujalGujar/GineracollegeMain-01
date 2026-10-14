@@ -1114,7 +1114,7 @@ const HomePage=({ onNavigate }) => {
   const [expandedProgram, setExpandedProgram] = useState(null);
 
   const [dynamicPrograms, setDynamicPrograms] = useState(() => getCachedData('/programs', []));
-  const [loadingPrograms, setLoadingPrograms] = useState(() => !getCachedData('/programs'));
+  const [loadingPrograms, setLoadingPrograms] = useState(false);
   const [dynamicTestimonials, setDynamicTestimonials] = useState(() => getCachedData('/testimonials', []));
   const [academicContent, setAcademicContent] = useState(() => getCachedData('/content/academic', {
     title: "Academic Programs",
@@ -1336,16 +1336,7 @@ const HomePage=({ onNavigate }) => {
                     }
                   }
                 `}</style>
-              {loadingPrograms ? (
-                <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/50 backdrop-blur-sm rounded-3xl z-10">
-                  <motion.div
-                    animate={{ rotate: 360 }}
-                    transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                    className="w-10 h-10 border-4 border-orange-500 border-t-transparent rounded-full mb-4"
-                  />
-                  <p className="text-gray-500 font-medium">Loading Programs...</p>
-                </div>
-              ) : programsToDisplay.map((prog, i) => {
+              {(programsToDisplay && programsToDisplay.length > 0) ? programsToDisplay.map((prog, i) => {
                 const programId = prog._id || i;
                 const isExpanded = expandedProgram === programId;
                 const features = getProgramFeatures(prog);
@@ -1433,7 +1424,12 @@ const HomePage=({ onNavigate }) => {
                     </div>
                   </motion.div>
                 );
-              })}
+              }) : (
+                <div className="w-full py-12 flex flex-col items-center justify-center">
+                  <div className="w-10 h-10 border-4 border-orange-500 border-t-transparent rounded-full animate-spin mb-4" />
+                  <p className="text-gray-500 font-medium">Loading Programs...</p>
+                </div>
+              )}
               </div>
             </div>
             <motion.div

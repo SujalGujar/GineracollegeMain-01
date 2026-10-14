@@ -23,6 +23,7 @@ const AdminPanel = React.lazy(() => import('./components/AdminPanel'));
 const LoginPage = React.lazy(() => import('./components/LoginPage').then(m => ({ default: m.LoginPage })));
 import { waitForApiIdle, warmUpBackend } from './api/axiosInstance';
 import { useSectionVisibility } from './context/SectionVisibilityContext';
+import { updatePageSEO } from './utils/seo';
 
 export default function App() {
   const { refreshVisibility } = useSectionVisibility();
@@ -98,6 +99,9 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    // Dynamic SEO update for title, meta descriptions, and canonical URL
+    updatePageSEO(currentPage);
+
     // Keep section visibility fresh across route transitions
     refreshVisibility();
 

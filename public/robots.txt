@@ -1,0 +1,21 @@
+# https://www.robotstxt.org/robotstxt.html
+# Robots exclusion file for GINERA - Gujarat Institute of Nursing Education and Research, Ahmedabad
+
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /login
+
+# Search engine crawlers
+User-agent: Googlebot
+Allow: /
+Disallow: /admin
+Disallow: /login
+
+User-agent: Bingbot
+Allow: /
+Disallow: /admin
+Disallow: /login
+
+# Sitemap location
+Sitemap: https://gineracollegemain-01.onrender.com/sitemap.xml

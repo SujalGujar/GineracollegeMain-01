@@ -314,24 +314,26 @@ export function Header({ currentPage, onNavigate }) {
                     <Menu className="h-6 w-6" />
                   </Button>
                 </SheetTrigger>
-                <SheetContent side="right" className="w-80 overflow-y-auto">
-                  <div className="mt-6 space-y-2">
-
-                    {/* Mobile Logo */}
-                    <div
-                      className="flex items-center space-x-3 p-4 border-b border-border cursor-pointer"
-                      onClick={() => handleNavigation("home")}
-                    >
-                      <div className="flex items-center justify-center w-10 h-10 rounded-full">
-                        <img src={gineraLogo} alt="College Logo" className="w-8 h-8 object-contain" />
-                      </div>
-                      <div>
-                        <h1 className="text-lg font-bold text-gray-900">Medical College</h1>
-                        <p className="text-xs text-gray-600">Excellence in Medical Education</p>
-                      </div>
+                <SheetContent side="right" className="w-80 sm:w-96 p-0 flex flex-col h-[100dvh] max-h-screen overflow-hidden">
+                  {/* Fixed Mobile Header */}
+                  <div
+                    className="flex items-center space-x-3 p-4 pr-12 border-b border-border bg-white shrink-0 cursor-pointer"
+                    onClick={() => handleNavigation("home")}
+                  >
+                    <div className="flex items-center justify-center w-10 h-10 rounded-full shrink-0">
+                      <img src={gineraLogo} alt="College Logo" className="w-8 h-8 object-contain" />
                     </div>
+                    <div className="min-w-0">
+                      <h1 className="text-lg font-bold text-gray-900 truncate">Medical College</h1>
+                      <p className="text-xs text-gray-600 truncate">Excellence in Medical Education</p>
+                    </div>
+                  </div>
 
-                    {/* Mobile Nav Items */}
+                  {/* Scrollable Mobile Nav Items */}
+                  <div
+                    className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 py-4 space-y-2 pb-32"
+                    style={{ WebkitOverflowScrolling: "touch", touchAction: "pan-y" }}
+                  >
                     {visibleNavItems.map((item) => {
                       const hasSubpages = item.subpages.length > 0;
                       const isMobileOpen = mobileOpenSections[item.key];
@@ -409,9 +411,6 @@ export function Header({ currentPage, onNavigate }) {
                         </div>
                       );
                     })}
-
-
-
                   </div>
                 </SheetContent>
               </Sheet>

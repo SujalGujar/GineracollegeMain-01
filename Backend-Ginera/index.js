@@ -176,16 +176,22 @@ app.get('/', (req, res) => {
   res.send('Ginera College Backend is running');
 });
 
-app.get('/api/health', (req, res) => {
-  res.json({
+const handleHealthCheck = (req, res) => {
+  res.status(200).json({
     status: 'ok',
+    uptime: Math.floor(process.uptime()),
+    timestamp: new Date().toISOString(),
     hasMongoUri: Boolean(process.env.MONGODB_URI),
     dbReadyState: mongoose.connection.readyState,
     dbName: mongoose.connection.name || null,
     redisReady: isRedisReady(),
     lastMongoError,
   });
-});
+};
+
+app.get('/health', handleHealthCheck);
+app.get('/api/health', handleHealthCheck);
+
 
 const publicDir = path.join(__dirname, 'public');
 if (fs.existsSync(publicDir)) {

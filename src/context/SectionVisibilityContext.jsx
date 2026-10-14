@@ -14,26 +14,42 @@ export const SectionVisibilityProvider = ({ children }) => {
   });
   const [sectionsList, setSectionsList] = useState([]);
   const [loading, setLoading] = useState(false);
+  const inFlightPromiseRef = React.useRef(null);
+  const lastFetchTimeRef = React.useRef(0);
 
-  const fetchVisibility = async () => {
-    try {
-      const res = await axiosInstance.get('/section-visibility');
-      if (Array.isArray(res.data) && res.data.length > 0) {
-        setSectionsList(res.data);
-        const map = {};
-        res.data.forEach(item => {
-          map[item.sectionKey] = item.isVisible !== false;
-        });
-        setVisibilityMap(map);
-        try {
-          localStorage.setItem('ginera_section_visibility', JSON.stringify(map));
-        } catch { }
-      }
-    } catch (err) {
-      console.error('Failed to fetch section visibility:', err);
-    } finally {
-      setLoading(false);
+  const fetchVisibility = async (force = false) => {
+    const now = Date.now();
+    if (!force && inFlightPromiseRef.current) {
+      return inFlightPromiseRef.current;
     }
+    if (!force && now - lastFetchTimeRef.current < 15000) {
+      return;
+    }
+
+    inFlightPromiseRef.current = (async () => {
+      try {
+        const res = await axiosInstance.get('/section-visibility');
+        lastFetchTimeRef.current = Date.now();
+        if (Array.isArray(res.data) && res.data.length > 0) {
+          setSectionsList(res.data);
+          const map = {};
+          res.data.forEach(item => {
+            map[item.sectionKey] = item.isVisible !== false;
+          });
+          setVisibilityMap(map);
+          try {
+            localStorage.setItem('ginera_section_visibility', JSON.stringify(map));
+          } catch { }
+        }
+      } catch (err) {
+        console.error('Failed to fetch section visibility:', err);
+      } finally {
+        setLoading(false);
+        inFlightPromiseRef.current = null;
+      }
+    })();
+
+    return inFlightPromiseRef.current;
   };
 
   useEffect(() => {
