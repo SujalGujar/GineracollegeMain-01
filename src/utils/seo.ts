@@ -20,6 +20,11 @@ export const PAGE_SEO_MAP: Record<string, PageMetadata> = {
     description: "Gujarat Institute of Nursing Education and Research (GINERA), Ahmedabad is a premier Government Nursing College located at Civil Hospital Campus, Asarwa. Offering B.Sc, M.Sc, and GNM programs with top clinical training.",
     keywords: "GINERA, GINERA Ahmedabad, Gujarat Institute of Nursing Education and Research, Government College of Nursing, Civil Hospital Asarwa, B.Sc Nursing Ahmedabad, M.Sc Nursing, GNM",
   },
+  announcements: {
+    title: "Admission Announcements & Circulars | GINERA Ahmedabad",
+    description: "Latest admission announcements, centralized counseling notices, document verification checklists, and schedules for GINERA Government College of Nursing.",
+    keywords: "GINERA announcements, nursing admission notices, B.Sc nursing admission 2026, ACPUGMEC GINERA, admission circulars Ahmedabad",
+  },
   courses: {
     title: "Courses Offered & Eligibility | GINERA Ahmedabad - Government Nursing College",
     description: "Explore accredited B.Sc. Nursing, M.Sc. Nursing, and General Nursing & Midwifery (GNM) degree programs offered at GINERA Ahmedabad.",

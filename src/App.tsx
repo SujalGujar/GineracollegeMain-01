@@ -8,6 +8,7 @@ import HomePage from './components/HomePage.jsx';
 
 import { AboutLogo, DeanMessage, History, Location, VisionMission, Achievements } from './components/AboutPages';
 import { CoursesOffered, AdmissionProcedure, AdmissionRules, Instructions } from './components/AdmissionPages';
+import { AnnouncementsPage } from './components/AnnouncementsPage';
 import HeroSection from './Homepages/HeroSection';
 
 import { GenericDepartment } from './components/DepartmentPages';
@@ -173,6 +174,9 @@ export default function App() {
         return <Achievements onNavigate={handleNavigation} />;
 
       // Admission pages
+      case 'announcements':
+      case 'announcement':
+        return <AnnouncementsPage onNavigate={handleNavigation} />;
       case 'courses':
         return <CoursesOffered onNavigate={handleNavigation} />;
       case 'admission-procedure':

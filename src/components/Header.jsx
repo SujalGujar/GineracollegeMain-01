@@ -4,7 +4,7 @@ import { Sheet, SheetContent, SheetTrigger } from "./ui/sheet.jsx";
 import { Menu, User, ChevronDown } from "lucide-react";
 import gineraLogo2 from "../images/ginera-logo2.png";
 import gineraLogo from "../images/ginera-logo.png";
-import axiosInstance from "../api/axiosInstance";
+import axiosInstance, { getMediaUrl } from "../api/axiosInstance";
 import { useSectionVisibility } from "../context/SectionVisibilityContext";
 
 let departmentItems = [
@@ -41,6 +41,7 @@ const NAV_ITEMS = [
     key: "admissions",
     label: "Admissions",
     subpages: [
+      { label: "Announcements", page: "announcements" },
       { label: "Courses Offered", page: "courses" },
       { label: "Admission Procedure", page: "admission-procedure" },
       { label: "Admission Rules", page: "admission-rules" },
@@ -68,6 +69,7 @@ const NAV_ITEMS = [
       { label: "Events Photos", page: "events-photos" },
     ],
   },
+  { key: "announcements", label: "Announcement", subpages: [] },
   { key: "student-corner", label: "Student Corner", subpages: [] },
   { key: "affiliated-institutes", label: "Affiliated Institutes", subpages: [] },
   { key: "contact", label: "Contact Us", subpages: [] },
@@ -82,6 +84,8 @@ const PAGE_SECTION_MAP = {
   "vision-mission": "about",
   "achievements": "about",
 
+  "announcements": "announcements",
+  "announcement": "announcements",
   "courses": "admissions",
   "admission-procedure": "admissions",
   "admission-rules": "admissions",
@@ -97,7 +101,8 @@ const PAGE_SECTION_MAP = {
 export function Header({ currentPage, onNavigate }) {
   const [isSheetOpen, setIsSheetOpen] = React.useState(false);
   const [openDropdown, setOpenDropdown] = React.useState(null);
-  const [mobileOpenSections, setMobileOpenSections] = React.useState({});
+  const [openMobileSection, setOpenMobileSection] = React.useState(null);
+  const [collegeLogoUrl, setCollegeLogoUrl] = React.useState(null);
   const dropdownRef = React.useRef(null);
   const [dynamicNavItems, setDynamicNavItems] = React.useState(NAV_ITEMS);
   const { isSectionVisible } = useSectionVisibility();
@@ -107,6 +112,39 @@ export function Header({ currentPage, onNavigate }) {
     if (item.key === 'student-corner') return isSectionVisible('student_corner');
     return true;
   });
+
+  // Automatically close mobile sidebar if viewport expands to desktop (e.g. exiting devtools mobile mode or resizing)
+  React.useEffect(() => {
+    const checkAndClose = () => {
+      if (window.innerWidth >= 1024) {
+        setIsSheetOpen(false);
+      }
+    };
+
+    const mediaQuery = window.matchMedia("(min-width: 1024px)");
+    const handleMediaChange = (e) => {
+      if (e.matches) {
+        setIsSheetOpen(false);
+      }
+    };
+
+    window.addEventListener("resize", checkAndClose);
+    mediaQuery.addEventListener("change", handleMediaChange);
+
+    return () => {
+      window.removeEventListener("resize", checkAndClose);
+      mediaQuery.removeEventListener("change", handleMediaChange);
+    };
+  }, []);
+
+  // Fetch college logo
+  React.useEffect(() => {
+    axiosInstance.get("/about/college-logo")
+      .then(res => {
+        if (res.data?.logoUrl) setCollegeLogoUrl(getMediaUrl(res.data.logoUrl));
+      })
+      .catch(() => {});
+  }, []);
 
   React.useEffect(() => {
     const fetchDepartments = async () => {
@@ -163,6 +201,7 @@ export function Header({ currentPage, onNavigate }) {
     onNavigate(page);
     setIsSheetOpen(false);
     setOpenDropdown(null);
+    setOpenMobileSection(null);
   };
 
   const toggleDropdown = (key) => {
@@ -170,7 +209,7 @@ export function Header({ currentPage, onNavigate }) {
   };
 
   const toggleMobileSection = (key) => {
-    setMobileOpenSections((prev) => ({ ...prev, [key]: !prev[key] }));
+    setOpenMobileSection((prev) => (prev === key ? null : key));
   };
 
   return (
@@ -189,7 +228,7 @@ export function Header({ currentPage, onNavigate }) {
                 className="flex items-center justify-center w-12 h-12 rounded-full cursor-pointer"
                 onClick={(e) => handleNavigation("home", e)}
               >
-                <img src={gineraLogo2} alt="College Logo" className="w-12 h-12 object-contain" />
+                <img src={collegeLogoUrl || gineraLogo2} alt="College Logo" className="w-12 h-12 object-contain" />
               </div>
               <div
                 className="hidden md:block cursor-pointer"
@@ -308,20 +347,23 @@ export function Header({ currentPage, onNavigate }) {
 
             {/* Mobile Navigation */}
             <div className="lg:hidden flex items-center space-x-2">
-              <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
+              <Sheet open={isSheetOpen} onOpenChange={(open) => {
+                setIsSheetOpen(open);
+                if (!open) setOpenMobileSection(null);
+              }}>
                 <SheetTrigger asChild>
                   <Button variant="ghost" size="icon">
                     <Menu className="h-6 w-6" />
                   </Button>
                 </SheetTrigger>
-                <SheetContent side="right" className="w-80 sm:w-96 p-0 flex flex-col h-[100dvh] max-h-screen overflow-hidden">
+                <SheetContent side="right" className="lg:hidden w-80 sm:w-96 p-0 flex flex-col h-[100dvh] max-h-screen overflow-hidden">
                   {/* Fixed Mobile Header */}
                   <div
                     className="flex items-center space-x-3 p-4 pr-12 border-b border-border bg-white shrink-0 cursor-pointer"
                     onClick={() => handleNavigation("home")}
                   >
                     <div className="flex items-center justify-center w-10 h-10 rounded-full shrink-0">
-                      <img src={gineraLogo} alt="College Logo" className="w-8 h-8 object-contain" />
+                      <img src={collegeLogoUrl || gineraLogo} alt="College Logo" className="w-8 h-8 object-contain" />
                     </div>
                     <div className="min-w-0">
                       <h1 className="text-lg font-bold text-gray-900 truncate">Medical College</h1>
@@ -336,7 +378,7 @@ export function Header({ currentPage, onNavigate }) {
                   >
                     {visibleNavItems.map((item) => {
                       const hasSubpages = item.subpages.length > 0;
-                      const isMobileOpen = mobileOpenSections[item.key];
+                      const isMobileOpen = openMobileSection === item.key;
                       const isActive =
                         currentPage === item.key || activeSection === item.key;
                       const isContact = item.key === "contact";

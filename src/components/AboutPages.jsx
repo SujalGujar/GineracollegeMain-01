@@ -85,16 +85,37 @@ function MissionStatementItem({ text, index, direction = 1 }) {
   );
 }
 
+function ImageSkeletonLoader({ title = "Loading Image...", className = "", style = {} }) {
+  return (
+    <div
+      className={`w-full h-full min-h-[220px] flex flex-col items-center justify-center bg-gradient-to-br from-amber-100/80 via-orange-50/90 to-amber-100/80 animate-pulse rounded-2xl select-none text-center p-4 ${className}`}
+      style={style}
+    >
+      <div className="w-10 h-10 border-4 border-amber-300 border-t-amber-600 rounded-full animate-spin mb-2" />
+      <span className="text-xs font-semibold tracking-wider uppercase text-amber-800/80">
+        {title}
+      </span>
+    </div>
+  );
+}
+
 export function AboutLogo({ onNavigate }) {
   const { isSectionVisible } = useSectionVisibility();
   const [collegeBranding, setCollegeBranding] = useState(null);
+  const [loadingBranding, setLoadingBranding] = useState(true);
   const [aboutImages, setAboutImages] = useState([]);
+  const [loadingImages, setLoadingImages] = useState(true);
   const [visionMission, setVisionMission] = useState([]);
 
   useEffect(() => {
+    let active = true;
+    setLoadingBranding(true);
     axiosInstance.get('/about/college-logo').then(r => {
-      if (r.data && typeof r.data === 'object') setCollegeBranding(r.data);
-    }).catch(() => { });
+      if (active && r.data && typeof r.data === 'object') setCollegeBranding(r.data);
+    }).catch(() => { }).finally(() => {
+      if (active) setLoadingBranding(false);
+    });
+    return () => { active = false; };
   }, []);
 
   useEffect(() => {
@@ -104,9 +125,14 @@ export function AboutLogo({ onNavigate }) {
   }, []);
 
   useEffect(() => {
+    let active = true;
+    setLoadingImages(true);
     axiosInstance.get('/about/images').then(r => {
-      if (Array.isArray(r.data)) setAboutImages(r.data);
-    }).catch(() => { });
+      if (active && Array.isArray(r.data)) setAboutImages(r.data);
+    }).catch(() => { }).finally(() => {
+      if (active) setLoadingImages(false);
+    });
+    return () => { active = false; };
   }, []);
 
   if (!isSectionVisible('about_logo')) return <SectionOffNotice name="College Logo & Branding" />;
@@ -189,21 +215,28 @@ export function AboutLogo({ onNavigate }) {
               }}
               transition={{ duration: 0.4 }}
             >
-              <motion.img
-                src={displayLogo}
-                alt={collegeBranding?.collegeName || 'College Logo'}
-                onError={(e) => { e.currentTarget.src = gineraLogo; }}
-                className="object-contain"
-                style={{
-                  width: "100%",
-                  height: "100%",
-                  maxWidth: "210px",
-                  maxHeight: "210px",
-                  filter: "drop-shadow(0 10px 18px rgba(0,0,0,0.16))",
-                }}
-                whileHover={{ scale: 1.04 }}
-                transition={{ duration: 0.3 }}
-              />
+              {loadingBranding ? (
+                <div className="flex flex-col items-center justify-center w-full h-full text-white animate-pulse">
+                  <div className="w-10 h-10 border-4 border-white/30 border-t-white rounded-full animate-spin mb-2" />
+                  <span className="text-xs font-semibold tracking-wider uppercase text-white/90">Loading Logo...</span>
+                </div>
+              ) : (
+                <motion.img
+                  src={displayLogo}
+                  alt={collegeBranding?.collegeName || 'College Logo'}
+                  onError={(e) => { e.currentTarget.src = gineraLogo; }}
+                  className="object-contain"
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    maxWidth: "210px",
+                    maxHeight: "210px",
+                    filter: "drop-shadow(0 10px 18px rgba(0,0,0,0.16))",
+                  }}
+                  whileHover={{ scale: 1.04 }}
+                  transition={{ duration: 0.3 }}
+                />
+              )}
             </motion.div>
           </motion.div>
 
@@ -306,12 +339,16 @@ export function AboutLogo({ onNavigate }) {
                 animate={{ x: 0, opacity: 1 }}
                 transition={{ duration: 0.8 }}
               >
-                <img
-                  src={imageFor('missionMain', libraryImage)}
-                  alt={altFor('missionMain', 'Mission & Values')}
-                  onError={(e) => { e.currentTarget.src = libraryImage; }}
-                  className="w-full h-full object-cover object-center transform hover:scale-105 transition-transform duration-500"
-                />
+                {loadingImages ? (
+                  <ImageSkeletonLoader title="Loading Mission Image..." />
+                ) : (
+                  <img
+                    src={imageFor('missionMain', libraryImage)}
+                    alt={altFor('missionMain', 'Mission & Values')}
+                    onError={(e) => { e.currentTarget.src = libraryImage; }}
+                    className="w-full h-full object-cover object-center transform hover:scale-105 transition-transform duration-500"
+                  />
+                )}
               </motion.div>
             </motion.div>
 
@@ -330,12 +367,16 @@ export function AboutLogo({ onNavigate }) {
                 animate={{ x: 0, opacity: 1 }}
                 transition={{ duration: 0.8 }}
               >
-                <img
-                  src={imageFor('visionMain', laboratoryImage)}
-                  alt={altFor('visionMain', 'Vision & Goals')}
-                  onError={(e) => { e.currentTarget.src = laboratoryImage; }}
-                  className="w-full h-full object-cover object-center transform hover:scale-105 transition-transform duration-500"
-                />
+                {loadingImages ? (
+                  <ImageSkeletonLoader title="Loading Vision Image..." />
+                ) : (
+                  <img
+                    src={imageFor('visionMain', laboratoryImage)}
+                    alt={altFor('visionMain', 'Vision & Goals')}
+                    onError={(e) => { e.currentTarget.src = laboratoryImage; }}
+                    className="w-full h-full object-cover object-center transform hover:scale-105 transition-transform duration-500"
+                  />
+                )}
               </motion.div>
 
               {/* RIGHT TEXT */}
@@ -734,6 +775,7 @@ export function History() {
   const { isSectionVisible } = useSectionVisibility();
   const [dynamicMilestones, setDynamicMilestones] = useState(() => getCachedData('/about/milestones', DEFAULT_MILESTONES));
   const [aboutImages, setAboutImages] = useState(() => getCachedData('/about/images', []));
+  const [loadingImages, setLoadingImages] = useState(!getCachedData('/about/images', null));
   const [historyContent, setHistoryContent] = useState(() => getCachedData('/about/history-content', null));
   const [isHistoryExpanded, setIsHistoryExpanded] = React.useState(false);
   const [expandedMilestones, setExpandedMilestones] = React.useState([]);
@@ -762,6 +804,9 @@ export function History() {
       })
       .catch((err) => {
         console.error("Failed to fetch history data:", err);
+      })
+      .finally(() => {
+        if (active) setLoadingImages(false);
       });
     return () => { active = false; };
   }, []);
@@ -804,19 +849,26 @@ export function History() {
     >
       {/* ---------- HERO IMAGE ---------- */}
       <motion.div
-        className="relative w-full h-64 sm:h-80 lg:h-96 mb-16 overflow-hidden rounded-xl"
+        className="relative w-full h-64 sm:h-80 lg:h-96 mb-16 overflow-hidden rounded-xl bg-slate-900"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 1 }}
       >
-        <motion.img
-          src={historyHeroImg}
-          alt={historyHeroSlot?.alt || "College Library"}
-          className="w-full h-full object-cover rounded-xl"
-          initial={{ scale: 1.1 }}
-          animate={{ scale: 1 }}
-          transition={{ duration: 2, ease: "easeOut" }}
-        />
+        {loadingImages ? (
+          <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-r from-amber-900/60 to-orange-950/70 animate-pulse text-white">
+            <div className="w-12 h-12 border-4 border-white/20 border-t-amber-400 rounded-full animate-spin mb-3" />
+            <span className="text-sm font-semibold tracking-wider uppercase text-amber-200">Loading History Banner...</span>
+          </div>
+        ) : (
+          <motion.img
+            src={historyHeroImg}
+            alt={historyHeroSlot?.alt || "College Library"}
+            className="w-full h-full object-cover rounded-xl"
+            initial={{ scale: 1.1 }}
+            animate={{ scale: 1 }}
+            transition={{ duration: 2, ease: "easeOut" }}
+          />
+        )}
         <motion.h1
           className="absolute inset-0 flex items-center justify-center text-4xl md:text-5xl font-bold text-white bg-black/30 backdrop-blur-sm"
           initial={{ opacity: 0, y: 20 }}
@@ -837,19 +889,28 @@ export function History() {
           {/* Image Section */}
           <motion.div
             variants={imageAnimation}
-            className="flex flex-col items-center justify-center"
+            className="flex flex-col items-center justify-center w-full"
           >
-            <motion.img
-              src={historyTimelineImg}
-              alt={historyTimelineSlot?.alt || "Institutional Timeline"}
-              className="rounded-2xl shadow-2xl w-full max-w-md object-cover object-center border-4 border-white"
-              style={{ aspectRatio: "4 / 3", height: "auto" }}
-              whileHover={{
-                scale: 1.05,
-                boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
-              }}
-              transition={{ duration: 0.4 }}
-            />
+            {loadingImages ? (
+              <div
+                className="rounded-2xl shadow-2xl w-full max-w-md border-4 border-white overflow-hidden"
+                style={{ aspectRatio: "4 / 3", minHeight: "260px" }}
+              >
+                <ImageSkeletonLoader title="Loading Timeline Image..." />
+              </div>
+            ) : (
+              <motion.img
+                src={historyTimelineImg}
+                alt={historyTimelineSlot?.alt || "Institutional Timeline"}
+                className="rounded-2xl shadow-2xl w-full max-w-md object-cover object-center border-4 border-white"
+                style={{ aspectRatio: "4 / 3", height: "auto" }}
+                whileHover={{
+                  scale: 1.05,
+                  boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
+                }}
+                transition={{ duration: 0.4 }}
+              />
+            )}
           </motion.div>
 
           {/* Content Section */}
@@ -922,20 +983,29 @@ export function History() {
 
           {/* Image Section */}
           <motion.div
-            className="flex items-center justify-center order-1 md:order-2"
+            className="flex items-center justify-center order-1 md:order-2 w-full"
             variants={imageAnimation}
           >
-            <motion.img
-              src={historyLegacyImg}
-              alt={historyLegacySlot?.alt || "Legacy of Excellence"}
-              className="rounded-2xl shadow-2xl w-full max-w-md object-cover object-center border-4 border-white"
-              style={{ aspectRatio: "4 / 3", height: "auto" }}
-              whileHover={{
-                scale: 1.05,
-                boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
-              }}
-              transition={{ duration: 0.4 }}
-            />
+            {loadingImages ? (
+              <div
+                className="rounded-2xl shadow-2xl w-full max-w-md border-4 border-white overflow-hidden"
+                style={{ aspectRatio: "4 / 3", minHeight: "260px" }}
+              >
+                <ImageSkeletonLoader title="Loading Legacy Image..." />
+              </div>
+            ) : (
+              <motion.img
+                src={historyLegacyImg}
+                alt={historyLegacySlot?.alt || "Legacy of Excellence"}
+                className="rounded-2xl shadow-2xl w-full max-w-md object-cover object-center border-4 border-white"
+                style={{ aspectRatio: "4 / 3", height: "auto" }}
+                whileHover={{
+                  scale: 1.05,
+                  boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
+                }}
+                transition={{ duration: 0.4 }}
+              />
+            )}
           </motion.div>
         </motion.div>
 
@@ -1364,6 +1434,7 @@ export function VisionMission() {
   const [visionMission, setVisionMission] = useState([]);
   const [coreValuesData, setCoreValuesData] = useState([]);
   const [aboutImages, setAboutImages] = useState([]);
+  const [loadingImages, setLoadingImages] = useState(true);
 
   const toggleCoreValue = (title) => {
     setExpandedCoreValues((prev) =>
@@ -1374,15 +1445,24 @@ export function VisionMission() {
   };
 
   useEffect(() => {
-    axiosInstance.get('/about/vision-mission').then(r => {
-      if (Array.isArray(r.data)) setVisionMission(r.data);
-    }).catch(() => { });
-    axiosInstance.get('/about/core-values').then(r => {
-      if (Array.isArray(r.data)) setCoreValuesData(r.data);
-    }).catch(() => { });
-    axiosInstance.get('/about/images').then(r => {
-      if (Array.isArray(r.data)) setAboutImages(r.data);
-    }).catch(() => { });
+    let active = true;
+    setLoadingImages(true);
+    Promise.all([
+      axiosInstance.get('/about/vision-mission'),
+      axiosInstance.get('/about/core-values'),
+      axiosInstance.get('/about/images')
+    ])
+      .then(([rVM, rCV, rImages]) => {
+        if (!active) return;
+        if (Array.isArray(rVM?.data)) setVisionMission(rVM.data);
+        if (Array.isArray(rCV?.data)) setCoreValuesData(rCV.data);
+        if (Array.isArray(rImages?.data)) setAboutImages(rImages.data);
+      })
+      .catch(() => { })
+      .finally(() => {
+        if (active) setLoadingImages(false);
+      });
+    return () => { active = false; };
   }, []);
 
   if (!isSectionVisible('about_vision_mission')) return <SectionOffNotice name="Vision & Mission" />;
@@ -1501,14 +1581,18 @@ export function VisionMission() {
               className="order-1 lg:order-1"
             >
               <div className="rounded-2xl overflow-hidden shadow-2xl bg-gradient-to-br from-amber-100 to-orange-100" style={{ aspectRatio: "4 / 3", maxHeight: "420px" }}>
-                <img
-                  src={visionImage}
-                  alt={altFor('visionMain', 'Our Vision for Medical Excellence')}
-                  className="w-full h-full object-cover object-center hover:scale-105 transition-transform duration-700"
-                  onError={(e) => {
-                    e.currentTarget.src = libraryImage;
-                  }}
-                />
+                {loadingImages ? (
+                  <ImageSkeletonLoader title="Loading Vision Image..." />
+                ) : (
+                  <img
+                    src={visionImage}
+                    alt={altFor('visionMain', 'Our Vision for Medical Excellence')}
+                    className="w-full h-full object-cover object-center hover:scale-105 transition-transform duration-700"
+                    onError={(e) => {
+                      e.currentTarget.src = libraryImage;
+                    }}
+                  />
+                )}
               </div>
             </motion.div>
 
@@ -1659,14 +1743,18 @@ export function VisionMission() {
               className="order-1 lg:order-2"
             >
               <div className="rounded-2xl overflow-hidden shadow-2xl bg-gradient-to-br from-orange-100 to-amber-100" style={{ aspectRatio: "4 / 3", maxHeight: "420px" }}>
-                <img
-                  src={missionImage}
-                  alt={altFor('missionMain', 'Our Mission in Action')}
-                  className="w-full h-full object-cover object-center hover:scale-105 transition-transform duration-700"
-                  onError={(e) => {
-                    e.currentTarget.src = laboratoryImage;
-                  }}
-                />
+                {loadingImages ? (
+                  <ImageSkeletonLoader title="Loading Mission Image..." />
+                ) : (
+                  <img
+                    src={missionImage}
+                    alt={altFor('missionMain', 'Our Mission in Action')}
+                    className="w-full h-full object-cover object-center hover:scale-105 transition-transform duration-700"
+                    onError={(e) => {
+                      e.currentTarget.src = laboratoryImage;
+                    }}
+                  />
+                )}
               </div>
             </motion.div>
 
