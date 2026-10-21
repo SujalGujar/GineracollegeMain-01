@@ -6,7 +6,8 @@ import {
   LogOut, Plus, Trash2, Edit3, ChevronRight, Upload, FileText,
   X, Menu, Save, CheckCircle2, AlertCircle, Layers, Info,
   ArrowLeft, Building2, Zap, ChevronDown, ChevronUp, Eye, EyeOff,
-  GraduationCap, Phone, MapPin, Sliders, Search, Clock, KeyRound, ShieldCheck
+  GraduationCap, Phone, MapPin, Sliders, Search, Clock, KeyRound, ShieldCheck,
+  Bell, Download
 } from "lucide-react";
 import axiosInstance, { getMediaUrl } from "../api/axiosInstance";
 import { useSectionVisibility } from "../context/SectionVisibilityContext";
@@ -923,6 +924,301 @@ const StudentCornerTab = ({ sections, openModal, setScForm, del }) => {
         </div>
       </div>
     </div>
+  );
+};
+
+// ── ANNOUNCEMENT FORM (Admission Announcements & PDF Upload) ─────────────────
+const AnnouncementForm = ({ editItem, announcementForm, setAnnouncementForm, closeModal, fetchData, notify }) => {
+  const [uploading, setUploading] = useState(false);
+  const [fileError, setFileError] = useState("");
+
+  const handlePdfChange = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setFileError("");
+    const isPdf = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
+    if (!isPdf) {
+      setFileError("Only PDF files (.pdf) are allowed.");
+      e.target.value = "";
+      return;
+    }
+
+    if (file.size > 500 * 1024) {
+      setFileError(`File size is ${(file.size / 1024).toFixed(1)} KB. Maximum allowed is 500 KB.`);
+      e.target.value = "";
+      return;
+    }
+
+    setAnnouncementForm(prev => ({
+      ...prev,
+      pdf: file,
+      formName: file.name,
+      formSize: file.size,
+      removeFile: false
+    }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (fileError) return;
+
+    setUploading(true);
+    const fd = new FormData();
+    fd.append("title", announcementForm.title || "");
+    fd.append("subtitle", announcementForm.subtitle || "");
+    fd.append("badge", announcementForm.badge || "");
+    fd.append("description", announcementForm.description || "");
+
+    const pointsList = typeof announcementForm.points === "string"
+      ? announcementForm.points.split("\n").map(p => p.trim()).filter(Boolean)
+      : (announcementForm.points || []);
+    fd.append("points", JSON.stringify(pointsList));
+
+    fd.append("isActive", announcementForm.isActive !== false ? "true" : "false");
+    fd.append("order", announcementForm.order || 0);
+
+    if (announcementForm.pdf) {
+      fd.append("pdf", announcementForm.pdf);
+    }
+    if (announcementForm.removeFile) {
+      fd.append("removeFile", "true");
+    }
+
+    try {
+      if (editItem) {
+        await axiosInstance.put(`/announcements/${editItem._id}`, fd);
+      } else {
+        await axiosInstance.post("/announcements", fd);
+      }
+      notify("Announcement saved successfully");
+      closeModal();
+      fetchData();
+    } catch (err) {
+      const msg = err.response?.data?.message || "Failed to save announcement";
+      notify(msg, "error");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-5">
+      <Field label="Announcement Title" required hint="Main heading displayed on the card">
+        <FInput
+          required
+          value={announcementForm.title || ""}
+          onChange={e => setAnnouncementForm({ ...announcementForm, title: e.target.value })}
+          placeholder="e.g. Admission Announcements Will Be Available Soon"
+        />
+      </Field>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <Field label="Status Badge" hint="Badge shown above title">
+          <FInput
+            value={announcementForm.badge || ""}
+            onChange={e => setAnnouncementForm({ ...announcementForm, badge: e.target.value })}
+            placeholder="e.g. Will Be Updated Soon, New Notice, Admission Open"
+          />
+        </Field>
+
+        <Field label="Sort Order" hint="Order of display (0 = top)">
+          <FInput
+            type="number"
+            value={announcementForm.order !== undefined ? announcementForm.order : 0}
+            onChange={e => setAnnouncementForm({ ...announcementForm, order: e.target.value })}
+          />
+        </Field>
+      </div>
+
+      <Field label="Announcement Description" required hint="Context text (Post Basic Diploma Course details)">
+        <FTextarea
+          rows={3}
+          required
+          value={announcementForm.description || ""}
+          onChange={e => setAnnouncementForm({ ...announcementForm, description: e.target.value })}
+          placeholder="The official admission notices, circulars, and application schedules for Post Basic Diploma Course in Nursing at Government / GMERS Medical / Nursing College (Government College of Nursing, GINERA, Ahmedabad) will be published here."
+        />
+      </Field>
+
+      <Field label="Key Points / Bullet Points" hint="Enter one bullet point per line">
+        <FTextarea
+          rows={3}
+          value={announcementForm.points || ""}
+          onChange={e => setAnnouncementForm({ ...announcementForm, points: e.target.value })}
+          placeholder="Official admission notifications and merit lists will be published here as soon as released.&#10;Post Basic Diploma Course in Nursing admissions are conducted for Government / GMERS Medical / Nursing College (Government College of Nursing, GINERA, Ahmedabad)."
+        />
+      </Field>
+
+      <FormSection title="Downloadable Form (PDF Max 500 KB)">
+        <div className="p-5 rounded-2xl border-2 space-y-4" style={{ background: "#FFFDF9", borderColor: "#F3E5D8" }}>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center">
+                <FileText size={18} />
+              </div>
+              <div>
+                <p className="text-sm font-extrabold text-gray-900">Application / Notice Form (PDF)</p>
+                <p className="text-[11px] text-gray-500">
+                  Strict limit: 500 KB. Once uploaded, a "Download Form" button automatically appears for students.
+                </p>
+              </div>
+            </div>
+            {announcementForm.existingPdf && !announcementForm.removeFile && (
+              <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300">
+                PDF Active on Website
+              </span>
+            )}
+          </div>
+
+          {/* Current existing PDF on server */}
+          {announcementForm.existingPdf && !announcementForm.removeFile && (
+            <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-9 h-9 rounded-lg bg-red-100 text-red-600 flex items-center justify-center font-black text-xs shrink-0">
+                  PDF
+                </div>
+                <div className="min-w-0">
+                  <p className="text-xs font-bold text-gray-900 truncate">
+                    {announcementForm.formName || "attached-announcement-form.pdf"}
+                  </p>
+                  {announcementForm.formSize > 0 && (
+                    <p className="text-[11px] text-gray-500">
+                      Size: {(announcementForm.formSize / 1024).toFixed(1)} KB · Currently visible on announcement page
+                    </p>
+                  )}
+                </div>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <a
+                  href={getMediaUrl(announcementForm.existingPdf)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-3 py-1.5 rounded-lg bg-white border border-amber-300 text-amber-700 hover:bg-amber-50 text-xs font-bold shadow-xs cursor-pointer inline-flex items-center gap-1"
+                >
+                  <Eye size={13} /> View PDF
+                </a>
+                <button
+                  type="button"
+                  onClick={() => setAnnouncementForm(prev => ({ ...prev, removeFile: true, pdf: null }))}
+                  className="px-3 py-1.5 rounded-lg bg-red-50 border border-red-200 text-red-600 hover:bg-red-100 text-xs font-bold cursor-pointer inline-flex items-center gap-1"
+                >
+                  <Trash2 size={13} /> Remove
+                </button>
+              </div>
+            </div>
+          )}
+
+          {announcementForm.removeFile && (
+            <div className="p-3 rounded-xl bg-red-50 border border-red-200 flex items-center justify-between">
+              <span className="text-xs text-red-700 font-semibold">
+                ⚠️ Current PDF marked for deletion upon clicking "Update Announcement".
+              </span>
+              <button
+                type="button"
+                onClick={() => setAnnouncementForm(prev => ({ ...prev, removeFile: false }))}
+                className="text-xs text-gray-800 underline font-bold cursor-pointer px-2 py-1 hover:text-gray-950"
+              >
+                Undo (Keep PDF)
+              </button>
+            </div>
+          )}
+
+          {/* New Selected PDF preview */}
+          {announcementForm.pdf && (
+            <div className="p-3.5 rounded-xl bg-emerald-50 border-2 border-emerald-300 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-9 h-9 rounded-lg bg-emerald-200 text-emerald-800 flex items-center justify-center font-black text-xs shrink-0">
+                  NEW
+                </div>
+                <div className="min-w-0">
+                  <p className="text-xs font-extrabold text-emerald-950 truncate">
+                    {announcementForm.pdf.name}
+                  </p>
+                  <p className="text-[11px] text-emerald-700 font-medium">
+                    {(announcementForm.pdf.size / 1024).toFixed(1)} KB · Ready to upload
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setAnnouncementForm(prev => ({ ...prev, pdf: null }))}
+                className="px-2.5 py-1 rounded-lg bg-white border border-emerald-300 text-emerald-800 text-xs font-bold cursor-pointer hover:bg-emerald-100"
+              >
+                Cancel
+              </button>
+            </div>
+          )}
+
+          {/* Prominent Upload Zone */}
+          <div>
+            <label
+              htmlFor="announcement-pdf-upload"
+              className="group flex flex-col items-center justify-center p-6 border-2 border-dashed rounded-2xl transition-all cursor-pointer hover:border-amber-500 hover:bg-amber-50/50"
+              style={{
+                borderColor: announcementForm.pdf ? "#10B981" : "#D97706",
+                background: announcementForm.pdf ? "#F0FDF4" : "#FFFBF5"
+              }}
+            >
+              <div className="w-12 h-12 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center mb-3 shadow-xs group-hover:scale-110 transition-transform">
+                <Upload size={22} className="text-amber-700" />
+              </div>
+              <p className="text-sm font-extrabold text-gray-900 text-center">
+                {announcementForm.pdf
+                  ? "Click to choose a different PDF file"
+                  : announcementForm.existingPdf && !announcementForm.removeFile
+                    ? "Click to Replace Current PDF Document"
+                    : "Click or Drag & Drop PDF Form Here"}
+              </p>
+              <p className="text-xs text-gray-500 mt-1 text-center">
+                Only PDF files (.pdf) up to <strong className="text-amber-800 font-bold">500 KB</strong> are accepted
+              </p>
+
+              <span
+                className="mt-3.5 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold text-white shadow-md transition-all group-hover:opacity-95"
+                style={{ background: "linear-gradient(135deg, #B45309 0%, #D97706 100%)" }}
+              >
+                <FileText size={14} />
+                <span>{announcementForm.pdf ? "Choose Another PDF" : "Browse & Select PDF (Max 500 KB)"}</span>
+              </span>
+
+              <input
+                id="announcement-pdf-upload"
+                type="file"
+                accept=".pdf,application/pdf"
+                onChange={handlePdfChange}
+                className="sr-only"
+              />
+            </label>
+
+            {fileError && (
+              <div className="mt-2.5 p-3 rounded-xl bg-red-50 border border-red-300 flex items-center gap-2 text-xs font-bold text-red-700">
+                <AlertCircle size={16} className="shrink-0" />
+                <span>{fileError}</span>
+              </div>
+            )}
+          </div>
+        </div>
+      </FormSection>
+
+      <div className="admin-form-actions flex gap-3 pt-2">
+        <button
+          type="button"
+          onClick={closeModal}
+          className={formBtnSecondary}
+        >
+          Cancel
+        </button>
+        <button
+          type="submit"
+          disabled={uploading}
+          className={formBtnPrimary}
+          style={{ background: C.brand }}
+        >
+          {uploading ? "Saving..." : editItem ? "Update Announcement" : "Create Announcement"}
+        </button>
+      </div>
+    </form>
   );
 };
 
@@ -3107,13 +3403,13 @@ const AboutTab = ({ aboutSub, setAboutSub, collegeLogo, setCollegeLogo, logoFile
   </div>
 );
 
-const AdmissionTab = ({ admSub, setAdmSub, courses, openModal, setCourseForm, del, admissionSteps, setStepForm, admissionRules, setRuleForm, bonds, setBondForm, guidelines, setGuidelineForm }) => {
+const AdmissionTab = ({ admSub, setAdmSub, courses, openModal, setCourseForm, del, admissionSteps, setStepForm, admissionRules, setRuleForm, bonds, setBondForm, guidelines, setGuidelineForm, announcements, setAnnouncementForm }) => {
   const [courseCategory, setCourseCategory] = useState('All');
   const courseCategories = ['All', ...Array.from(new Set(courses.map(course => course.category).filter(Boolean)))];
   const visibleCourses = courseCategory === 'All' ? courses : courses.filter(course => course.category === courseCategory);
   return (
   <div className="admission-manager-shell admin-clean-page">
-    <SubTabs tabs={["Courses","Procedure","Eligibility","Guidelines"]} active={admSub} onChange={setAdmSub}/>
+    <SubTabs tabs={["Courses","Procedure","Eligibility","Guidelines","Announcements"]} active={admSub} onChange={setAdmSub}/>
     
     {admSub === "Courses" && (
       <div className="space-y-6">
@@ -3208,7 +3504,145 @@ const AdmissionTab = ({ admSub, setAdmSub, courses, openModal, setCourseForm, de
         })}
       </div>
     )}
+
+    {admSub === "Announcements" && (
+      <AnnouncementsTab
+        announcements={announcements}
+        setAnnouncementForm={setAnnouncementForm}
+        openModal={openModal}
+        del={del}
+      />
+    )}
   </div>
+  );
+};
+
+const AnnouncementsTab = ({ announcements, setAnnouncementForm, openModal, del }) => {
+  return (
+    <div className="space-y-6">
+      <SectionHeader
+        icon={Bell}
+        title="Admission Announcements"
+        subtitle={`${(announcements || []).length} announcement(s) published · Visible on public Admission Announcement page`}
+        action={
+          <AddBtn
+            onClick={() => {
+              setAnnouncementForm({
+                title: "Admission Announcements Will Be Available Soon",
+                badge: "Will Be Updated Soon",
+                subtitle: "Official announcements, notices, and admission circulars for Government College of Nursing, GINERA.",
+                description: "The official admission notices, circulars, and application schedules for Post Basic Diploma Course in Nursing at Government / GMERS Medical / Nursing College (Government College of Nursing, GINERA, Ahmedabad) will be published here.",
+                points: "Official admission notifications and merit lists will be published here as soon as released.\nPost Basic Diploma Course in Nursing admissions are conducted for Government / GMERS Medical / Nursing College (Government College of Nursing, GINERA, Ahmedabad).",
+                pdf: null,
+                existingPdf: "",
+                formName: "",
+                formSize: 0,
+                removeFile: false,
+                isActive: true,
+                order: 0
+              });
+              openModal("announcement");
+            }}
+            label="Add Announcement"
+          />
+        }
+      />
+
+      {(!announcements || announcements.length === 0) ? (
+        <EmptyState icon={Bell} text="No announcements yet. Click 'Add Announcement' to create one." />
+      ) : (
+        <div className="grid grid-cols-1 gap-4">
+          {announcements.map((a, idx) => {
+            const hasPdf = Boolean(a.formUrl);
+            const pointsCount = Array.isArray(a.points) ? a.points.length : 0;
+            return (
+              <div
+                key={a._id || idx}
+                className="p-5 rounded-3xl group relative shadow-sm hover:shadow-md transition-all space-y-4"
+                style={{ background: C.surface, border: `1px solid ${C.border}` }}
+              >
+                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+                  <div className="flex items-start gap-3 flex-1 min-w-0">
+                    <div className="w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 bg-amber-100 text-amber-700 shadow-sm">
+                      <Bell size={20} />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2 flex-wrap mb-1">
+                        <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-amber-100 text-amber-800 border border-amber-200">
+                          {a.badge || "Will Be Updated Soon"}
+                        </span>
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${a.isActive !== false ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>
+                          {a.isActive !== false ? "Active (Visible)" : "Draft"}
+                        </span>
+                      </div>
+                      <h4 className="font-bold text-base text-gray-900 leading-snug">{a.title}</h4>
+                      <p className="text-xs text-gray-600 line-clamp-2 mt-1 leading-relaxed">{a.description}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <IconBtn
+                      title="Edit Announcement"
+                      onClick={() => {
+                        setAnnouncementForm({
+                          ...a,
+                          points: Array.isArray(a.points) ? a.points.join("\n") : (a.points || ""),
+                          pdf: null,
+                          existingPdf: a.formUrl || "",
+                          formName: a.formName || "",
+                          formSize: a.formSize || 0,
+                          removeFile: false
+                        });
+                        openModal("announcement", a);
+                      }}
+                    >
+                      <Edit3 size={14} />
+                    </IconBtn>
+                    <IconBtn
+                      danger
+                      title="Delete Announcement"
+                      onClick={() => del(`/announcements/${a._id}`)}
+                    >
+                      <Trash2 size={14} />
+                    </IconBtn>
+                  </div>
+                </div>
+
+                {/* Attachment Status */}
+                <div className="pt-3 border-t border-gray-100 flex flex-wrap items-center justify-between gap-2 text-xs">
+                  {hasPdf ? (
+                    <div className="flex items-center gap-2 text-amber-900 bg-amber-50 px-3 py-1.5 rounded-xl border border-amber-200">
+                      <FileText size={15} className="text-amber-600 shrink-0" />
+                      <span className="font-semibold truncate max-w-xs">{a.formName || "Attached Form (PDF)"}</span>
+                      {a.formSize > 0 && (
+                        <span className="text-[11px] text-gray-500">({(a.formSize / 1024).toFixed(0)} KB)</span>
+                      )}
+                      <a
+                        href={getMediaUrl(a.formUrl)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-amber-600 hover:text-amber-800 font-bold underline ml-1 cursor-pointer"
+                      >
+                        View/Download
+                      </a>
+                    </div>
+                  ) : (
+                    <div className="text-gray-400 italic flex items-center gap-1.5">
+                      <FileText size={14} />
+                      <span>No PDF form uploaded · Download button hidden from students</span>
+                    </div>
+                  )}
+
+                  <span className="text-[11px] text-gray-400 font-medium">
+                    {pointsCount} key point(s)
+                  </span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
   );
 };
 
@@ -5244,6 +5678,7 @@ const AdminPanel = ({ onLogout }) => {
   const [keyPersons, setKeyPersons] = useState([]);
   const [contactDepartments, setContactDepartments] = useState([]);
   const [contactInfo, setContactInfo] = useState({ address: "", receptionPhone: "", ambulancePhone: "", generalEmail: "" });
+  const [announcements, setAnnouncements] = useState([]);
 
   // Form States
   const [programForm, setProgramForm] = useState({ title:"",description:"",duration:"",category:"Undergraduate",courses:"",image:null });
@@ -5270,6 +5705,20 @@ const AdminPanel = ({ onLogout }) => {
   const [contactDeptForm, setContactDeptForm] = useState({ name:"",phone:"",email:"",icon:"📚" });
   const [studentCornerSections, setStudentCornerSections] = useState([]);
   const [scForm, setScForm] = useState({ title:'',subtitle:'',tag:'',icon:'📄',color:'#F59E0B',borderColor:'#FCD34D',badgeColor:'#D97706',items:[],description:'',order:0 });
+  const [announcementForm, setAnnouncementForm] = useState({
+    title: "Admission Announcements Will Be Available Soon",
+    subtitle: "Official announcements, notices, and admission circulars for Government College of Nursing, GINERA.",
+    badge: "Will Be Updated Soon",
+    description: "The official admission notices, circulars, and application schedules for Post Basic Diploma Course in Nursing at Government / GMERS Medical / Nursing College (Government College of Nursing, GINERA, Ahmedabad) will be published here.",
+    points: "Official admission notifications and merit lists will be published here as soon as released.\nPost Basic Diploma Course in Nursing admissions are conducted for Government / GMERS Medical / Nursing College (Government College of Nursing, GINERA, Ahmedabad).",
+    pdf: null,
+    existingPdf: "",
+    formName: "",
+    formSize: 0,
+    removeFile: false,
+    isActive: true,
+    order: 0
+  });
 
   const notify = (message, type = "success") => {
     setNote({ message, type });
@@ -5281,7 +5730,7 @@ const AdminPanel = ({ onLogout }) => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      // Student Corner is fetched independently below. This ensures it still
+      // Student Corner and Announcements are fetched independently below. This ensures it still
       // appears if an unrelated admin endpoint is temporarily unavailable.
       const r = await Promise.all([
         axiosInstance.get("/programs"),
@@ -5323,6 +5772,12 @@ const AdminPanel = ({ onLogout }) => {
         setStudentCornerSections([]);
         notify("Unable to load Student Corner data", "error");
       }
+      try {
+        const annRes = await axiosInstance.get("/announcements?all=true");
+        setAnnouncements(Array.isArray(annRes.data) ? annRes.data : []);
+      } catch {
+        setAnnouncements([]);
+      }
       setLoading(false);
     }
   };
@@ -5362,6 +5817,7 @@ const AdminPanel = ({ onLogout }) => {
     { name: "Testimonials", icon: Users },
     { name: "About Us",     icon: Info },
     { name: "Admission",    icon: Layers },
+    { name: "Announcement", icon: Bell },
     { name: "Departments",  icon: Building2 },
     { name: "Institutes",   icon: Building2 },
     { name: "Gallery",         icon: ImageIcon },
@@ -5387,6 +5843,7 @@ const AdminPanel = ({ onLogout }) => {
     keyPerson:    { title: editItem ? "Edit Contact"    : "Add Contact",    subtitle: "Key administrative contact" },
     contactDept:  { title: editItem ? "Edit Dept"       : "Add Dept",       subtitle: "Contact department" },
     studentCorner:{ title: editItem ? "Edit Section"    : "Add Section",    subtitle: "Student Corner document section" },
+    announcement: { title: editItem ? "Edit Announcement": "Add Announcement", subtitle: "Admission announcement & PDF form" },
   }[modalType] || {};
 
   return (
@@ -5714,7 +6171,8 @@ const AdminPanel = ({ onLogout }) => {
                   {activeTab === "Academic" && <AcademicTab programs={programs} academicContent={academicContent} setAcademicContent={setAcademicContent} axiosInstance={axiosInstance} notify={notify} openModal={openModal} setProgramForm={setProgramForm} del={del}/>}
                   {activeTab === "Testimonials" && <TestimonialsTab testimonials={testimonials} testimonialForm={testimonialForm} setTestimonialForm={setTestimonialForm} openModal={openModal} del={del}/>}
                   {activeTab === "About Us" && <AboutTab aboutSub={aboutSub} setAboutSub={setAboutSub} collegeLogo={collegeLogo} setCollegeLogo={setCollegeLogo} logoFile={logoFile} setLogoFile={setLogoFile} deanMessage={deanMessage} setDeanMessage={setDeanMessage} deanPhotoFile={deanPhotoFile} setDeanPhotoFile={setDeanPhotoFile} milestones={milestones} milestoneForm={milestoneForm} setMilestoneForm={setMilestoneForm} openModal={openModal} setMilestones={setMilestones} visionMission={visionMission} setVmForm={setVmForm} coreValues={coreValues} setCvForm={setCvForm} aboutImages={aboutImages} setAboutImages={setAboutImages} aboutImageFiles={aboutImageFiles} setAboutImageFiles={setAboutImageFiles} historyContent={historyContent} setHistoryContent={setHistoryContent} axiosInstance={axiosInstance} notify={notify} del={del}/>}
-                  {activeTab === "Admission" && <AdmissionTab admSub={admSub} setAdmSub={setAdmSub} courses={courses} openModal={openModal} setCourseForm={setCourseForm} del={del} admissionSteps={admissionSteps} setStepForm={setStepForm} admissionRules={admissionRules} setRuleForm={setRuleForm} bonds={bonds} setBondForm={setBondForm} guidelines={guidelines} setGuidelineForm={setGuidelineForm}/>}
+                  {activeTab === "Admission" && <AdmissionTab admSub={admSub} setAdmSub={setAdmSub} courses={courses} openModal={openModal} setCourseForm={setCourseForm} del={del} admissionSteps={admissionSteps} setStepForm={setStepForm} admissionRules={admissionRules} setRuleForm={setRuleForm} bonds={bonds} setBondForm={setBondForm} guidelines={guidelines} setGuidelineForm={setGuidelineForm} announcements={announcements} setAnnouncementForm={setAnnouncementForm}/>}
+                  {activeTab === "Announcement" && <AnnouncementsTab announcements={announcements} setAnnouncementForm={setAnnouncementForm} openModal={openModal} del={del}/>}
                   {activeTab === "Departments" && <DepartmentsTab selectedDept={selectedDept} setSelectedDept={setSelectedDept} departments={departments} deptForm={deptForm} setDeptForm={setDeptForm} deptSub={deptSub} setDeptSub={setDeptSub} deptFacultyForm={deptFacultyForm} setDeptFacultyForm={setDeptFacultyForm} deptFacilityInput={deptFacilityInput} setDeptFacilityInput={setDeptFacilityInput} deptActivityInput={deptActivityInput} setDeptActivityInput={setDeptActivityInput} sliders={sliders} axiosInstance={axiosInstance} fetchData={fetchData} notify={notify} openModal={openModal} del={del} handleSliderUpload={handleSliderUpload}/>}
                   {activeTab === "Gallery" && <GalleryTab galleryImages={galleryImages} galleryForm={galleryForm} setGalleryForm={setGalleryForm} openModal={openModal} del={del} />}
                   {activeTab === "Institutes" && <InstitutesTab institutes={institutes} openModal={openModal} del={del} />}
@@ -5749,6 +6207,7 @@ const AdminPanel = ({ onLogout }) => {
         {modalType === "keyPerson" && <KeyPersonForm editItem={editItem} keyPersonForm={keyPersonForm} setKeyPersonForm={setKeyPersonForm} closeModal={closeModal} fetchData={fetchData} notify={notify} axiosInstance={axiosInstance}/>}
         {modalType === "contactDept" && <ContactDeptForm editItem={editItem} contactDeptForm={contactDeptForm} setContactDeptForm={setContactDeptForm} closeModal={closeModal} fetchData={fetchData} notify={notify} axiosInstance={axiosInstance}/>}
         {modalType === "studentCorner" && <StudentCornerForm editItem={editItem} scForm={scForm} setScForm={setScForm} closeModal={closeModal} fetchData={fetchData} notify={notify}/>}
+        {modalType === "announcement" && <AnnouncementForm editItem={editItem} announcementForm={announcementForm} setAnnouncementForm={setAnnouncementForm} closeModal={closeModal} fetchData={fetchData} notify={notify}/>}
       </Modal>
       <ResetPasswordModal
         show={showResetPasswordModal}

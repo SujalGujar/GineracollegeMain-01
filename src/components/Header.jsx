@@ -1,7 +1,7 @@
 import React from "react";
 import { Button } from "./ui/button.jsx";
 import { Sheet, SheetContent, SheetTrigger } from "./ui/sheet.jsx";
-import { Menu, User, ChevronDown } from "lucide-react";
+import { Menu, User, ChevronDown, Bell, Megaphone, ArrowRight, X } from "lucide-react";
 import gineraLogo2 from "../images/ginera-logo2.png";
 import gineraLogo from "../images/ginera-logo.png";
 import axiosInstance, { getMediaUrl } from "../api/axiosInstance";
@@ -97,6 +97,85 @@ const PAGE_SECTION_MAP = {
 
   "student-corner": "student-corner",
 };
+
+// ── Announcement Ticker Banner (Displays on all pages) ─────────────────
+function AnnouncementTicker({ onNavigate }) {
+  const [tickerDismissed, setTickerDismissed] = React.useState(() => {
+    try {
+      return sessionStorage.getItem("ginera_ticker_dismissed") === "true";
+    } catch {
+      return false;
+    }
+  });
+
+  const handleDismiss = () => {
+    setTickerDismissed(true);
+    try {
+      sessionStorage.setItem("ginera_ticker_dismissed", "true");
+    } catch {}
+  };
+
+  if (tickerDismissed) return null;
+
+  return (
+    <div
+      className="relative z-50 text-white overflow-hidden py-2 px-3 sm:px-6 shadow-sm border-b"
+      style={{
+        background: "linear-gradient(90deg, #4E2B12 0%, #6B3F1D 30%, #B45309 70%, #D97706 100%)",
+        borderColor: "rgba(253, 230, 138, 0.25)"
+      }}
+    >
+      <div className="container mx-auto flex items-center justify-between gap-3 text-xs sm:text-sm">
+        {/* Left Badge */}
+        <div className="flex items-center gap-2 shrink-0">
+          <span
+            className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] sm:text-[11px] font-black uppercase tracking-wider shadow-sm"
+            style={{ background: "#F59E0B", color: "#4E2B12" }}
+          >
+            <Megaphone className="w-3.5 h-3.5 animate-bounce" />
+            <span>Announcement</span>
+          </span>
+        </div>
+
+        {/* Center Marquee / Ticker Text */}
+        <div className="flex-1 overflow-hidden min-w-0">
+          <div
+            className="truncate font-semibold tracking-wide text-amber-50 hover:text-white transition-colors cursor-pointer text-left"
+            onClick={() => onNavigate("announcements")}
+          >
+            Post Basic Diploma Course in Nursing (Government / GMERS Medical College) — Official Admission Notice & Application Form Available!
+          </div>
+        </div>
+
+        {/* Right Actions: Click Button + Cancel Button */}
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            onClick={() => onNavigate("announcements")}
+            className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-xs font-black shadow-md transition-all duration-150 transform hover:scale-105 active:scale-95 cursor-pointer whitespace-nowrap"
+            style={{
+              background: "#FFFFFF",
+              color: "#92400E",
+              border: "1px solid #FDE68A"
+            }}
+          >
+            <span>Click Here</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </button>
+
+          <button
+            type="button"
+            onClick={handleDismiss}
+            title="Remove announcement banner"
+            aria-label="Remove announcement banner"
+            className="p-1 rounded-full hover:bg-black/20 text-amber-200 hover:text-white transition-colors cursor-pointer"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export function Header({ currentPage, onNavigate }) {
   const [isSheetOpen, setIsSheetOpen] = React.useState(false);
@@ -214,6 +293,9 @@ export function Header({ currentPage, onNavigate }) {
 
   return (
     <>
+      {/* Top Announcement Slider / Ticker Banner (All Pages) */}
+      <AnnouncementTicker onNavigate={handleNavigation} />
+
       {/* Main Header */}
       <header className="bg-white border-b border-border shadow-sm sticky top-0 z-50">
         <div className="container mx-auto px-4">
@@ -248,6 +330,7 @@ export function Header({ currentPage, onNavigate }) {
                   const isActive =
                     currentPage === item.key || activeSection === item.key;
                   const isContact = item.key === "contact";
+                  const isAnnouncement = item.key === "announcements" || item.key === "announcement";
 
                   return (
                     <div key={item.key} className="relative">
@@ -263,24 +346,36 @@ export function Header({ currentPage, onNavigate }) {
                         }}
                         className={[
                           "inline-flex items-center h-10 px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 focus:outline-none cursor-pointer",
-                          isContact
-                            ? "text-white"
-                            : isActive
-                              ? "bg-orange-50 text-orange-600"
-                              : "text-gray-700 hover:bg-orange-50 hover:text-orange-600",
-                          isOpen && !isContact
+                          isAnnouncement
+                            ? "text-white rounded-xl"
+                            : isContact
+                              ? "text-white"
+                              : isActive
+                                ? "bg-orange-50 text-orange-600"
+                                : "text-gray-700 hover:bg-orange-50 hover:text-orange-600",
+                          isOpen && !isContact && !isAnnouncement
                             ? "bg-orange-50 text-orange-600"
                             : "",
                         ]
                           .filter(Boolean)
                           .join(" ")}
                         style={
-                          isContact
+                          isAnnouncement
                             ? {
-                                backgroundColor:
-                                  currentPage === "contact" ? "#D97706" : "#F59E0B",
+                                background: isActive
+                                  ? "linear-gradient(135deg, #92400E 0%, #B45309 50%, #D97706 100%)"
+                                  : "linear-gradient(135deg, #B45309 0%, #D97706 50%, #F59E0B 100%)",
+                                color: "#FFFFFF",
+                                border: "1.5px solid #FDE68A",
+                                boxShadow: "0 4px 14px rgba(217, 119, 6, 0.4)",
+                                fontWeight: "bold"
                               }
-                            : undefined
+                            : isContact
+                              ? {
+                                  backgroundColor:
+                                    currentPage === "contact" ? "#D97706" : "#F59E0B",
+                                }
+                              : undefined
                         }
                         onMouseEnter={(e) => {
                           if (isContact)
@@ -382,6 +477,7 @@ export function Header({ currentPage, onNavigate }) {
                       const isActive =
                         currentPage === item.key || activeSection === item.key;
                       const isContact = item.key === "contact";
+                      const isAnnouncement = item.key === "announcements" || item.key === "announcement";
 
                       return (
                         <div key={item.key}>
@@ -395,26 +491,35 @@ export function Header({ currentPage, onNavigate }) {
                             }}
                             className={[
                               "w-full flex items-center justify-between px-4 py-2.5 rounded-md text-sm font-medium transition-colors cursor-pointer",
-                              isContact
-                                ? "text-white rounded-md"
-                                : isActive
-                                  ? "bg-orange-50 text-orange-600"
-                                  : "text-gray-700 hover:bg-orange-50 hover:text-orange-600",
+                              isAnnouncement
+                                ? "text-white rounded-xl font-bold"
+                                : isContact
+                                  ? "text-white rounded-md"
+                                  : isActive
+                                    ? "bg-orange-50 text-orange-600"
+                                    : "text-gray-700 hover:bg-orange-50 hover:text-orange-600",
                             ]
                               .filter(Boolean)
                               .join(" ")}
                             style={
-                              isContact
+                              isAnnouncement
                                 ? {
-                                    backgroundColor:
-                                      currentPage === "contact"
-                                        ? "#D97706"
-                                        : "#F59E0B",
+                                    background: "linear-gradient(135deg, #B45309 0%, #D97706 50%, #F59E0B 100%)",
+                                    color: "#FFFFFF",
+                                    border: "1.5px solid #FDE68A",
+                                    boxShadow: "0 3px 10px rgba(217, 119, 6, 0.35)",
                                   }
-                                : undefined
+                                : isContact
+                                  ? {
+                                      backgroundColor:
+                                        currentPage === "contact"
+                                          ? "#D97706"
+                                          : "#F59E0B",
+                                    }
+                                  : undefined
                             }
                           >
-                            {item.label}
+                            <span>{item.label}</span>
                             {hasSubpages && (
                               <ChevronDown
                                 className={`h-4 w-4 transition-transform duration-200 ${
