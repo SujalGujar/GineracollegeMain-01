@@ -145,18 +145,25 @@ const FSelect = ({ className = '', style = {}, ...props }) => (
 );
 
 const Modal = ({ show, onClose, title, subtitle, children }) => {
+  useEffect(() => {
+    if (show) {
+      const prevOverflow = document.body.style.overflow;
+      document.body.style.overflow = "hidden";
+      return () => {
+        document.body.style.overflow = prevOverflow;
+      };
+    }
+  }, [show]);
+
   if (typeof document === 'undefined') return null;
   return createPortal(
     <AnimatePresence>
       {show && (
         <div
-          className="admin-modal-overlay fixed inset-0 flex items-center justify-center p-4 sm:p-6"
+          className="admin-modal-overlay fixed inset-0 flex items-center justify-center p-3 sm:p-5"
           style={{
             fontFamily: "'DM Sans', sans-serif",
             zIndex: 9999,
-            minHeight: '100dvh',
-            overflow: 'hidden',
-            padding: 'clamp(14px, 2.4vw, 28px)',
           }}>
           {/* Custom style for Modal Form Scrollbar */}
           <style>{`
@@ -185,23 +192,33 @@ const Modal = ({ show, onClose, title, subtitle, children }) => {
               min-height: 0;
             }
             .admin-modal-overlay {
-              align-items: center !important;
-              justify-content: center !important;
+              position: fixed !important;
               inset: 0 !important;
               width: 100vw !important;
-              min-height: 100dvh !important;
+              height: 100vh !important;
+              height: 100dvh !important;
+              display: flex !important;
+              align-items: center !important;
+              justify-content: center !important;
+              overflow-y: auto !important;
+              -webkit-overflow-scrolling: touch !important;
+              padding: clamp(14px, 2.5vh, 28px) clamp(12px, 2vw, 24px) !important;
             }
             .admin-modal-card {
-              margin: 0 auto !important;
+              margin: auto !important;
               width: min(720px, calc(100vw - 32px)) !important;
-              max-height: calc(100dvh - 32px) !important;
+              max-height: calc(100dvh - 36px) !important;
               height: auto !important;
               border-radius: 18px !important;
               box-shadow: 0 30px 80px rgba(26, 18, 8, 0.32) !important;
+              display: flex !important;
+              flex-direction: column !important;
+              flex-shrink: 0 !important;
+              position: relative !important;
             }
             .admin-modal-header {
               padding: 20px 24px !important;
-              min-height: 78px;
+              min-height: 72px;
               gap: 18px;
             }
             .admin-modal-header h3,
@@ -218,8 +235,9 @@ const Modal = ({ show, onClose, title, subtitle, children }) => {
             }
             .admin-modal-body {
               padding: 24px !important;
-              max-height: calc(100dvh - 110px) !important;
+              max-height: calc(100dvh - 120px) !important;
               background: #FAFAF9 !important;
+              min-height: 0;
             }
             .admin-modal-body form .grid {
               display: grid !important;
@@ -252,11 +270,18 @@ const Modal = ({ show, onClose, title, subtitle, children }) => {
             .admin-modal-body label {
               max-width: 100%;
             }
-            .admin-modal-body input,
+            .admin-modal-body input:not([type="file"]):not([type="checkbox"]):not([type="radio"]),
             .admin-modal-body select,
             .admin-modal-body textarea,
             .admin-modal-body .admin-field > label {
               min-height: 46px;
+            }
+            .admin-modal-body input[type="file"] {
+              display: none !important;
+              height: 0 !important;
+              width: 0 !important;
+              opacity: 0 !important;
+              position: absolute !important;
             }
             .admin-form-actions {
               position: sticky;
@@ -1187,7 +1212,7 @@ const AnnouncementForm = ({ editItem, announcementForm, setAnnouncementForm, clo
                 type="file"
                 accept=".pdf,application/pdf"
                 onChange={handlePdfChange}
-                className="sr-only"
+                className="hidden"
               />
             </label>
 
@@ -1201,20 +1226,22 @@ const AnnouncementForm = ({ editItem, announcementForm, setAnnouncementForm, clo
         </div>
       </FormSection>
 
-      <div className="admin-form-actions flex gap-3 pt-2">
+      <div className="admin-form-actions flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-3 pt-5 mt-2 border-t" style={{ borderColor: '#EDE9E4' }}>
         <button
           type="button"
           onClick={closeModal}
-          className={formBtnSecondary}
+          className={`${formBtnSecondary} w-full sm:w-auto`}
+          style={{ borderColor: '#D1C7BC', minWidth: '120px' }}
         >
           Cancel
         </button>
         <button
           type="submit"
           disabled={uploading}
-          className={formBtnPrimary}
-          style={{ background: C.brand }}
+          className={`${formBtnPrimary} w-full sm:w-auto sm:min-w-[190px]`}
+          style={{ background: 'linear-gradient(135deg, #6B3F1D 0%, #9B6A43 100%)', justifyContent: 'center' }}
         >
+          <Save size={16} />
           {uploading ? "Saving..." : editItem ? "Update Announcement" : "Create Announcement"}
         </button>
       </div>

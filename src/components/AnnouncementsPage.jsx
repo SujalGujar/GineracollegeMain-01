@@ -9,8 +9,7 @@ import {
   ShieldCheck,
   Building2,
   CalendarCheck,
-  Download,
-  FileText
+  Download
 } from "lucide-react";
 import backgroundImage4 from "../images/backgroundImage4_opt.jpg";
 import axiosInstance, { getMediaUrl } from "../api/axiosInstance";
@@ -169,22 +168,6 @@ export function AnnouncementsPage({ onNavigate }) {
                             {(item.formSize / 1024).toFixed(0)} KB
                           </span>
                         )}
-                      </a>
-
-                      <a
-                        href={downloadUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-2 px-6 py-3.5 rounded-2xl font-bold text-sm border-2 transition-all duration-200 hover:bg-orange-50 cursor-pointer"
-                        style={{
-                          background: "#FFFFFF",
-                          color: "#B45309",
-                          borderColor: "#F59E0B",
-                          boxShadow: "0 4px 12px rgba(0,0,0,0.06)"
-                        }}
-                      >
-                        <FileText className="w-4 h-4 text-amber-600" />
-                        <span>View / Preview</span>
                       </a>
                     </div>
 
