@@ -952,15 +952,21 @@ const StudentCornerTab = ({ sections, openModal, setScForm, del }) => {
   );
 };
 
-// ── ANNOUNCEMENT FORM (Admission Announcements & Multi-File PDF / Excel Upload) ──
+// ── ANNOUNCEMENT FORM (Admission Announcements & Multi-File PDF / Excel Upload with 5-file limit) ──
 const AnnouncementForm = ({ editItem, announcementForm, setAnnouncementForm, closeModal, fetchData, notify }) => {
   const [uploading, setUploading] = useState(false);
   const [fileError, setFileError] = useState("");
+  const [quickTitle, setQuickTitle] = useState("");
+
+  const MAX_ANNOUNCEMENT_FILES = 5;
 
   const existingFiles = Array.isArray(announcementForm.existingFiles) ? announcementForm.existingFiles : [];
   const stagedFiles = Array.isArray(announcementForm.files) ? announcementForm.files : [];
+  const totalFilesCount = existingFiles.length + stagedFiles.length;
+  const remainingSlots = Math.max(0, MAX_ANNOUNCEMENT_FILES - totalFilesCount);
+  const isLimitReached = totalFilesCount >= MAX_ANNOUNCEMENT_FILES;
 
-  const handleFilesChange = (e) => {
+  const handleFilesChange = (e, customTitle = "") => {
     const selected = Array.from(e.target.files || []);
     if (!selected.length) return;
 
@@ -968,7 +974,13 @@ const AnnouncementForm = ({ editItem, announcementForm, setAnnouncementForm, clo
     const allowedExts = [".pdf", ".xlsx", ".xls", ".csv"];
     const maxSizeBytes = 10 * 1024 * 1024; // 10 MB
 
-    const validNewFiles = [];
+    if (totalFilesCount + selected.length > MAX_ANNOUNCEMENT_FILES) {
+      setFileError(`Limit reached: Maximum ${MAX_ANNOUNCEMENT_FILES} files allowed. You have ${totalFilesCount} and selected ${selected.length}. Only ${remainingSlots} more can be added.`);
+      e.target.value = "";
+      return;
+    }
+
+    const validNewItems = [];
     for (const file of selected) {
       const ext = file.name.substring(file.name.lastIndexOf(".")).toLowerCase();
       if (!allowedExts.includes(ext)) {
@@ -981,14 +993,43 @@ const AnnouncementForm = ({ editItem, announcementForm, setAnnouncementForm, clo
         e.target.value = "";
         return;
       }
-      validNewFiles.push(file);
+
+      // Default display name: custom title if provided, otherwise clean filename without extension
+      const defaultTitle = customTitle.trim() || file.name.replace(/\.[^/.]+$/, "").replace(/[_-]/g, " ");
+      validNewItems.push({
+        file,
+        displayName: defaultTitle
+      });
     }
 
     setAnnouncementForm(prev => ({
       ...prev,
-      files: [...(prev.files || []), ...validNewFiles]
+      files: [...(prev.files || []), ...validNewItems]
     }));
+    setQuickTitle("");
     e.target.value = "";
+  };
+
+  const handleUpdateStagedDisplayName = (index, newTitle) => {
+    setAnnouncementForm(prev => {
+      const updated = [...(prev.files || [])];
+      if (updated[index]) {
+        updated[index] = {
+          ...updated[index],
+          displayName: newTitle
+        };
+      }
+      return { ...prev, files: updated };
+    });
+  };
+
+  const handleUpdateExistingDisplayName = (fileUrl, newTitle) => {
+    setAnnouncementForm(prev => ({
+      ...prev,
+      existingFiles: (prev.existingFiles || []).map(f =>
+        f.fileUrl === fileUrl ? { ...f, displayName: newTitle } : f
+      )
+    }));
   };
 
   const handleRemoveExistingFile = (fileUrl) => {
@@ -996,6 +1037,7 @@ const AnnouncementForm = ({ editItem, announcementForm, setAnnouncementForm, clo
       ...prev,
       existingFiles: (prev.existingFiles || []).filter(f => f.fileUrl !== fileUrl)
     }));
+    setFileError("");
   };
 
   const handleRemoveStagedFile = (index) => {
@@ -1003,11 +1045,17 @@ const AnnouncementForm = ({ editItem, announcementForm, setAnnouncementForm, clo
       ...prev,
       files: (prev.files || []).filter((_, i) => i !== index)
     }));
+    setFileError("");
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (fileError) return;
+
+    if (totalFilesCount > MAX_ANNOUNCEMENT_FILES) {
+      setFileError(`Please remove files so total does not exceed ${MAX_ANNOUNCEMENT_FILES}.`);
+      return;
+    }
 
     setUploading(true);
     const fd = new FormData();
@@ -1024,11 +1072,22 @@ const AnnouncementForm = ({ editItem, announcementForm, setAnnouncementForm, clo
     fd.append("isActive", announcementForm.isActive !== false ? "true" : "false");
     fd.append("order", announcementForm.order || 0);
 
-    // Retained files JSON
+    // Retained files JSON (including updated display names)
     fd.append("retainedFiles", JSON.stringify(existingFiles));
 
-    // Append newly added files
-    stagedFiles.forEach(file => {
+    // File details for newly staged files
+    const details = stagedFiles.map(s => {
+      const f = s.file || s;
+      return {
+        fileName: f.name,
+        displayName: (s.displayName || f.name).trim()
+      };
+    });
+    fd.append("fileDetails", JSON.stringify(details));
+
+    // Append newly added binary files
+    stagedFiles.forEach(s => {
+      const file = s.file || s;
       fd.append("files", file);
     });
 
@@ -1097,49 +1156,86 @@ const AnnouncementForm = ({ editItem, announcementForm, setAnnouncementForm, clo
         />
       </Field>
 
-      <FormSection title="Downloadable Documents (Multiple PDFs & Excel Sheets)">
+      <FormSection title={`Downloadable Documents (Max ${MAX_ANNOUNCEMENT_FILES} PDFs & Excel Sheets)`}>
         <div className="p-5 rounded-2xl border-2 space-y-4" style={{ background: "#FFFDF9", borderColor: "#F3E5D8" }}>
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-orange-100">
             <div className="flex items-center gap-2">
               <div className="w-9 h-9 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center shrink-0">
                 <FileSpreadsheet size={18} />
               </div>
               <div>
-                <p className="text-sm font-extrabold text-gray-900">Application Forms, Circulars & Merit Lists</p>
+                <p className="text-sm font-extrabold text-gray-900">Application Forms, Circulars &amp; Merit Lists</p>
                 <p className="text-[11px] text-gray-500">
-                  Attach multiple documents. Supports PDF (.pdf) and Excel spreadsheets (.xlsx, .xls, .csv) up to 10 MB each.
+                  Attach up to {MAX_ANNOUNCEMENT_FILES} documents with custom title details. Supports PDF (.pdf) and Excel (.xlsx, .xls, .csv).
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-1.5 self-start sm:self-center">
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-100 text-red-800 border border-red-200">
-                PDF
-              </span>
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
-                Excel / CSV
+            <div className="flex items-center gap-2 self-start sm:self-center">
+              <span
+                className={`text-xs font-black px-2.5 py-1 rounded-full border ${
+                  isLimitReached
+                    ? "bg-red-100 text-red-800 border-red-300"
+                    : "bg-amber-100 text-amber-800 border-amber-300"
+                }`}
+              >
+                {totalFilesCount} / {MAX_ANNOUNCEMENT_FILES} Files {isLimitReached ? "(Max Reached)" : ""}
               </span>
             </div>
           </div>
+
+          {/* Quick Single-Field: Add File With Details In One Place */}
+          {!isLimitReached && (
+            <div className="p-3.5 rounded-xl border border-amber-200 bg-amber-50/60 space-y-2.5">
+              <p className="text-xs font-bold text-amber-950 flex items-center gap-1.5">
+                <Plus size={14} className="text-amber-700" />
+                <span>Add Document With Details (Title &amp; File)</span>
+              </p>
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                <input
+                  type="text"
+                  placeholder="Document Title / Details (e.g. Admission Application Form 2026)"
+                  value={quickTitle}
+                  onChange={(e) => setQuickTitle(e.target.value)}
+                  className="flex-1 text-xs px-3 py-2 rounded-xl border border-amber-300 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 font-medium"
+                />
+                <label
+                  htmlFor="quick-single-file-upload"
+                  className="px-4 py-2 rounded-xl text-xs font-bold text-white shadow-xs hover:opacity-95 cursor-pointer flex items-center justify-center gap-1.5 shrink-0"
+                  style={{ background: "linear-gradient(135deg, #B45309 0%, #D97706 100%)" }}
+                >
+                  <Upload size={13} />
+                  <span>Choose &amp; Attach File</span>
+                </label>
+                <input
+                  id="quick-single-file-upload"
+                  type="file"
+                  accept=".pdf,.xlsx,.xls,.csv,application/pdf,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv"
+                  onChange={(e) => handleFilesChange(e, quickTitle)}
+                  className="hidden"
+                />
+              </div>
+            </div>
+          )}
 
           {/* List of currently active existing files */}
           {existingFiles.length > 0 && (
             <div className="space-y-2">
               <p className="text-[11px] font-bold uppercase tracking-wider text-gray-600">
-                Files Active On Website ({existingFiles.length})
+                Active Website Documents ({existingFiles.length})
               </p>
-              <div className="space-y-2">
+              <div className="space-y-2.5">
                 {existingFiles.map((file, idx) => {
                   const isExcel = file.fileType === "excel" || file.fileName?.toLowerCase().endsWith(".xlsx") || file.fileName?.toLowerCase().endsWith(".xls") || file.fileName?.toLowerCase().endsWith(".csv");
                   return (
                     <div
                       key={file.fileUrl || idx}
-                      className="p-3 rounded-xl border flex items-center justify-between gap-3 transition-all"
+                      className="p-3 rounded-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-all"
                       style={{
                         background: isExcel ? "#F0FDF4" : "#FEF2F2",
                         borderColor: isExcel ? "#BBF7D0" : "#FECACA"
                       }}
                     >
-                      <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="flex items-center gap-2.5 min-w-0 flex-1">
                         <div
                           className="w-8 h-8 rounded-lg flex items-center justify-center font-black text-xs shrink-0"
                           style={{
@@ -1149,16 +1245,22 @@ const AnnouncementForm = ({ editItem, announcementForm, setAnnouncementForm, clo
                         >
                           {isExcel ? <FileSpreadsheet size={16} /> : <FileText size={16} />}
                         </div>
-                        <div className="min-w-0">
-                          <p className="text-xs font-bold text-gray-900 truncate">
-                            {file.fileName || "document"}
-                          </p>
-                          <p className="text-[11px] text-gray-500">
-                            {file.fileSize > 0 ? `${(file.fileSize / 1024).toFixed(1)} KB` : "Uploaded Document"} · {isExcel ? "Excel Spreadsheet" : "PDF Document"}
+                        <div className="min-w-0 flex-1 space-y-1">
+                          <input
+                            type="text"
+                            value={file.displayName || file.fileName || ""}
+                            onChange={(e) => handleUpdateExistingDisplayName(file.fileUrl, e.target.value)}
+                            placeholder="Document title / details shown on card"
+                            className="w-full text-xs font-bold px-2 py-1 rounded-md border bg-white focus:outline-none focus:ring-1 focus:ring-amber-500"
+                            style={{ borderColor: isExcel ? "#86EFAC" : "#FCA5A5" }}
+                            title="Edit Document Title / Details"
+                          />
+                          <p className="text-[10px] text-gray-500 truncate">
+                            File: {file.fileName} · {file.fileSize > 0 ? `${(file.fileSize / 1024).toFixed(1)} KB` : "Uploaded Document"} · {isExcel ? "Excel" : "PDF"}
                           </p>
                         </div>
                       </div>
-                      <div className="flex items-center gap-1.5 shrink-0">
+                      <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-center">
                         <a
                           href={getMediaUrl(file.fileUrl)}
                           target="_blank"
@@ -1188,33 +1290,39 @@ const AnnouncementForm = ({ editItem, announcementForm, setAnnouncementForm, clo
           {stagedFiles.length > 0 && (
             <div className="space-y-2">
               <p className="text-[11px] font-bold uppercase tracking-wider text-emerald-800">
-                New Files Ready To Upload ({stagedFiles.length})
+                New Documents Ready To Upload ({stagedFiles.length})
               </p>
-              <div className="space-y-2">
-                {stagedFiles.map((file, idx) => {
+              <div className="space-y-2.5">
+                {stagedFiles.map((item, idx) => {
+                  const file = item.file || item;
                   const isExcel = file.name.toLowerCase().endsWith(".xlsx") || file.name.toLowerCase().endsWith(".xls") || file.name.toLowerCase().endsWith(".csv");
                   return (
                     <div
                       key={idx}
-                      className="p-3 rounded-xl bg-emerald-50/80 border-2 border-emerald-300 flex items-center justify-between gap-3"
+                      className="p-3 rounded-xl bg-emerald-50/90 border-2 border-emerald-300 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
                     >
-                      <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="flex items-center gap-2.5 min-w-0 flex-1">
                         <div className="w-8 h-8 rounded-lg bg-emerald-200 text-emerald-800 flex items-center justify-center font-black text-xs shrink-0">
                           {isExcel ? <FileSpreadsheet size={16} /> : <FileText size={16} />}
                         </div>
-                        <div className="min-w-0">
-                          <p className="text-xs font-extrabold text-emerald-950 truncate">
-                            {file.name}
-                          </p>
-                          <p className="text-[11px] text-emerald-700 font-medium">
-                            {(file.size / 1024).toFixed(1)} KB · {isExcel ? "Excel File (New)" : "PDF File (New)"}
+                        <div className="min-w-0 flex-1 space-y-1">
+                          <input
+                            type="text"
+                            value={item.displayName || file.name}
+                            onChange={(e) => handleUpdateStagedDisplayName(idx, e.target.value)}
+                            placeholder="Document title / details shown on card"
+                            className="w-full text-xs font-bold px-2 py-1 rounded-md border border-emerald-300 bg-white focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                            title="Edit Document Title / Details"
+                          />
+                          <p className="text-[10px] text-emerald-800 truncate font-medium">
+                            File: {file.name} · {(file.size / 1024).toFixed(1)} KB · {isExcel ? "Excel (New)" : "PDF (New)"}
                           </p>
                         </div>
                       </div>
                       <button
                         type="button"
                         onClick={() => handleRemoveStagedFile(idx)}
-                        className="px-2 py-1 rounded-lg bg-white border border-red-300 text-red-600 hover:bg-red-50 text-xs font-bold cursor-pointer"
+                        className="px-2.5 py-1 rounded-lg bg-white border border-red-300 text-red-600 hover:bg-red-50 text-xs font-bold cursor-pointer shrink-0 self-end sm:self-center"
                       >
                         Cancel
                       </button>
@@ -1225,51 +1333,50 @@ const AnnouncementForm = ({ editItem, announcementForm, setAnnouncementForm, clo
             </div>
           )}
 
-          {/* Prominent Multi-File Upload Zone */}
-          <div>
-            <label
-              htmlFor="announcement-multi-files-upload"
-              className="group flex flex-col items-center justify-center p-6 border-2 border-dashed rounded-2xl transition-all cursor-pointer hover:border-amber-500 hover:bg-amber-50/50"
-              style={{
-                borderColor: stagedFiles.length > 0 ? "#10B981" : "#D97706",
-                background: stagedFiles.length > 0 ? "#F0FDF4" : "#FFFBF5"
-              }}
-            >
-              <div className="w-12 h-12 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center mb-3 shadow-xs group-hover:scale-110 transition-transform">
-                <Upload size={22} className="text-amber-700" />
-              </div>
-              <p className="text-sm font-extrabold text-gray-900 text-center">
-                Click or Drag &amp; Drop PDF or Excel Files Here
-              </p>
-              <p className="text-xs text-gray-500 mt-1 text-center">
-                Supports multiple files: <strong className="text-amber-800 font-bold">PDF (.pdf)</strong> and <strong className="text-emerald-700 font-bold">Excel (.xlsx, .xls, .csv)</strong> up to 10 MB each
-              </p>
-
-              <span
-                className="mt-3.5 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold text-white shadow-md transition-all group-hover:opacity-95"
-                style={{ background: "linear-gradient(135deg, #B45309 0%, #D97706 100%)" }}
+          {/* Multi-File Upload Zone */}
+          {!isLimitReached ? (
+            <div>
+              <label
+                htmlFor="announcement-multi-files-upload"
+                className="group flex flex-col items-center justify-center p-5 border-2 border-dashed rounded-2xl transition-all cursor-pointer hover:border-amber-500 hover:bg-amber-50/50"
+                style={{
+                  borderColor: stagedFiles.length > 0 ? "#10B981" : "#D97706",
+                  background: stagedFiles.length > 0 ? "#F0FDF4" : "#FFFBF5"
+                }}
               >
-                <FileSpreadsheet size={14} />
-                <span>Browse &amp; Add Files (Multiple Allowed)</span>
-              </span>
+                <div className="w-10 h-10 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center mb-2 shadow-xs group-hover:scale-110 transition-transform">
+                  <Upload size={20} className="text-amber-700" />
+                </div>
+                <p className="text-xs font-extrabold text-gray-900 text-center">
+                  Drag &amp; Drop or Browse Multiple Files (Up to {remainingSlots} more allowed)
+                </p>
+                <p className="text-[11px] text-gray-500 mt-0.5 text-center">
+                  Supports <strong className="text-amber-800 font-bold">PDF (.pdf)</strong> and <strong className="text-emerald-700 font-bold">Excel (.xlsx, .xls, .csv)</strong> up to 10 MB each
+                </p>
 
-              <input
-                id="announcement-multi-files-upload"
-                type="file"
-                multiple
-                accept=".pdf,.xlsx,.xls,.csv,application/pdf,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv"
-                onChange={handleFilesChange}
-                className="hidden"
-              />
-            </label>
+                <input
+                  id="announcement-multi-files-upload"
+                  type="file"
+                  multiple
+                  accept=".pdf,.xlsx,.xls,.csv,application/pdf,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv"
+                  onChange={handleFilesChange}
+                  className="hidden"
+                />
+              </label>
+            </div>
+          ) : (
+            <div className="p-3 rounded-xl bg-amber-50 border border-amber-300 flex items-center justify-between text-xs font-bold text-amber-900">
+              <span>⚠️ Maximum limit of {MAX_ANNOUNCEMENT_FILES} documents reached.</span>
+              <span className="text-[11px] font-normal text-amber-700">Remove an existing document to attach a different one.</span>
+            </div>
+          )}
 
-            {fileError && (
-              <div className="mt-2.5 p-3 rounded-xl bg-red-50 border border-red-300 flex items-center gap-2 text-xs font-bold text-red-700">
-                <AlertCircle size={16} className="shrink-0" />
-                <span>{fileError}</span>
-              </div>
-            )}
-          </div>
+          {fileError && (
+            <div className="p-3 rounded-xl bg-red-50 border border-red-300 flex items-center gap-2 text-xs font-bold text-red-700">
+              <AlertCircle size={16} className="shrink-0" />
+              <span>{fileError}</span>
+            </div>
+          )}
         </div>
       </FormSection>
 
@@ -3643,10 +3750,11 @@ const AnnouncementsTab = ({ announcements, setAnnouncementForm, openModal, del }
         <div className="grid grid-cols-1 gap-4">
           {announcements.map((a, idx) => {
             const fileList = Array.isArray(a.files) && a.files.length > 0
-              ? a.files
+              ? a.files.map(f => ({ ...f, displayName: f.displayName || f.fileName || '' }))
               : (a.formUrl ? [{
                   fileUrl: a.formUrl,
                   fileName: a.formName || 'Attached Document.pdf',
+                  displayName: a.formName || 'Attached Document',
                   fileSize: a.formSize || 0,
                   fileType: (a.formName?.toLowerCase().endsWith('.xlsx') || a.formName?.toLowerCase().endsWith('.xls') || a.formName?.toLowerCase().endsWith('.csv')) ? 'excel' : 'pdf'
                 }] : []);
@@ -3721,7 +3829,7 @@ const AnnouncementsTab = ({ announcements, setAnnouncementForm, openModal, del }
                             }}
                           >
                             {isExcel ? <FileSpreadsheet size={14} /> : <FileText size={14} />}
-                            <span className="truncate max-w-[180px]">{file.fileName || (isExcel ? "Spreadsheet" : "Form.pdf")}</span>
+                            <span className="truncate max-w-[200px] font-bold">{file.displayName || file.fileName || (isExcel ? "Spreadsheet" : "Form.pdf")}</span>
                             {file.fileSize > 0 && (
                               <span className="text-[10px] opacity-75">({(file.fileSize / 1024).toFixed(0)} KB)</span>
                             )}
@@ -3731,7 +3839,7 @@ const AnnouncementsTab = ({ announcements, setAnnouncementForm, openModal, del }
                               rel="noopener noreferrer"
                               className="underline font-bold ml-1 cursor-pointer hover:opacity-80"
                             >
-                              Download
+                              View
                             </a>
                           </div>
                         );

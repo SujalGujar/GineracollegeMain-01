@@ -58,6 +58,11 @@ export const getMediaUrl = (url, fallback = '/placeholder.png') => {
 
   let cleanUrl = url.replace(/\\/g, '/').trim();
 
+  // Cloudinary direct URLs: return directly without modifying
+  if (cleanUrl.includes('cloudinary.com')) {
+    return cleanUrl;
+  }
+
   // If DB contains absolute localhost / 127.0.0.1 or old backend URLs with /uploads/
   if (cleanUrl.includes('/uploads/')) {
     const uploadIndex = cleanUrl.indexOf('/uploads/');

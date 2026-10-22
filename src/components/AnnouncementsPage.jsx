@@ -94,7 +94,7 @@ export function AnnouncementsPage({ onNavigate }) {
 
         {/* Dynamic Responsive Announcement Cards Section */}
         {/* If 1 card: Centered prominent layout. If 2 or more: Modern responsive grid */}
-        <div className={isSingleCard ? "max-w-3xl mx-auto" : "grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8 items-stretch"}>
+        <div className={isSingleCard ? "max-w-4xl mx-auto" : "grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8 items-stretch"}>
           {displayList.map((item, index) => {
             const filesList = Array.isArray(item.files) && item.files.length > 0
               ? item.files
@@ -179,10 +179,24 @@ export function AnnouncementsPage({ onNavigate }) {
                           </span>
                         </div>
 
-                        <div className="space-y-2">
+                        {/* Multiple PDFs and Sheets in One Row Grid with Generous Spacing */}
+                        <div
+                          className="w-full mt-2"
+                          style={{
+                            display: "grid",
+                            gridTemplateColumns: filesList.length === 1
+                              ? "minmax(0, 360px)"
+                              : filesList.length === 2
+                                ? "repeat(auto-fit, minmax(260px, 1fr))"
+                                : "repeat(auto-fit, minmax(220px, 1fr))",
+                            gap: "16px",
+                            alignItems: "stretch"
+                          }}
+                        >
                           {filesList.map((doc, dIdx) => {
                             const isExcel = doc.fileType === "excel" || doc.fileName?.toLowerCase().endsWith(".xlsx") || doc.fileName?.toLowerCase().endsWith(".xls") || doc.fileName?.toLowerCase().endsWith(".csv");
                             const downloadUrl = getMediaUrl(doc.fileUrl);
+                            const displayTitle = doc.displayName || doc.fileName || (isExcel ? "Spreadsheet Document" : "Official PDF Notice");
 
                             return (
                               <a
@@ -191,44 +205,53 @@ export function AnnouncementsPage({ onNavigate }) {
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 download
-                                className="flex items-center justify-between gap-3 p-3 sm:p-3.5 rounded-2xl border transition-all duration-200 transform hover:scale-[1.01] active:scale-[0.99] shadow-xs hover:shadow-md cursor-pointer text-left"
+                                title={displayTitle}
+                                className="group relative flex items-center justify-between gap-3 rounded-2xl border transition-all duration-300 transform hover:-translate-y-1 hover:shadow-xl active:translate-y-0 cursor-pointer text-left min-w-0"
                                 style={{
+                                  padding: "14px 16px",
+                                  borderRadius: "16px",
                                   background: isExcel
-                                    ? "linear-gradient(135deg, #065F46 0%, #047857 60%, #059669 100%)"
-                                    : "linear-gradient(135deg, #B45309 0%, #D97706 50%, #EA580C 100%)",
-                                  borderColor: isExcel ? "#6EE7B7" : "#FDE68A",
+                                    ? "linear-gradient(135deg, #064E3B 0%, #065F46 55%, #047857 100%)"
+                                    : "linear-gradient(135deg, #9A3412 0%, #C2410C 55%, #EA580C 100%)",
+                                  border: isExcel ? "1.5px solid rgba(110, 231, 183, 0.4)" : "1.5px solid rgba(253, 230, 138, 0.4)",
+                                  boxShadow: isExcel
+                                    ? "0 6px 18px -4px rgba(6, 78, 59, 0.35)"
+                                    : "0 6px 18px -4px rgba(194, 65, 12, 0.35)",
                                   color: "#FFFFFF"
                                 }}
                               >
-                                <div className="flex items-center gap-3 min-w-0">
+                                <div className="flex items-center gap-3 min-w-0 flex-1">
                                   <div
-                                    className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 shadow-inner"
-                                    style={{ background: "rgba(0, 0, 0, 0.22)" }}
+                                    className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-inner"
+                                    style={{ background: "rgba(0, 0, 0, 0.25)" }}
                                   >
-                                    {isExcel ? <FileSpreadsheet className="w-4 h-4 text-emerald-100" /> : <FileText className="w-4 h-4 text-amber-100" />}
+                                    {isExcel ? <FileSpreadsheet className="w-5 h-5 text-emerald-100" /> : <FileText className="w-5 h-5 text-amber-100" />}
                                   </div>
-                                  <div className="min-w-0">
-                                    <div className="flex items-center gap-1.5 mb-0.5">
+                                  <div className="min-w-0 flex-1">
+                                    <div className="flex items-center gap-2 mb-1 leading-none">
                                       <span
-                                        className="text-[9px] font-extrabold uppercase tracking-wider px-1.5 py-0.2 rounded"
-                                        style={{ background: "rgba(255, 255, 255, 0.22)" }}
+                                        className="text-[9px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded leading-none shadow-xs"
+                                        style={{ background: "rgba(255, 255, 255, 0.25)" }}
                                       >
-                                        {isExcel ? "Excel Sheet" : "PDF Form"}
+                                        {isExcel ? "Excel Sheet" : "PDF Notice"}
                                       </span>
                                       {doc.fileSize > 0 && (
-                                        <span className="text-[10px] text-white/80">
+                                        <span className="text-[11px] text-white/85 font-semibold leading-none">
                                           {(doc.fileSize / 1024).toFixed(0)} KB
                                         </span>
                                       )}
                                     </div>
-                                    <p className="text-xs sm:text-sm font-bold text-white truncate underline-offset-2 hover:underline">
-                                      {doc.fileName || (isExcel ? "Spreadsheet Document" : "Official PDF Notice")}
+                                    <p className="text-xs sm:text-sm font-bold text-white truncate leading-snug group-hover:underline">
+                                      {displayTitle}
                                     </p>
                                   </div>
                                 </div>
 
-                                <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 bg-white/20 group-hover:bg-white/30 transition-colors">
-                                  <Download className="w-3.5 h-3.5 text-white" />
+                                <div
+                                  className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-all duration-200 group-hover:scale-110 shadow-xs"
+                                  style={{ background: "rgba(255, 255, 255, 0.22)" }}
+                                >
+                                  <Download className="w-4 h-4 text-white" />
                                 </div>
                               </a>
                             );

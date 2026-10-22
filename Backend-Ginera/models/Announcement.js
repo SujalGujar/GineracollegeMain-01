@@ -25,8 +25,11 @@ const announcementSchema = new mongoose.Schema({
   files: [{
     fileUrl: { type: String, required: true },
     fileName: { type: String, required: true },
+    displayName: { type: String, default: '' },
     fileSize: { type: Number, default: 0 },
-    fileType: { type: String, enum: ['pdf', 'excel', 'other'], default: 'pdf' }
+    fileType: { type: String, enum: ['pdf', 'excel', 'other'], default: 'pdf' },
+    publicId: { type: String, default: '' },
+    resourceType: { type: String, default: 'auto' }
   }],
   // Backward compatibility fields for single-file legacy references
   formUrl: {
@@ -52,13 +55,16 @@ const announcementSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 // Auto-sync legacy single-file fields with the first attached file if present
-announcementSchema.pre('save', function(next) {
+announcementSchema.pre('save', function() {
   if (Array.isArray(this.files) && this.files.length > 0) {
     this.formUrl = this.files[0].fileUrl;
     this.formName = this.files[0].fileName;
     this.formSize = this.files[0].fileSize;
+  } else if (Array.isArray(this.files) && this.files.length === 0) {
+    this.formUrl = '';
+    this.formName = '';
+    this.formSize = 0;
   }
-  next();
 });
 
 module.exports = mongoose.model('Announcement', announcementSchema);

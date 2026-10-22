@@ -49,7 +49,7 @@ const upload = multer({
 // Middleware supporting multiple files under 'files' or backward-compatible 'pdf'
 const uploadAnnouncementFilesMiddleware = (req, res, next) => {
   const multiUpload = upload.fields([
-    { name: 'files', maxCount: 15 },
+    { name: 'files', maxCount: 5 },
     { name: 'pdf', maxCount: 1 }
   ]);
 
@@ -57,6 +57,9 @@ const uploadAnnouncementFilesMiddleware = (req, res, next) => {
     if (err instanceof multer.MulterError) {
       if (err.code === 'LIMIT_FILE_SIZE') {
         return res.status(400).json({ message: 'File size exceeds maximum limit of 10 MB per file.' });
+      }
+      if (err.code === 'LIMIT_UNEXPECTED_FILE') {
+        return res.status(400).json({ message: 'Maximum 5 files (PDF & Excel) allowed per announcement.' });
       }
       return res.status(400).json({ message: `Upload error: ${err.message}` });
     } else if (err) {
