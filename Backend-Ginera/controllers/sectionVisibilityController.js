@@ -27,6 +27,10 @@ const DEFAULT_SECTIONS = [
   { sectionKey: 'admission_procedure', page: 'Admission', sectionName: 'Admission Steps & Procedure', description: 'Step-by-step application process' },
   { sectionKey: 'admission_rules', page: 'Admission', sectionName: 'Rules & Regulations', description: 'Code of conduct and admission rules' },
   { sectionKey: 'admission_instructions', page: 'Admission', sectionName: 'Instructions & Guidelines', description: 'Guidelines for applicants and parents' },
+  { sectionKey: 'admission_announcements', page: 'Admission', sectionName: 'Admission Announcements & Circulars', description: 'Official announcements, notices, and downloadable forms' },
+
+  // Announcement
+  { sectionKey: 'announcements_page', page: 'Announcement', sectionName: 'Announcement Board Page', description: 'Public admission announcements and downloadable documents page' },
 
   // Gallery
   { sectionKey: 'gallery_college', page: 'Gallery', sectionName: 'College Campus Photos', description: 'Campus building and infrastructure photos' },

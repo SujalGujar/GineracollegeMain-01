@@ -22,7 +22,7 @@ import { StudentCorner } from './components/StudentCorner';
 
 const AdminPanel = React.lazy(() => import('./components/AdminPanel'));
 const LoginPage = React.lazy(() => import('./components/LoginPage').then(m => ({ default: m.LoginPage })));
-import { waitForApiIdle, warmUpBackend } from './api/axiosInstance';
+import axiosInstance, { waitForApiIdle, warmUpBackend } from './api/axiosInstance';
 import { useSectionVisibility } from './context/SectionVisibilityContext';
 import { updatePageSEO } from './utils/seo';
 
@@ -219,8 +219,11 @@ export default function App() {
       case 'admin':
         if (isLoggedIn) {
           return <AdminPanel onLogout={() => {
+            axiosInstance.post('/auth/logout').catch(() => {});
             setIsLoggedIn(false);
             localStorage.removeItem('adminAuthenticated');
+            localStorage.removeItem('adminToken');
+            localStorage.removeItem('adminEmail');
             handleNavigation('home');
           }} />;
         }

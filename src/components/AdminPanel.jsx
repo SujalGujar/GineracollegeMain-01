@@ -7,7 +7,7 @@ import {
   X, Menu, Save, CheckCircle2, AlertCircle, Layers, Info,
   ArrowLeft, Building2, Zap, ChevronDown, ChevronUp, Eye, EyeOff,
   GraduationCap, Phone, MapPin, Sliders, Search, Clock, KeyRound, ShieldCheck,
-  Bell, Download
+  Bell, Download, FileSpreadsheet
 } from "lucide-react";
 import axiosInstance, { getMediaUrl } from "../api/axiosInstance";
 import { useSectionVisibility } from "../context/SectionVisibilityContext";
@@ -952,35 +952,56 @@ const StudentCornerTab = ({ sections, openModal, setScForm, del }) => {
   );
 };
 
-// ── ANNOUNCEMENT FORM (Admission Announcements & PDF Upload) ─────────────────
+// ── ANNOUNCEMENT FORM (Admission Announcements & Multi-File PDF / Excel Upload) ──
 const AnnouncementForm = ({ editItem, announcementForm, setAnnouncementForm, closeModal, fetchData, notify }) => {
   const [uploading, setUploading] = useState(false);
   const [fileError, setFileError] = useState("");
 
-  const handlePdfChange = (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const existingFiles = Array.isArray(announcementForm.existingFiles) ? announcementForm.existingFiles : [];
+  const stagedFiles = Array.isArray(announcementForm.files) ? announcementForm.files : [];
+
+  const handleFilesChange = (e) => {
+    const selected = Array.from(e.target.files || []);
+    if (!selected.length) return;
 
     setFileError("");
-    const isPdf = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
-    if (!isPdf) {
-      setFileError("Only PDF files (.pdf) are allowed.");
-      e.target.value = "";
-      return;
-    }
+    const allowedExts = [".pdf", ".xlsx", ".xls", ".csv"];
+    const maxSizeBytes = 10 * 1024 * 1024; // 10 MB
 
-    if (file.size > 500 * 1024) {
-      setFileError(`File size is ${(file.size / 1024).toFixed(1)} KB. Maximum allowed is 500 KB.`);
-      e.target.value = "";
-      return;
+    const validNewFiles = [];
+    for (const file of selected) {
+      const ext = file.name.substring(file.name.lastIndexOf(".")).toLowerCase();
+      if (!allowedExts.includes(ext)) {
+        setFileError(`File "${file.name}" is not supported. Only PDF (.pdf) and Excel files (.xlsx, .xls, .csv) are accepted.`);
+        e.target.value = "";
+        return;
+      }
+      if (file.size > maxSizeBytes) {
+        setFileError(`File "${file.name}" is ${(file.size / (1024 * 1024)).toFixed(1)} MB. Maximum allowed size is 10 MB per file.`);
+        e.target.value = "";
+        return;
+      }
+      validNewFiles.push(file);
     }
 
     setAnnouncementForm(prev => ({
       ...prev,
-      pdf: file,
-      formName: file.name,
-      formSize: file.size,
-      removeFile: false
+      files: [...(prev.files || []), ...validNewFiles]
+    }));
+    e.target.value = "";
+  };
+
+  const handleRemoveExistingFile = (fileUrl) => {
+    setAnnouncementForm(prev => ({
+      ...prev,
+      existingFiles: (prev.existingFiles || []).filter(f => f.fileUrl !== fileUrl)
+    }));
+  };
+
+  const handleRemoveStagedFile = (index) => {
+    setAnnouncementForm(prev => ({
+      ...prev,
+      files: (prev.files || []).filter((_, i) => i !== index)
     }));
   };
 
@@ -1003,12 +1024,13 @@ const AnnouncementForm = ({ editItem, announcementForm, setAnnouncementForm, clo
     fd.append("isActive", announcementForm.isActive !== false ? "true" : "false");
     fd.append("order", announcementForm.order || 0);
 
-    if (announcementForm.pdf) {
-      fd.append("pdf", announcementForm.pdf);
-    }
-    if (announcementForm.removeFile) {
-      fd.append("removeFile", "true");
-    }
+    // Retained files JSON
+    fd.append("retainedFiles", JSON.stringify(existingFiles));
+
+    // Append newly added files
+    stagedFiles.forEach(file => {
+      fd.append("files", file);
+    });
 
     try {
       if (editItem) {
@@ -1075,143 +1097,168 @@ const AnnouncementForm = ({ editItem, announcementForm, setAnnouncementForm, clo
         />
       </Field>
 
-      <FormSection title="Downloadable Form (PDF Max 500 KB)">
+      <FormSection title="Downloadable Documents (Multiple PDFs & Excel Sheets)">
         <div className="p-5 rounded-2xl border-2 space-y-4" style={{ background: "#FFFDF9", borderColor: "#F3E5D8" }}>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center">
-                <FileText size={18} />
+              <div className="w-9 h-9 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center shrink-0">
+                <FileSpreadsheet size={18} />
               </div>
               <div>
-                <p className="text-sm font-extrabold text-gray-900">Application / Notice Form (PDF)</p>
+                <p className="text-sm font-extrabold text-gray-900">Application Forms, Circulars & Merit Lists</p>
                 <p className="text-[11px] text-gray-500">
-                  Strict limit: 500 KB. Once uploaded, a "Download Form" button automatically appears for students.
+                  Attach multiple documents. Supports PDF (.pdf) and Excel spreadsheets (.xlsx, .xls, .csv) up to 10 MB each.
                 </p>
               </div>
             </div>
-            {announcementForm.existingPdf && !announcementForm.removeFile && (
-              <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300">
-                PDF Active on Website
+            <div className="flex items-center gap-1.5 self-start sm:self-center">
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-100 text-red-800 border border-red-200">
+                PDF
               </span>
-            )}
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
+                Excel / CSV
+              </span>
+            </div>
           </div>
 
-          {/* Current existing PDF on server */}
-          {announcementForm.existingPdf && !announcementForm.removeFile && (
-            <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200 flex items-center justify-between gap-3">
-              <div className="flex items-center gap-3 min-w-0">
-                <div className="w-9 h-9 rounded-lg bg-red-100 text-red-600 flex items-center justify-center font-black text-xs shrink-0">
-                  PDF
-                </div>
-                <div className="min-w-0">
-                  <p className="text-xs font-bold text-gray-900 truncate">
-                    {announcementForm.formName || "attached-announcement-form.pdf"}
-                  </p>
-                  {announcementForm.formSize > 0 && (
-                    <p className="text-[11px] text-gray-500">
-                      Size: {(announcementForm.formSize / 1024).toFixed(1)} KB · Currently visible on announcement page
-                    </p>
-                  )}
-                </div>
-              </div>
-              <div className="flex items-center gap-2 shrink-0">
-                <a
-                  href={getMediaUrl(announcementForm.existingPdf)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="px-3 py-1.5 rounded-lg bg-white border border-amber-300 text-amber-700 hover:bg-amber-50 text-xs font-bold shadow-xs cursor-pointer inline-flex items-center gap-1"
-                >
-                  <Eye size={13} /> View PDF
-                </a>
-                <button
-                  type="button"
-                  onClick={() => setAnnouncementForm(prev => ({ ...prev, removeFile: true, pdf: null }))}
-                  className="px-3 py-1.5 rounded-lg bg-red-50 border border-red-200 text-red-600 hover:bg-red-100 text-xs font-bold cursor-pointer inline-flex items-center gap-1"
-                >
-                  <Trash2 size={13} /> Remove
-                </button>
+          {/* List of currently active existing files */}
+          {existingFiles.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-[11px] font-bold uppercase tracking-wider text-gray-600">
+                Files Active On Website ({existingFiles.length})
+              </p>
+              <div className="space-y-2">
+                {existingFiles.map((file, idx) => {
+                  const isExcel = file.fileType === "excel" || file.fileName?.toLowerCase().endsWith(".xlsx") || file.fileName?.toLowerCase().endsWith(".xls") || file.fileName?.toLowerCase().endsWith(".csv");
+                  return (
+                    <div
+                      key={file.fileUrl || idx}
+                      className="p-3 rounded-xl border flex items-center justify-between gap-3 transition-all"
+                      style={{
+                        background: isExcel ? "#F0FDF4" : "#FEF2F2",
+                        borderColor: isExcel ? "#BBF7D0" : "#FECACA"
+                      }}
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div
+                          className="w-8 h-8 rounded-lg flex items-center justify-center font-black text-xs shrink-0"
+                          style={{
+                            background: isExcel ? "#DCFCE7" : "#FEE2E2",
+                            color: isExcel ? "#166534" : "#991B1B"
+                          }}
+                        >
+                          {isExcel ? <FileSpreadsheet size={16} /> : <FileText size={16} />}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-xs font-bold text-gray-900 truncate">
+                            {file.fileName || "document"}
+                          </p>
+                          <p className="text-[11px] text-gray-500">
+                            {file.fileSize > 0 ? `${(file.fileSize / 1024).toFixed(1)} KB` : "Uploaded Document"} · {isExcel ? "Excel Spreadsheet" : "PDF Document"}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <a
+                          href={getMediaUrl(file.fileUrl)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="px-2.5 py-1 rounded-lg bg-white border text-xs font-bold shadow-xs hover:bg-gray-50 flex items-center gap-1"
+                          style={{ color: isExcel ? "#166534" : "#991B1B", borderColor: isExcel ? "#86EFAC" : "#FCA5A5" }}
+                        >
+                          <Eye size={12} /> View
+                        </a>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveExistingFile(file.fileUrl)}
+                          className="px-2 py-1 rounded-lg bg-red-50 border border-red-200 text-red-600 hover:bg-red-100 text-xs font-bold flex items-center gap-1 cursor-pointer"
+                          title="Remove this file"
+                        >
+                          <Trash2 size={12} /> Remove
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}
 
-          {announcementForm.removeFile && (
-            <div className="p-3 rounded-xl bg-red-50 border border-red-200 flex items-center justify-between">
-              <span className="text-xs text-red-700 font-semibold">
-                ⚠️ Current PDF marked for deletion upon clicking "Update Announcement".
-              </span>
-              <button
-                type="button"
-                onClick={() => setAnnouncementForm(prev => ({ ...prev, removeFile: false }))}
-                className="text-xs text-gray-800 underline font-bold cursor-pointer px-2 py-1 hover:text-gray-950"
-              >
-                Undo (Keep PDF)
-              </button>
-            </div>
-          )}
-
-          {/* New Selected PDF preview */}
-          {announcementForm.pdf && (
-            <div className="p-3.5 rounded-xl bg-emerald-50 border-2 border-emerald-300 flex items-center justify-between gap-3">
-              <div className="flex items-center gap-3 min-w-0">
-                <div className="w-9 h-9 rounded-lg bg-emerald-200 text-emerald-800 flex items-center justify-center font-black text-xs shrink-0">
-                  NEW
-                </div>
-                <div className="min-w-0">
-                  <p className="text-xs font-extrabold text-emerald-950 truncate">
-                    {announcementForm.pdf.name}
-                  </p>
-                  <p className="text-[11px] text-emerald-700 font-medium">
-                    {(announcementForm.pdf.size / 1024).toFixed(1)} KB · Ready to upload
-                  </p>
-                </div>
+          {/* List of newly staged files */}
+          {stagedFiles.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-[11px] font-bold uppercase tracking-wider text-emerald-800">
+                New Files Ready To Upload ({stagedFiles.length})
+              </p>
+              <div className="space-y-2">
+                {stagedFiles.map((file, idx) => {
+                  const isExcel = file.name.toLowerCase().endsWith(".xlsx") || file.name.toLowerCase().endsWith(".xls") || file.name.toLowerCase().endsWith(".csv");
+                  return (
+                    <div
+                      key={idx}
+                      className="p-3 rounded-xl bg-emerald-50/80 border-2 border-emerald-300 flex items-center justify-between gap-3"
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="w-8 h-8 rounded-lg bg-emerald-200 text-emerald-800 flex items-center justify-center font-black text-xs shrink-0">
+                          {isExcel ? <FileSpreadsheet size={16} /> : <FileText size={16} />}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-xs font-extrabold text-emerald-950 truncate">
+                            {file.name}
+                          </p>
+                          <p className="text-[11px] text-emerald-700 font-medium">
+                            {(file.size / 1024).toFixed(1)} KB · {isExcel ? "Excel File (New)" : "PDF File (New)"}
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveStagedFile(idx)}
+                        className="px-2 py-1 rounded-lg bg-white border border-red-300 text-red-600 hover:bg-red-50 text-xs font-bold cursor-pointer"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  );
+                })}
               </div>
-              <button
-                type="button"
-                onClick={() => setAnnouncementForm(prev => ({ ...prev, pdf: null }))}
-                className="px-2.5 py-1 rounded-lg bg-white border border-emerald-300 text-emerald-800 text-xs font-bold cursor-pointer hover:bg-emerald-100"
-              >
-                Cancel
-              </button>
             </div>
           )}
 
-          {/* Prominent Upload Zone */}
+          {/* Prominent Multi-File Upload Zone */}
           <div>
             <label
-              htmlFor="announcement-pdf-upload"
+              htmlFor="announcement-multi-files-upload"
               className="group flex flex-col items-center justify-center p-6 border-2 border-dashed rounded-2xl transition-all cursor-pointer hover:border-amber-500 hover:bg-amber-50/50"
               style={{
-                borderColor: announcementForm.pdf ? "#10B981" : "#D97706",
-                background: announcementForm.pdf ? "#F0FDF4" : "#FFFBF5"
+                borderColor: stagedFiles.length > 0 ? "#10B981" : "#D97706",
+                background: stagedFiles.length > 0 ? "#F0FDF4" : "#FFFBF5"
               }}
             >
               <div className="w-12 h-12 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center mb-3 shadow-xs group-hover:scale-110 transition-transform">
                 <Upload size={22} className="text-amber-700" />
               </div>
               <p className="text-sm font-extrabold text-gray-900 text-center">
-                {announcementForm.pdf
-                  ? "Click to choose a different PDF file"
-                  : announcementForm.existingPdf && !announcementForm.removeFile
-                    ? "Click to Replace Current PDF Document"
-                    : "Click or Drag & Drop PDF Form Here"}
+                Click or Drag &amp; Drop PDF or Excel Files Here
               </p>
               <p className="text-xs text-gray-500 mt-1 text-center">
-                Only PDF files (.pdf) up to <strong className="text-amber-800 font-bold">500 KB</strong> are accepted
+                Supports multiple files: <strong className="text-amber-800 font-bold">PDF (.pdf)</strong> and <strong className="text-emerald-700 font-bold">Excel (.xlsx, .xls, .csv)</strong> up to 10 MB each
               </p>
 
               <span
                 className="mt-3.5 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold text-white shadow-md transition-all group-hover:opacity-95"
                 style={{ background: "linear-gradient(135deg, #B45309 0%, #D97706 100%)" }}
               >
-                <FileText size={14} />
-                <span>{announcementForm.pdf ? "Choose Another PDF" : "Browse & Select PDF (Max 500 KB)"}</span>
+                <FileSpreadsheet size={14} />
+                <span>Browse &amp; Add Files (Multiple Allowed)</span>
               </span>
 
               <input
-                id="announcement-pdf-upload"
+                id="announcement-multi-files-upload"
                 type="file"
-                accept=".pdf,application/pdf"
-                onChange={handlePdfChange}
+                multiple
+                accept=".pdf,.xlsx,.xls,.csv,application/pdf,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv"
+                onChange={handleFilesChange}
                 className="hidden"
               />
             </label>
@@ -1433,6 +1480,7 @@ const ResetPasswordModal = ({ show, onClose, notify }) => {
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const isLongEnough = newPassword.length > 8;
   const hasUniqueChar = /[!@#$%^&*(),.?":{}|<>_\-+=\\/[\]~`]/.test(newPassword);
@@ -1445,10 +1493,11 @@ const ResetPasswordModal = ({ show, onClose, notify }) => {
     setShowNewPassword(false);
     setShowConfirmPassword(false);
     setError("");
+    setIsSubmitting(false);
     onClose();
   };
 
-  const handleReset = (e) => {
+  const handleReset = async (e) => {
     e.preventDefault();
     if (!isLongEnough) {
       setError("New password must be greater than 8 characters (at least 9 characters).");
@@ -1463,9 +1512,25 @@ const ResetPasswordModal = ({ show, onClose, notify }) => {
       return;
     }
 
-    localStorage.setItem("adminPassword", newPassword);
-    notify("Admin password successfully updated!");
-    handleClose();
+    setIsSubmitting(true);
+    setError("");
+
+    try {
+      const email = localStorage.getItem('adminEmail') || 'adminginera@gmail.com';
+      const res = await axiosInstance.post('/auth/reset-password', {
+        email,
+        newPassword
+      });
+
+      notify(res.data?.message || "Admin password successfully updated in database!");
+      handleClose();
+    } catch (err) {
+      console.error("Reset password error:", err);
+      const msg = err.response?.data?.message || "Failed to update password. Please try again.";
+      setError(msg);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -1560,15 +1625,15 @@ const ResetPasswordModal = ({ show, onClose, notify }) => {
           </button>
           <button
             type="submit"
-            disabled={!isValid}
+            disabled={!isValid || isSubmitting}
             className={formBtnPrimary}
             style={{
-              background: isValid ? C.brand : "#B5ACA2",
-              cursor: isValid ? "pointer" : "not-allowed"
+              background: isValid && !isSubmitting ? C.brand : "#B5ACA2",
+              cursor: isValid && !isSubmitting ? "pointer" : "not-allowed"
             }}
           >
             <ShieldCheck size={18} />
-            Reset Password
+            {isSubmitting ? "Updating Password..." : "Reset Password"}
           </button>
         </div>
       </form>
@@ -3557,14 +3622,11 @@ const AnnouncementsTab = ({ announcements, setAnnouncementForm, openModal, del }
               setAnnouncementForm({
                 title: "Admission Announcements Will Be Available Soon",
                 badge: "Will Be Updated Soon",
-                subtitle: "Official announcements, notices, and admission circulars for Government College of Nursing, GINERA.",
+                subtitle: "",
                 description: "The official admission notices, circulars, and application schedules for Post Basic Diploma Course in Nursing at Government / GMERS Medical / Nursing College (Government College of Nursing, GINERA, Ahmedabad) will be published here.",
                 points: "Official admission notifications and merit lists will be published here as soon as released.\nPost Basic Diploma Course in Nursing admissions are conducted for Government / GMERS Medical / Nursing College (Government College of Nursing, GINERA, Ahmedabad).",
-                pdf: null,
-                existingPdf: "",
-                formName: "",
-                formSize: 0,
-                removeFile: false,
+                files: [],
+                existingFiles: [],
                 isActive: true,
                 order: 0
               });
@@ -3580,8 +3642,17 @@ const AnnouncementsTab = ({ announcements, setAnnouncementForm, openModal, del }
       ) : (
         <div className="grid grid-cols-1 gap-4">
           {announcements.map((a, idx) => {
-            const hasPdf = Boolean(a.formUrl);
+            const fileList = Array.isArray(a.files) && a.files.length > 0
+              ? a.files
+              : (a.formUrl ? [{
+                  fileUrl: a.formUrl,
+                  fileName: a.formName || 'Attached Document.pdf',
+                  fileSize: a.formSize || 0,
+                  fileType: (a.formName?.toLowerCase().endsWith('.xlsx') || a.formName?.toLowerCase().endsWith('.xls') || a.formName?.toLowerCase().endsWith('.csv')) ? 'excel' : 'pdf'
+                }] : []);
+            const hasFiles = fileList.length > 0;
             const pointsCount = Array.isArray(a.points) ? a.points.length : 0;
+
             return (
               <div
                 key={a._id || idx}
@@ -3614,11 +3685,9 @@ const AnnouncementsTab = ({ announcements, setAnnouncementForm, openModal, del }
                         setAnnouncementForm({
                           ...a,
                           points: Array.isArray(a.points) ? a.points.join("\n") : (a.points || ""),
-                          pdf: null,
-                          existingPdf: a.formUrl || "",
-                          formName: a.formName || "",
-                          formSize: a.formSize || 0,
-                          removeFile: false
+                          files: [],
+                          existingFiles: fileList,
+                          order: a.order !== undefined ? a.order : 0
                         });
                         openModal("announcement", a);
                       }}
@@ -3637,30 +3706,45 @@ const AnnouncementsTab = ({ announcements, setAnnouncementForm, openModal, del }
 
                 {/* Attachment Status */}
                 <div className="pt-3 border-t border-gray-100 flex flex-wrap items-center justify-between gap-2 text-xs">
-                  {hasPdf ? (
-                    <div className="flex items-center gap-2 text-amber-900 bg-amber-50 px-3 py-1.5 rounded-xl border border-amber-200">
-                      <FileText size={15} className="text-amber-600 shrink-0" />
-                      <span className="font-semibold truncate max-w-xs">{a.formName || "Attached Form (PDF)"}</span>
-                      {a.formSize > 0 && (
-                        <span className="text-[11px] text-gray-500">({(a.formSize / 1024).toFixed(0)} KB)</span>
-                      )}
-                      <a
-                        href={getMediaUrl(a.formUrl)}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-amber-600 hover:text-amber-800 font-bold underline ml-1 cursor-pointer"
-                      >
-                        View/Download
-                      </a>
+                  {hasFiles ? (
+                    <div className="flex flex-wrap items-center gap-2">
+                      {fileList.map((file, fIdx) => {
+                        const isExcel = file.fileType === "excel" || file.fileName?.toLowerCase().endsWith(".xlsx") || file.fileName?.toLowerCase().endsWith(".xls") || file.fileName?.toLowerCase().endsWith(".csv");
+                        return (
+                          <div
+                            key={file.fileUrl || fIdx}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-semibold"
+                            style={{
+                              background: isExcel ? "#F0FDF4" : "#FEF3C7",
+                              borderColor: isExcel ? "#BBF7D0" : "#FDE68A",
+                              color: isExcel ? "#166534" : "#92400E"
+                            }}
+                          >
+                            {isExcel ? <FileSpreadsheet size={14} /> : <FileText size={14} />}
+                            <span className="truncate max-w-[180px]">{file.fileName || (isExcel ? "Spreadsheet" : "Form.pdf")}</span>
+                            {file.fileSize > 0 && (
+                              <span className="text-[10px] opacity-75">({(file.fileSize / 1024).toFixed(0)} KB)</span>
+                            )}
+                            <a
+                              href={getMediaUrl(file.fileUrl)}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="underline font-bold ml-1 cursor-pointer hover:opacity-80"
+                            >
+                              Download
+                            </a>
+                          </div>
+                        );
+                      })}
                     </div>
                   ) : (
                     <div className="text-gray-400 italic flex items-center gap-1.5">
                       <FileText size={14} />
-                      <span>No PDF form uploaded · Download button hidden from students</span>
+                      <span>No files uploaded · Download buttons hidden from students</span>
                     </div>
                   )}
 
-                  <span className="text-[11px] text-gray-400 font-medium">
+                  <span className="text-[11px] text-gray-400 font-medium ml-auto">
                     {pointsCount} key point(s)
                   </span>
                 </div>
@@ -4541,7 +4625,7 @@ const SectionControlTab = ({ notify }) => {
     }
   }, []);
 
-  const pages = ["Home Page", "About Us", "Admission", "Departments", "Gallery", "Institutes", "Student Corner", "Contact Us", "All Pages"];
+  const pages = ["Home Page", "About Us", "Admission", "Announcement", "Departments", "Gallery", "Institutes", "Student Corner", "Contact Us", "All Pages"];
   const pageCounts = pages.reduce((acc, page) => {
     acc[page] = page === "All Pages" ? sectionsList.length : sectionsList.filter(s => s.page === page).length;
     return acc;
@@ -5734,15 +5818,12 @@ const AdminPanel = ({ onLogout }) => {
   const [scForm, setScForm] = useState({ title:'',subtitle:'',tag:'',icon:'📄',color:'#F59E0B',borderColor:'#FCD34D',badgeColor:'#D97706',items:[],description:'',order:0 });
   const [announcementForm, setAnnouncementForm] = useState({
     title: "Admission Announcements Will Be Available Soon",
-    subtitle: "Official announcements, notices, and admission circulars for Government College of Nursing, GINERA.",
+    subtitle: "",
     badge: "Will Be Updated Soon",
     description: "The official admission notices, circulars, and application schedules for Post Basic Diploma Course in Nursing at Government / GMERS Medical / Nursing College (Government College of Nursing, GINERA, Ahmedabad) will be published here.",
     points: "Official admission notifications and merit lists will be published here as soon as released.\nPost Basic Diploma Course in Nursing admissions are conducted for Government / GMERS Medical / Nursing College (Government College of Nursing, GINERA, Ahmedabad).",
-    pdf: null,
-    existingPdf: "",
-    formName: "",
-    formSize: 0,
-    removeFile: false,
+    files: [],
+    existingFiles: [],
     isActive: true,
     order: 0
   });

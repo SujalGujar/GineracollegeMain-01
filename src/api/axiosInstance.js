@@ -129,6 +129,10 @@ axiosInstance.interceptors.request.use((config) => {
   if (config.method === 'get' || !config.method) {
     config.params = { ...config.params, _cb: Date.now() };
   }
+  const token = typeof window !== 'undefined' ? localStorage.getItem('adminToken') : null;
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
   return config;
 }, (error) => Promise.reject(error));
 

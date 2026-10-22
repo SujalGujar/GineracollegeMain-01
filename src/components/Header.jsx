@@ -189,6 +189,9 @@ export function Header({ currentPage, onNavigate }) {
   // Filter nav items based on section visibility
   const visibleNavItems = dynamicNavItems.filter(item => {
     if (item.key === 'student-corner') return isSectionVisible('student_corner');
+    if (item.key === 'announcements' || item.key === 'announcement') {
+      return isSectionVisible('admission_announcements') && isSectionVisible('announcements_page');
+    }
     return true;
   });
 

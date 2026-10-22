@@ -117,6 +117,7 @@ const sectionVisibilityRoutes = require('./routes/sectionVisibilityRoutes');
 const studentCornerRoutes = require('./routes/studentCornerRoutes');
 const screenRoutes = require('./routes/screenRoutes');
 const announcementRoutes = require('./routes/announcementRoutes');
+const authRoutes = require('./routes/authRoutes');
 
 app.use('/api/sliders', sliderRoutes);
 app.use('/api/gallery', galleryRoutes);
@@ -136,6 +137,7 @@ app.use('/api/section-visibility', sectionVisibilityRoutes);
 app.use('/api/student-corner', studentCornerRoutes);
 app.use('/api/screen', screenRoutes);
 app.use('/api/announcements', announcementRoutes);
+app.use('/api/auth', authRoutes);
 
 // MongoDB Connection
 mongoose.set('bufferCommands', false);

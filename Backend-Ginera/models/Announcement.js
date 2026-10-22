@@ -8,7 +8,7 @@ const announcementSchema = new mongoose.Schema({
   },
   subtitle: {
     type: String,
-    default: 'Official announcements, notices, and admission circulars for Government College of Nursing, GINERA.'
+    default: ''
   },
   badge: {
     type: String,
@@ -21,6 +21,14 @@ const announcementSchema = new mongoose.Schema({
   points: [{
     type: String
   }],
+  // Multi-file support: Multiple PDFs and Excel sheets (.pdf, .xlsx, .xls, .csv)
+  files: [{
+    fileUrl: { type: String, required: true },
+    fileName: { type: String, required: true },
+    fileSize: { type: Number, default: 0 },
+    fileType: { type: String, enum: ['pdf', 'excel', 'other'], default: 'pdf' }
+  }],
+  // Backward compatibility fields for single-file legacy references
   formUrl: {
     type: String,
     default: ''
@@ -42,5 +50,15 @@ const announcementSchema = new mongoose.Schema({
     default: 0
   }
 }, { timestamps: true });
+
+// Auto-sync legacy single-file fields with the first attached file if present
+announcementSchema.pre('save', function(next) {
+  if (Array.isArray(this.files) && this.files.length > 0) {
+    this.formUrl = this.files[0].fileUrl;
+    this.formName = this.files[0].fileName;
+    this.formSize = this.files[0].fileSize;
+  }
+  next();
+});
 
 module.exports = mongoose.model('Announcement', announcementSchema);

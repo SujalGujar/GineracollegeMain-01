@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Mail, Lock, ArrowRight, AlertCircle, Eye, EyeOff, KeyRound } from 'lucide-react';
 import gineraLogo2 from '../images/ginera-logo2.png';
 import { motion } from 'framer-motion';
+import axiosInstance from '../api/axiosInstance';
 
 export const LoginPage = ({ onLogin }) => {
   const [username, setUsername] = useState('');
@@ -10,19 +11,34 @@ export const LoginPage = ({ onLogin }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
     setError('');
-    setTimeout(() => {
-      const validPassword = localStorage.getItem('adminPassword') || 'Admin@12345';
-      if (username === 'adminginera@gmail.com' && password === validPassword) {
+
+    try {
+      const res = await axiosInstance.post('/auth/login', {
+        email: username,
+        password: password
+      });
+
+      if (res.data?.token) {
+        localStorage.setItem('adminToken', res.data.token);
+        localStorage.setItem('adminAuthenticated', 'true');
+        if (res.data.admin?.email) {
+          localStorage.setItem('adminEmail', res.data.admin.email);
+        }
         onLogin();
       } else {
-        setError('Invalid email or password. Please try again.');
+        setError('Login failed. Please check your credentials.');
         setIsLoading(false);
       }
-    }, 800);
+    } catch (err) {
+      console.error('Login error:', err);
+      const msg = err.response?.data?.message || 'Invalid email or password. Please try again.';
+      setError(msg);
+      setIsLoading(false);
+    }
   };
 
   return (
