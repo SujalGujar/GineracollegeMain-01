@@ -17,7 +17,7 @@ import { Button } from "./ui/button";
 import principleImage from "../images/principleImage.jpeg"
 import axiosInstance, { getMediaUrl, getCachedData, setCachedData } from "../api/axiosInstance";
 import campusLocationImg from "../images/coll.jpeg";
-import gineraLogo from "../images/ginera-logo.png";
+import gujaratNursingEmblem from "../images/Gujarat Nursing Education Emblem.png";
 import { useSectionVisibility } from "../context/SectionVisibilityContext";
 import SectionOffNotice from "./SectionOffNotice";
 
@@ -141,7 +141,7 @@ export function AboutLogo({ onNavigate }) {
   const visionPoints = safeVisionMission.filter(v => v?.type === 'vision').map(v => v?.content).filter(Boolean);
   const missionPoints = safeVisionMission.filter(v => v?.type === 'mission').map(v => v?.content).filter(Boolean);
 
-  const displayLogo = collegeBranding?.logoUrl ? getMediaUrl(collegeBranding.logoUrl) : gineraLogo;
+  const displayLogo = (collegeBranding?.logoUrl && !collegeBranding.logoUrl.includes('1791372513748')) ? getMediaUrl(collegeBranding.logoUrl) : gujaratNursingEmblem;
   const imageFor = (key, fallback = null) => {
     const safeImages = Array.isArray(aboutImages) ? aboutImages : [];
     let image = safeImages.find(item => item?.key === key);
@@ -224,7 +224,7 @@ export function AboutLogo({ onNavigate }) {
                 <motion.img
                   src={displayLogo}
                   alt={collegeBranding?.collegeName || 'College Logo'}
-                  onError={(e) => { e.currentTarget.src = gineraLogo; }}
+                  onError={(e) => { e.currentTarget.src = gujaratNursingEmblem; }}
                   className="object-contain"
                   style={{
                     width: "100%",

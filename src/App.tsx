@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { ThemeProvider } from './components/ThemeProvider';
 import { Header } from './components/Header';
 import { Toaster } from './components/ui/sonner';
-import gineraLogo2 from './images/ginera-logo2.png';
+import gujaratNursingEmblem from './images/Gujarat Nursing Education Emblem.png';
 
 import HomePage from './components/HomePage.jsx';
 
@@ -292,7 +292,7 @@ export default function App() {
                   <div>
                     <div className="flex items-center space-x-3 mb-4">
                       <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#F59E0B' }}>
-                        <img src={gineraLogo2} alt="College Logo" className="w-8 h-8 object-contain" />
+                        <img src={gujaratNursingEmblem} alt="College Logo" className="w-8 h-8 object-contain" />
                       </div>
                       <div>
                         <h3 className="font-bold text-lg">Nursing College</h3>

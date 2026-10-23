@@ -2,8 +2,7 @@ import React from "react";
 import { Button } from "./ui/button.jsx";
 import { Sheet, SheetContent, SheetTrigger } from "./ui/sheet.jsx";
 import { Menu, User, ChevronDown, Bell, Megaphone, ArrowRight, X } from "lucide-react";
-import gineraLogo2 from "../images/ginera-logo2.png";
-import gineraLogo from "../images/ginera-logo.png";
+import gujaratNursingEmblem from "../images/Gujarat Nursing Education Emblem.png";
 import axiosInstance, { getMediaUrl } from "../api/axiosInstance";
 import { useSectionVisibility } from "../context/SectionVisibilityContext";
 
@@ -223,7 +222,9 @@ export function Header({ currentPage, onNavigate }) {
   React.useEffect(() => {
     axiosInstance.get("/about/college-logo")
       .then(res => {
-        if (res.data?.logoUrl) setCollegeLogoUrl(getMediaUrl(res.data.logoUrl));
+        if (res.data?.logoUrl && !res.data.logoUrl.includes('1791372513748')) {
+          setCollegeLogoUrl(getMediaUrl(res.data.logoUrl));
+        }
       })
       .catch(() => {});
   }, []);
@@ -310,10 +311,10 @@ export function Header({ currentPage, onNavigate }) {
             {/* Logo */}
             <div className="flex items-center space-x-3">
               <div
-                className="flex items-center justify-center w-12 h-12 rounded-full cursor-pointer"
+                className="flex items-center justify-center w-12 h-12 rounded-full cursor-pointer overflow-hidden"
                 onClick={(e) => handleNavigation("home", e)}
               >
-                <img src={collegeLogoUrl || gineraLogo2} alt="College Logo" className="w-12 h-12 object-contain" />
+                <img src={collegeLogoUrl || gujaratNursingEmblem} alt="Gujarat Nursing Education Emblem" className="w-12 h-12 object-contain" />
               </div>
               <div
                 className="hidden md:block cursor-pointer"
@@ -460,8 +461,8 @@ export function Header({ currentPage, onNavigate }) {
                     className="flex items-center space-x-3 p-4 pr-12 border-b border-border bg-white shrink-0 cursor-pointer"
                     onClick={() => handleNavigation("home")}
                   >
-                    <div className="flex items-center justify-center w-10 h-10 rounded-full shrink-0">
-                      <img src={collegeLogoUrl || gineraLogo} alt="College Logo" className="w-8 h-8 object-contain" />
+                    <div className="flex items-center justify-center w-10 h-10 rounded-full shrink-0 overflow-hidden">
+                      <img src={collegeLogoUrl || gujaratNursingEmblem} alt="Gujarat Nursing Education Emblem" className="w-10 h-10 object-contain" />
                     </div>
                     <div className="min-w-0">
                       <h1 className="text-lg font-bold text-gray-900 truncate">Medical College</h1>

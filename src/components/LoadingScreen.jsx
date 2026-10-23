@@ -1,6 +1,6 @@
 import React from 'react';
 import { createPortal } from 'react-dom';
-import gineraLogo2 from '../images/ginera-logo2.png';
+import gujaratNursingEmblem from '../images/Gujarat Nursing Education Emblem.png';
 
 // Render into document.body so page animation/stacking contexts can never
 // cover this loader. It is deliberately high-contrast and visible on every
@@ -17,8 +17,8 @@ const LoadingScreen = () => createPortal(
     }}
   >
     <div style={{ width: 'min(440px, calc(100vw - 40px))', textAlign: 'center', color: '#fff' }}>
-      <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 90, height: 90, borderRadius: 24, background: '#fff', boxShadow: '0 18px 50px rgba(0,0,0,.35)' }}>
-        <img src={gineraLogo2} alt="Ginera College" style={{ width: 70, height: 70, objectFit: 'contain' }} />
+      <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 90, height: 90, borderRadius: 24, background: '#fff', boxShadow: '0 18px 50px rgba(0,0,0,.35)', overflow: 'hidden', padding: 8 }}>
+        <img src={gujaratNursingEmblem} alt="Ginera College Emblem" style={{ width: 70, height: 70, objectFit: 'contain' }} />
       </div>
       <div style={{ margin: '24px auto 14px', width: 48, height: 48, border: '5px solid rgba(255,255,255,.28)', borderTopColor: '#f59e0b', borderRadius: '50%', animation: 'ginera-loader-spin .8s linear infinite' }} />
       <h2 style={{ margin: 0, fontSize: 24, fontWeight: 800 }}>Loading page data…</h2>

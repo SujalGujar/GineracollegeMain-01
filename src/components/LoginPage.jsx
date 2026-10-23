@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Mail, Lock, ArrowRight, AlertCircle, Eye, EyeOff, KeyRound } from 'lucide-react';
-import gineraLogo2 from '../images/ginera-logo2.png';
+import gujaratNursingEmblem from '../images/Gujarat Nursing Education Emblem.png';
 import { motion } from 'framer-motion';
 import axiosInstance from '../api/axiosInstance';
 
@@ -75,7 +75,7 @@ export const LoginPage = ({ onLogin }) => {
             className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0"
             style={{ background: 'linear-gradient(135deg, #6B3F1D, #c05a1f)' }}
           >
-            <img src={gineraLogo2} alt="Ginera" className="w-6 h-6 object-contain" />
+            <img src={gujaratNursingEmblem} alt="Ginera" className="w-7 h-7 object-contain" />
           </div>
           <span className="playfair text-white text-[17px] font-bold">Ginera</span>
         </div>
