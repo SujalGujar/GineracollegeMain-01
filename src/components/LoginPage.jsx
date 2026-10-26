@@ -48,12 +48,26 @@ export const LoginPage = ({ onLogin }) => {
     >
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap');
-        * { font-family: 'DM Sans', sans-serif; }
+        * { font-family: 'DM Sans', sans-serif; box-sizing: border-box; }
         .playfair { font-family: 'Playfair Display', serif; }
         .input-field:focus {
           border-color: rgba(224,123,57,0.5) !important;
           background: rgba(224,123,57,0.05) !important;
           box-shadow: 0 0 0 3px rgba(224,123,57,0.08) !important;
+        }
+        .admin-login-logo-img {
+          width: 30px !important;
+          height: 30px !important;
+          max-width: 30px !important;
+          max-height: 30px !important;
+          object-fit: contain !important;
+          display: block !important;
+        }
+        @media (max-width: 480px) {
+          .admin-login-card {
+            padding: 24px 20px !important;
+            border-radius: 20px !important;
+          }
         }
       `}</style>
 
@@ -61,23 +75,79 @@ export const LoginPage = ({ onLogin }) => {
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
-        className="w-full rounded-3xl"
+        className="w-full rounded-3xl admin-login-card"
         style={{
-          maxWidth: '460px',
+          width: '100%',
+          maxWidth: '440px',
           background: 'rgba(255,255,255,0.03)',
           border: '1px solid rgba(255,255,255,0.07)',
-          padding: 'clamp(32px, 6vw, 52px)',
+          padding: 'clamp(28px, 5vw, 44px)',
+          overflow: 'hidden',
+          boxShadow: '0 25px 60px rgba(0,0,0,0.55)',
+          backdropFilter: 'blur(12px)',
+          WebkitBackdropFilter: 'blur(12px)',
         }}
       >
         {/* Logo */}
-        <div className="flex items-center gap-3 mb-9">
+        <div
+          className="flex items-center gap-3 mb-8"
+          style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '28px' }}
+        >
           <div
-            className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0"
-            style={{ background: 'linear-gradient(135deg, #6B3F1D, #c05a1f)' }}
+            style={{
+              width: '46px',
+              height: '46px',
+              minWidth: '46px',
+              minHeight: '46px',
+              maxWidth: '46px',
+              maxHeight: '46px',
+              borderRadius: '12px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
+              background: 'linear-gradient(135deg, #6B3F1D, #c05a1f)',
+              boxShadow: '0 4px 14px rgba(107, 63, 29, 0.4)',
+              overflow: 'hidden',
+              padding: '6px',
+            }}
           >
-            <img src={gujaratNursingEmblem} alt="Ginera" className="w-7 h-7 object-contain" />
+            <img
+              src={gujaratNursingEmblem}
+              alt="Ginera"
+              width="30"
+              height="30"
+              className="admin-login-logo-img"
+              style={{
+                width: '30px',
+                height: '30px',
+                maxWidth: '30px',
+                maxHeight: '30px',
+                objectFit: 'contain',
+                display: 'block',
+              }}
+            />
           </div>
-          <span className="playfair text-white text-[17px] font-bold">Ginera</span>
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <span
+              className="playfair text-white text-[18px] font-bold"
+              style={{ color: '#ffffff', fontSize: '18px', fontWeight: '700', lineHeight: 1.2 }}
+            >
+              Ginera
+            </span>
+            <span
+              style={{
+                fontSize: '11px',
+                color: 'rgba(255,255,255,0.45)',
+                letterSpacing: '0.6px',
+                textTransform: 'uppercase',
+                fontWeight: '500',
+                marginTop: '2px',
+              }}
+            >
+              Admin Portal
+            </span>
+          </div>
         </div>
 
         {/* Headings */}

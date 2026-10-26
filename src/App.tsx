@@ -291,8 +291,8 @@ export default function App() {
                 <div className="grid md:grid-cols-4 gap-8">
                   <div>
                     <div className="flex items-center space-x-3 mb-4">
-                      <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#F59E0B' }}>
-                        <img src={gujaratNursingEmblem} alt="College Logo" className="w-8 h-8 object-contain" />
+                      <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0 overflow-hidden" style={{ backgroundColor: '#F59E0B', width: '40px', height: '40px', minWidth: '40px', minHeight: '40px' }}>
+                        <img src={gujaratNursingEmblem} alt="College Logo" width="32" height="32" className="w-8 h-8 object-contain" style={{ width: '32px', height: '32px', maxWidth: '32px', maxHeight: '32px', objectFit: 'contain', display: 'block' }} />
                       </div>
                       <div>
                         <h3 className="font-bold text-lg">Nursing College</h3>

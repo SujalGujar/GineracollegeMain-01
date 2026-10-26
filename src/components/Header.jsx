@@ -311,10 +311,16 @@ export function Header({ currentPage, onNavigate }) {
             {/* Logo */}
             <div className="flex items-center space-x-3">
               <div
-                className="flex items-center justify-center w-12 h-12 rounded-full cursor-pointer overflow-hidden"
+                className="flex items-center justify-center w-12 h-12 rounded-full cursor-pointer overflow-hidden flex-shrink-0"
+                style={{ width: '48px', height: '48px', minWidth: '48px', minHeight: '48px', overflow: 'hidden' }}
                 onClick={(e) => handleNavigation("home", e)}
               >
-                <img src={collegeLogoUrl || gujaratNursingEmblem} alt="Gujarat Nursing Education Emblem" className="w-12 h-12 object-contain" />
+                <img
+                  src={collegeLogoUrl || gujaratNursingEmblem}
+                  alt="Gujarat Nursing Education Emblem"
+                  className="w-12 h-12 object-contain"
+                  style={{ width: '100%', height: '100%', maxWidth: '48px', maxHeight: '48px', objectFit: 'contain', display: 'block' }}
+                />
               </div>
               <div
                 className="hidden md:block cursor-pointer"
@@ -461,8 +467,16 @@ export function Header({ currentPage, onNavigate }) {
                     className="flex items-center space-x-3 p-4 pr-12 border-b border-border bg-white shrink-0 cursor-pointer"
                     onClick={() => handleNavigation("home")}
                   >
-                    <div className="flex items-center justify-center w-10 h-10 rounded-full shrink-0 overflow-hidden">
-                      <img src={collegeLogoUrl || gujaratNursingEmblem} alt="Gujarat Nursing Education Emblem" className="w-10 h-10 object-contain" />
+                    <div
+                      className="flex items-center justify-center w-10 h-10 rounded-full shrink-0 overflow-hidden"
+                      style={{ width: '40px', height: '40px', minWidth: '40px', minHeight: '40px', overflow: 'hidden' }}
+                    >
+                      <img
+                        src={collegeLogoUrl || gujaratNursingEmblem}
+                        alt="Gujarat Nursing Education Emblem"
+                        className="w-10 h-10 object-contain"
+                        style={{ width: '100%', height: '100%', maxWidth: '40px', maxHeight: '40px', objectFit: 'contain', display: 'block' }}
+                      />
                     </div>
                     <div className="min-w-0">
                       <h1 className="text-lg font-bold text-gray-900 truncate">Medical College</h1>
